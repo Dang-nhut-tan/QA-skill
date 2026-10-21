@@ -57,11 +57,16 @@ description: >-
    * **Notes:** Assumptions, risks, or device dependencies.
    * **Status:** Trạng thái thực thi (`Pass`, `Fail`, `Pending`, `Skip`). Giá trị mặc định khi tạo mới luôn là `Pending`.
 
-3. **Draft Coverage Summary & Uncovered Risks:**
+3. **Kiểm Soát Truy Vết Yêu Cầu 2 Chiều & Chống Trùng Lặp (Traceability & Deduplication):**
+   * **Kiểm tra Bao phủ Chiều Xuôi (Forward Traceability):** Rà soát toàn bộ các yêu cầu trọng yếu, quy tắc xác thực và luồng nghiệp vụ đã trích xuất trong `module-context.md`. Đảm bảo mỗi yêu cầu quan trọng phải có ít nhất MỘT test case tương ứng. Tuyệt đối không để sót yêu cầu trọng yếu mà không có kiểm thử (Orphan Requirements = 0).
+   * **Kiểm tra Căn cứ Chiều Ngược (Backward Grounding Traceability):** Mọi test case bắt buộc phải điền cột `Requirement Reference` cụ thể, trỏ chính xác về mã đặc tả (ví dụ: `SPEC-AU-01`, `BR§2.1`) hoặc hàm/symbol/endpoint từ source code phát hiện bởi Graphify (ví dụ: `useSubmitOnce`, `POST /api/login`). Nghiêm cấm các test case ảo tưởng (Hallucinated / Orphan Test Cases) không có căn cứ từ code hay tài liệu.
+   * **Kiểm tra Chống Trùng Lặp Mục Tiêu (Deduplication Check):** Rà soát đối chiếu toàn bộ danh sách. Nghiêm cấm tạo ra các test case trùng lặp về mục tiêu kiểm thử, thao tác các bước giống hệt nhau trên cùng tiền điều kiện mà không bổ sung thêm giá trị rủi ro hay giá trị biên.
+
+4. **Draft Coverage Summary & Uncovered Risks:**
    * Document what is tested across the Nặng (7-10) and Sai (5-7) tiers, and what remains outside the scope.
 
-4. **Transition Workflow State:**
-   * Invoke: `python scripts/state_manager.py transition TESTCASE_REVIEW "Generated risk-based test cases (7-10 Chặn, 5-7 Sai)"`.
+5. **Transition Workflow State:**
+   * Invoke: `python scripts/state_manager.py transition TESTCASE_REVIEW "Generated risk-based test cases (7-10 Chặn, 5-7 Sai) with 100% Traceability"`.
 
 ## 5. Expected Outputs
 * Structured test case dataset (JSON or Markdown) conforming to the 13-column schema with 7–10 Chặn and 5–7 Sai cases.

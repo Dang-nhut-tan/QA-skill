@@ -353,6 +353,10 @@ def build_template(output_path: Path):
         ("Số ca Sẵn sàng Tự động hoá (Yes):", "3 (100%)"),
         ("Số ca Yêu cầu Kiểm thử Thủ công (No):", "0"),
         ("Phân bổ Mức độ Nghiêm trọng:", "Chặn (Nặng): 2 | Sai: 1 | Nhỏ: 0"),
+        ("Tỷ lệ Truy vết Yêu cầu (Traceability Rate):", "100% (3/3 yêu cầu trọng yếu đã có test case bao phủ)"),
+        ("Yêu cầu Trọng yếu Chưa có Test Case (Orphan):", "Không có (0) - Đạt chuẩn 100% bao phủ nghiệp vụ"),
+        ("Test Case Ảo Không có Căn cứ Code/Spec:", "Không có (0) - 100% test case có mã đối soát thực tế"),
+        ("Test Case Trùng lặp Mục tiêu (Duplicates):", "Không có (0) - Bộ test case độc lập và tối giản"),
         ("Các Luồng Nghiệp vụ Đã Bao Phủ:", "• Luồng Đăng nhập hợp lệ chính thống (Happy Path)\n• Cơ chế phòng thủ chống spam click submit liên tục (useSubmitOnce)\n• Chuyển đổi qua lại giữa Tab Mã NV và Số điện thoại"),
         ("Vùng Rủi ro Chưa Bao Phủ / Tồn đọng:", "• Luồng xác thực đăng nhập một lần (SSO OAuth2 qua Google/Microsoft)\n• Luồng mở khoá bằng mã PIN vật lý bảo mật phần cứng"),
         ("Giả định Môi trường & Dữ liệu:", "• Môi trường Staging không bật Google reCAPTCHA v3\n• Database có sẵn tài khoản mẫu đã kích hoạt và không bị khoá")

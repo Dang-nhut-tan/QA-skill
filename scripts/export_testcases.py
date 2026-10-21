@@ -285,12 +285,24 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
     ready_count = sum(1 for t in testcases if str(t.get("automation_ready", "")).strip().lower() == "yes")
     not_ready_count = len(testcases) - ready_count
 
+    from traceability_validator import validate_traceability
+    t_audit = validate_traceability(data)
+    t_metrics = t_audit.get("metrics", {})
+
+    orphan_req_str = "Không có (0) - Đạt 100% bao phủ" if t_metrics.get("orphan_requirements_count", 0) == 0 else f"{t_metrics.get('orphan_requirements_count')} yêu cầu: " + ", ".join(o.get('requirement', '') for o in t_audit.get('orphan_requirements', []))
+    orphan_tc_str = "Không có (0) - 100% test case có căn cứ thực tế" if t_metrics.get("orphan_testcases_count", 0) == 0 else f"{t_metrics.get('orphan_testcases_count')} test case: " + ", ".join(o.get('id', '') for o in t_audit.get('orphan_testcases', []))
+    dup_str = "Không có (0) - Bộ test case độc lập tối giản" if t_metrics.get("duplicate_groups_count", 0) == 0 else f"{t_metrics.get('duplicate_groups_count')} cặp trùng: " + ", ".join(f"{d['pair'][0]}={d['pair'][1]}" for d in t_audit.get('duplicate_groups', []))
+
     summary_rows = [
         ("Tên Phân hệ / Module:", summary_info.get("module_name", "")),
         ("Tổng số Test Cases Thiết kế:", f"{len(testcases)} (Chỉ tiêu tiêu chuẩn: 7–10 Chặn, 5–7 Sai)"),
         ("Số ca Sẵn sàng Tự động hoá (Yes):", f"{ready_count} ({ready_count/max(1, len(testcases))*100:.0f}%)"),
         ("Số ca Cần can thiệp Thủ công (No):", str(not_ready_count)),
         ("Phân bổ Mức độ Nghiêm trọng:", f"Chặn (Nặng): {chan_count} | Sai: {sai_count} | Nhỏ: {nho_count}"),
+        ("Tỷ lệ Truy vết Yêu cầu (Traceability Rate):", f"{t_metrics.get('coverage_percentage', 100)}% ({t_metrics.get('covered_requirements_count', 0)}/{t_metrics.get('total_requirements', 0)} yêu cầu đã có test case)"),
+        ("Yêu cầu Trọng yếu Chưa có Test Case (Orphan):", orphan_req_str),
+        ("Test Case Ảo Không có Căn cứ Code/Spec:", orphan_tc_str),
+        ("Test Case Trùng lặp Mục tiêu (Duplicates):", dup_str),
         ("Các Luồng Nghiệp vụ Đã Bao Phủ:", summary_info.get("covered_flows", "")),
         ("Vùng Rủi ro Chưa Bao Phủ / Tồn đọng:", summary_info.get("uncovered_risks", "")),
         ("Giả định Môi trường & Dữ liệu:", summary_info.get("environment_assumptions", ""))

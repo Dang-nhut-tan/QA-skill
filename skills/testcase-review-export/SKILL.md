@@ -20,28 +20,27 @@ description: >-
   * `.qa-state.json`.
 * **References:**
   * `references/testcase-quality-checklist.md`
+  * `scripts/traceability_validator.py`
   * `scripts/export_testcases.py`
 
 ## 3. Prerequisites
 * Python 3 with `openpyxl` available.
 
 ## 4. Step-by-step Execution Instructions
-1. **Internal Quality Review (Self-Audit):**
-   * Check each test case against the 6 pillars in `references/testcase-quality-checklist.md`:
-     1. Unique, stable IDs.
-     2. Reproducible, numbered steps.
-     3. Measurable expected results (no vague phrases).
-     4. Accurate `Chặn / Sai / Nhỏ` severity.
-     5. Justified `Automation Ready` flags and blockers.
-     6. No duplicate or overlapping test coverage.
-   * Auto-correct formatting discrepancies before export.
+1. **Internal Quality Review & Traceability Validation (Self-Audit):**
+   * Execute programmatic validation: `python scripts/traceability_validator.py <payload.json>`.
+   * Enforce the 3 core Traceability Gates before export:
+     1. **Bao phủ Yêu cầu (Forward Check):** 100% yêu cầu trọng yếu trong `module-context.md` có ít nhất 1 test case bao phủ (`orphan_requirements_count == 0`).
+     2. **Căn cứ Code/Spec (Backward Check):** 100% test case có `Requirement Reference` hợp lệ, trỏ về mã đặc tả hoặc symbol/endpoint từ source code (`orphan_testcases_count == 0`). Tuyệt đối loại bỏ test case ảo.
+     3. **Chống Trùng Lặp (Deduplication Check):** Không có cặp test case nào trùng lặp về mục tiêu kiểm thử hay thao tác (`duplicate_groups_count == 0`).
+   * Kiểm tra 6 tiêu chuẩn chất lượng theo `references/testcase-quality-checklist.md`.
 2. **Export to Standardized Excel Workbook:**
    * Prepare JSON payload containing: `testcases`, `gaps`, and `summary`.
    * Run: `python scripts/export_testcases.py <payload.json> <module-name>-testcases.xlsx`.
    * Verify workbook contains 3 sheets:
      * `Sheet 1 — Test Cases`: 13 columns (bao gồm cột ngoài cùng `Status` với dropdown `Pass, Fail, Pending, Skip`, mặc định là `Pending`), dropdown validations, frozen header, autofilter, badges màu pastel.
      * `Sheet 2 — Requirement Gaps`: Open and resolved issues.
-     * `Sheet 3 — Coverage Summary`: High-level metrics, covered flows, and uncovered risks.
+     * `Sheet 3 — Coverage Summary`: High-level metrics, Bảng đối soát Ma trận Truy vết Yêu cầu (RTM), covered flows, and uncovered risks.
 3. **Persist State Checkpoint:**
    * Record exported file path in `.qa-state.json` under `artifacts.excel_testcases`.
    * Update workflow state:

@@ -212,6 +212,72 @@ def run_dry_run_simulation():
     finally:
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
+def validate_traceability_engine():
+    from scripts.traceability_validator import validate_traceability
+
+    # 1. Clean payload test
+    clean_payload = {
+        "requirements": ["SPEC-AUTH-01", "SPEC-AUTH-02"],
+        "testcases": [
+            {
+                "id": "TC-01",
+                "name": "Login success",
+                "preconditions": "Active account",
+                "test_data": "user/pass",
+                "steps": "1. Login",
+                "expected_result": "Dashboard",
+                "requirement_ref": "SPEC-AUTH-01"
+            },
+            {
+                "id": "TC-02",
+                "name": "Lockout after 5 fails",
+                "preconditions": "Active account",
+                "test_data": "user/badpass",
+                "steps": "1. Bad pass 5 times",
+                "expected_result": "Locked 15m",
+                "requirement_ref": "SPEC-AUTH-02"
+            }
+        ]
+    }
+    res_clean = validate_traceability(clean_payload)
+    assert res_clean["valid"] is True, "Clean payload failed traceability validation"
+    assert res_clean["metrics"]["coverage_percentage"] == 100.0, "Coverage calculation mismatch"
+
+    # 2. Flawed payload test (Orphan Req, Orphan TC, Duplicate)
+    flawed_payload = {
+        "requirements": ["SPEC-AUTH-01", "SPEC-MISSING-REQ"],
+        "testcases": [
+            {
+                "id": "TC-01",
+                "name": "Login success",
+                "steps": "1. Login",
+                "expected_result": "Dashboard",
+                "requirement_ref": "SPEC-AUTH-01"
+            },
+            {
+                "id": "TC-02",
+                "name": "Login success", # Duplicate name & steps
+                "steps": "1. Login",
+                "expected_result": "Dashboard",
+                "requirement_ref": "SPEC-AUTH-01"
+            },
+            {
+                "id": "TC-03",
+                "name": "Hallucinated case",
+                "steps": "1. Mystery",
+                "expected_result": "Unknown",
+                "requirement_ref": "" # Orphan TC (no ref)
+            }
+        ]
+    }
+    res_flawed = validate_traceability(flawed_payload)
+    assert res_flawed["valid"] is False, "Flawed payload falsely passed validation"
+    assert res_flawed["metrics"]["orphan_requirements_count"] == 1, "Failed to catch orphan requirement"
+    assert res_flawed["metrics"]["orphan_testcases_count"] == 1, "Failed to catch orphan test case"
+    assert res_flawed["metrics"]["duplicate_groups_count"] == 1, "Failed to catch duplicate test case"
+
+    return "Traceability validator correctly enforces Forward Coverage, Backward Grounding, and Deduplication."
+
 def main():
     print("=" * 60)
     print("QA AGENT SYSTEM — VERIFICATION & VALIDATION SUITE")
@@ -226,6 +292,7 @@ def main():
     results.append(check("6. MarkItDown CLI Verification", check_markitdown_tool))
     results.append(check("7. MCP Server Configurations", check_mcp_config))
     results.append(check("8. End-to-End Dry-Run Simulation", run_dry_run_simulation))
+    results.append(check("9. Requirement Traceability & Deduplication", validate_traceability_engine))
 
     print("\n" + "=" * 60)
     all_passed = all(r[0] for r in results)

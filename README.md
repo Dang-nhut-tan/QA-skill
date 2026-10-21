@@ -48,6 +48,7 @@
 4. **Human-in-the-Loop:** Tuyệt đối không tự động vượt qua 2 trạm dừng bắt buộc: duyệt câu hỏi BA/PO và phê duyệt file test case Excel.
 5. **Ponytail-Optimized:** Tái sử dụng tối đa Page Objects và Fixtures có sẵn, nghiêm cấm sleep cứng, cấm tạo wrapper thừa thãi.
 6. **Continuous Self-Improvement:** Gặp khó khăn hay lỗi lặp lại $\ge 2$ lần $\rightarrow$ tự tổng kết kinh nghiệm $\rightarrow$ xin duyệt $\rightarrow$ tự tiêm vào file Skill để không bao giờ tái phạm.
+7. **Bidirectional Requirement Traceability:** Truy vết yêu cầu 2 chiều và chống trùng lặp. Mỗi yêu cầu trọng yếu phải có ít nhất 1 test case; 100% test case phải có căn cứ từ code hoặc spec (chống test case ảo); triệt tiêu hoàn toàn các test case trùng lặp mục tiêu.
 
 ---
 
@@ -77,11 +78,12 @@ qa-agent-system/
 │   ├── learn_manager.py                     # Quản lý đề xuất và tự động tiêm tri thức vào Skill
 │   ├── generate_template.py                 # Tạo/cập nhật file Excel mẫu với badge pastel
 │   ├── export_testcases.py                  # Xuất bộ test case ra file .xlsx hoàn chỉnh
+│   ├── traceability_validator.py            # Kiểm soát truy vết yêu cầu 2 chiều & chống trùng lặp
 │   ├── read_approved_testcases.py           # Phân tích file Excel người dùng duyệt
-│   └── validate_system.py                   # Bộ kiểm thử xác thực toàn diện (8 bài test)
+│   └── validate_system.py                   # Bộ kiểm thử xác thực toàn diện (9 bài test)
 └── references/
     ├── severity-guidelines.md               # Tiêu chuẩn mức độ nghiêm trọng: Chặn / Sai / Nhỏ
-    ├── testcase-quality-checklist.md        # 7 Trụ cột đánh giá chất lượng test case nội bộ
+    ├── testcase-quality-checklist.md        # 9 Trụ cột đánh giá chất lượng test case nội bộ
     ├── project-learnings.json               # Kho lưu trữ các bài học kinh nghiệm đã được duyệt
     └── workflow-state-schema.json           # JSON Schema kiểm soát tính toàn vẹn của state
 ```
