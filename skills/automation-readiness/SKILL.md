@@ -1,0 +1,59 @@
+---
+name: automation-readiness
+description: >-
+  Ingests the user-approved Excel test case workbook, validates structural schema,
+  and filters strictly for test cases marked 'Automation Ready = Yes'.
+  Enforces zero-tampering with user-approved expected results.
+---
+
+# Skill: Automation Readiness Assessment (Phase 6.1)
+
+## 1. Description & Trigger Conditions
+* **Purpose:** Process the human checkpoint from Step 5 by reading the user's approved `.xlsx` file, validating table columns, filtering strictly for rows where `Automation Ready = Yes`, and preparing execution scope.
+* **Triggers:**
+  * User uploads or points to an approved Excel file and requests automation.
+  * State was `WAITING_FOR_APPROVED_TESTCASES`.
+
+## 2. Inputs
+* **Required:**
+  * Path to approved Excel workbook (e.g. `<module-name>-testcases.xlsx`).
+  * `.qa-state.json`.
+* **References:**
+  * `scripts/read_approved_testcases.py`
+
+## 3. Prerequisites
+* Valid `.xlsx` file available locally.
+
+## 4. Step-by-step Execution Instructions
+1. **Workbook Inspection & Column Validation:**
+   * Run: `python scripts/read_approved_testcases.py <approved_workbook.xlsx>`.
+   * Verify sheet `Test Cases` contains all required columns: `Test Case ID`, `Module`, `Test Case Name`, `Preconditions`, `Test Data`, `Test Steps`, `Expected Result`, `Severity`, `Automation Ready`.
+2. **Filter Automation-Ready Test Cases:**
+   * Extract ONLY rows where `Automation Ready` column equals `Yes` (case-insensitive).
+   * Strictly do NOT convert `No` or empty values to `Yes`.
+   * Strictly do NOT alter or overwrite user-approved `Expected Result` text.
+3. **Report Intake Breakdown:**
+   * Display summary:
+     * Total test cases in workbook.
+     * Count of `Automation Ready = Yes` selected for implementation.
+     * Count of skipped cases (`No` or missing) with their listed blockers.
+4. **Transition Workflow State:**
+   * Record approved Excel path in `.qa-state.json` under `artifacts.approved_excel`.
+   * Record ready test case IDs in `testcase_ids`.
+   * Update workflow state:
+     `python scripts/state_manager.py transition AUTOMATION_IMPLEMENTATION "Approved Excel loaded; proceeding to implementation"`.
+
+## 5. Expected Outputs
+* Structured JSON list of approved automation-ready test cases.
+* Updated `.qa-state.json` transitioning to `AUTOMATION_IMPLEMENTATION`.
+
+## 6. Failure Handling
+* If file is unreadable, corrupted, or missing required columns: report exact column error and request user to upload a compliant file.
+* If 0 test cases are marked `Automation Ready = Yes`: halt and notify the user that no cases were selected for automation.
+
+## 7. Human Approval Requirements
+* None (this skill is the direct recipient of human approval).
+
+## 8. Completion Criteria
+* At least one validated test case marked `Automation Ready = Yes`.
+* State is `AUTOMATION_IMPLEMENTATION`.

@@ -1,0 +1,96 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "QAWorkflowState",
+  "description": "Schema for .qa-state.json state tracking file",
+  "type": "object",
+  "required": [
+    "version",
+    "module_name",
+    "current_state",
+    "created_at",
+    "updated_at",
+    "completed_steps",
+    "artifacts"
+  ],
+  "properties": {
+    "version": {
+      "type": "string",
+      "enum": ["1.0.0"]
+    },
+    "module_name": {
+      "type": "string"
+    },
+    "current_state": {
+      "type": "string",
+      "enum": [
+        "INITIALIZED",
+        "CONTEXT_DISCOVERY",
+        "GAP_ANALYSIS",
+        "WAITING_FOR_REQUIREMENT_CLARIFICATION",
+        "RUNTIME_INVESTIGATION",
+        "TESTCASE_GENERATION",
+        "TESTCASE_REVIEW",
+        "WAITING_FOR_APPROVED_TESTCASES",
+        "AUTOMATION_IMPLEMENTATION",
+        "AUTOMATION_EXECUTION",
+        "COMPLETED",
+        "BLOCKED"
+      ]
+    },
+    "created_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "completed_steps": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "pending_approval": {
+      "type": ["object", "null"],
+      "properties": {
+        "checkpoint": { "type": "string" },
+        "flagged_at": { "type": "string", "format": "date-time" },
+        "status": { "type": "string" }
+      }
+    },
+    "artifacts": {
+      "type": "object",
+      "properties": {
+        "module_context": { "type": ["string", "null"] },
+        "gap_analysis": { "type": ["string", "null"] },
+        "investigation_report": { "type": ["string", "null"] },
+        "excel_testcases": { "type": ["string", "null"] },
+        "approved_excel": { "type": ["string", "null"] },
+        "automation_summary": { "type": ["string", "null"] }
+      }
+    },
+    "document_hashes": {
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "testcase_ids": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "clarification_issues": {
+      "type": "array",
+      "items": { "type": "object" }
+    },
+    "history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "from_state": { "type": ["string", "null"] },
+          "to_state": { "type": "string" },
+          "timestamp": { "type": "string" },
+          "note": { "type": "string" }
+        }
+      }
+    }
+  }
+}

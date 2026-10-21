@@ -1,0 +1,160 @@
+# ==============================================================================
+# .gitignore for QA Agent Testing System
+# Protects against credential leaks, personal tokens, billable API keys,
+# and runtime execution artifacts.
+# ==============================================================================
+
+# ------------------------------------------------------------------------------
+# 1. API Keys, Tokens, Credentials & Secrets (CRITICAL - PREVENT COST & LEAKS)
+# ------------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+*.p12
+*.pfx
+*.pkcs12
+id_rsa*
+id_ed25519*
+*credentials*.json
+*client_secret*.json
+service-account*.json
+token.json
+tokens.json
+secrets.json
+auth.json
+.auth/
+.gemini_keys*
+
+# ------------------------------------------------------------------------------
+# 2. QA Workflow State & Dynamic Runtime Artifacts
+# ------------------------------------------------------------------------------
+# Workflow state machine persistence
+.qa-state.json
+.qa-state.*.json
+
+# Dynamic module context and execution deliverables generated during runs
+module-context.md
+automation-summary.md
+requirement-gaps.md
+
+# Generated module-specific Excel test case workbooks
+# (Explicitly whitelist the blank template in templates/)
+*.xlsx
+*.xls
+!templates/testcase-template.xlsx
+
+# Screenshots & Visual Investigation Evidence from Playwright MCP
+*.png
+*.jpg
+*.jpeg
+*.webp
+screenshots/
+traces/
+
+# Project-specific dynamic learnings captured during execution
+references/project-learnings.json
+
+# ------------------------------------------------------------------------------
+# 3. Test Automation & Runner Artifacts (Playwright CLI, Jest, Pytest)
+# ------------------------------------------------------------------------------
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+.playwright/
+.playwright-artifacts/
+playwright-trace/
+traces/
+videos/
+ms-playwright/
+playwright-results/
+*.trace.zip
+.pytest_cache/
+.coverage
+htmlcov/
+*.lcov
+junit.xml
+
+# ------------------------------------------------------------------------------
+# 4. Reverse-Engineering & Code Graph Artifacts (Graphify)
+# ------------------------------------------------------------------------------
+.graphify/
+graphify-out/
+*.graphml
+graph.json
+
+# ------------------------------------------------------------------------------
+# 5. Python Environment & Bytecode
+# ------------------------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+venv/
+.venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# ------------------------------------------------------------------------------
+# 6. Node.js & Package Managers
+# ------------------------------------------------------------------------------
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+
+# ------------------------------------------------------------------------------
+# 7. Operating System & IDE / Editor Clutter
+# ------------------------------------------------------------------------------
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# Editors / IDEs
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+*.swp
+*.swo
+*~
+*.bak
+*.tmp
