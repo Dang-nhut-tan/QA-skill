@@ -53,6 +53,6 @@ Tất cả các ca kiểm thử do Agent thiết kế phải vượt qua bảng 
 
 ## 10. Tiếp Cận Cho Người Non-IT Không Giảm Thiểu Định Mức (Non-IT Friendly Without Reducing Depth)
 - [ ] **Người Non-IT có thể hiểu & thực hiện được:** Bất kỳ nhân viên nghiệp vụ, BA, PO, hoặc Tester mới vào nghề nào khi đọc test case cũng hiểu ngay mục đích và tự thao tác làm theo được từng bước trên màn hình.
-- [ ] **Bảo toàn 100% độ sâu kiểm thử:** Không cắt giảm số lượng hay độ phức tạp của kịch bản (vẫn đủ 7–10 ca Chặn, 5–7 ca Sai, đầy đủ các kịch bản spam, rate limiting, bảo mật phân quyền, kiểm tra dữ liệu ngầm).
+- [ ] **Bảo toàn 100% độ sâu kiểm thử:** Không cắt giảm độ sâu phân tích hay độ phức tạp của kịch bản kiểm thử (đáp ứng định mức theo Risk-Based Coverage Tier S/M/L, đầy đủ các kịch bản spam, rate limiting, bảo mật phân quyền, kiểm tra dữ liệu ngầm, concurrency và state transition).
 - [ ] **Tuân thủ Cẩm nang thuật ngữ nghiệp vụ:** Áp dụng đầy đủ quy chuẩn chuyển đổi thuật ngữ theo `references/business-terminology-guide.md`, loại bỏ hoàn toàn các từ dịch thô ("phanh chống ngập", "chặn âm thầm", "DB chèn dòng", "web_anon").
 

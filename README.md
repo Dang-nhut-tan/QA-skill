@@ -195,8 +195,8 @@ Số lượng test case co giãn linh hoạt dựa trên độ phức tạp và 
 * **Nhiệm vụ:** Tiếp nhận tài liệu spec từ bạn. Nếu tài liệu là file PDF, Excel hoặc Word, hệ thống tự động dùng **Microsoft MarkItDown** chuyển thành file `.md` sạch sẽ để giữ nguyên bảng biểu và tiết kiệm bộ nhớ.
 
 ### BƯỚC 1 — Khám Phá Cấu Trúc Mã Nguồn (`graphify-context-discovery`)
-* **Nhiệm vụ:** Dùng **Graphify** quét cây cú pháp tĩnh (AST) để vẽ bản đồ liên kết giữa màn hình, các dịch vụ xử lý và cơ sở dữ liệu.
-* **Nguyên tắc tiết kiệm:** Chỉ lấy định nghĩa kiểu (Interface/Types) trước, giới hạn độ sâu $\le 2$, cache theo mã băm commit để không đọc lại file cũ.
+* **Nhiệm vụ:** Dùng **Graphify** quét cây cú pháp tĩnh (AST) để vẽ bản đồ liên kết không giới hạn độ sâu giữa giao diện, dịch vụ xử lý, logic phân quyền và cơ sở dữ liệu.
+* **Nguyên tắc cốt lõi:** **Tối ưu tiêu thụ ngữ cảnh, KHÔNG thu hẹp phạm vi khám phá (Optimize Context Consumption, NOT Discovery Coverage).** Graphify được tự do khám phá 100% dependency liên quan, bao gồm cả phụ thuộc gián tiếp và xuyên module. LLM chỉ nạp theo nhu cầu (Signature-first) để tiết kiệm token mà không bao giờ bỏ sót góc khuất nghiệp vụ.
 
 ### BƯỚC 2 — Phát Hiện Kẽ Hở Nghiệp Vụ (`requirement-gap-analysis`)
 * **Nhiệm vụ:** Đối soát giữa tài liệu bạn đưa và code thực tế. Phát hiện 5 nhóm bất cập (mơ hồ, lỗi tiềm ẩn, thiếu spec, giới hạn môi trường, lỗi xác định).
@@ -211,7 +211,7 @@ Số lượng test case co giãn linh hoạt dựa trên độ phức tạp và 
 * **Truy vết 2 chiều (Bidirectional RTM):** Đảm bảo 100% yêu cầu quan trọng đều có test case, 100% test case đều có căn cứ từ code thật (0% test ảo), và triệt tiêu các ca trùng lặp.
 
 ### BƯỚC 5 — Xuất File Excel Doanh Nghiệp (`testcase-review-export`)
-* **Nhiệm vụ:** Dùng thư viện `openpyxl` tạo ra file `<module>-testcases.xlsx` với font chữ Segoe UI, bảng màu Corporate Navy, đóng băng dòng, bộ lọc dữ liệu và danh sách chọn dropdown.
+* **Nhiệm vụ:** Dùng thư viện `openpyxl` tạo ra file `<module>-testcases.xlsx` với font chữ Segoe UI, bảng màu Corporate Navy, đóng băng dòng, tự động co giãn dòng theo nội dung, thu phóng mở 85% và danh sách chọn dropdown.
 * **Bàn giao:** Giao file Excel cho bạn và dừng lại tại **Điểm dừng 2**.
 
 ### BƯỚC 6 — Hiện Thực Hóa & Chạy Tự Động Hóa (`automation-implementation` & `debugging`)
@@ -226,20 +226,21 @@ Số lượng test case co giãn linh hoạt dựa trên độ phức tạp và 
 
 ## 8. Cơ Chế Quản Trị & Tiết Kiệm Token
 
-Để giảm thiểu chi phí API và giúp AI phản hồi nhanh chóng, hệ thống trang bị các cơ chế tối ưu hoá độc quyền:
+Hệ thống tuân thủ nghiêm ngặt tôn chỉ: **Optimize Context Consumption, NOT Discovery Coverage (Tối ưu tiêu thụ ngữ cảnh, KHÔNG thu hẹp phạm vi khám phá)**. Việc tiết kiệm token tuyệt đối không đánh đổi độ sâu kiểm thử hay bỏ sót rủi ro tiềm ẩn.
 
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
-│ 4 TẤM KHIÊN BẢO VỆ TOKEN                                               │
+│ 4 TẤM KHIÊN BẢO VỆ TOKEN THÔNG MINH                                    │
 ├───────────────────────────────┬────────────────────────────────────────┤
-│ 1. Giới hạn độ sâu Graphify   │ max_depth <= 2, max_nodes <= 30.       │
-│                               │ Tiết kiệm 80% so với nhồi code thô.   │
+│ 1. Tách biệt Khám phá & Nạp   │ Graphify khám phá toàn bộ dependency   │
+│    (Decoupled Discovery)      │ không giới hạn depth/node; LLM chỉ     │
+│                               │ truy xuất on-demand các subgraph cần.  │
 ├───────────────────────────────┼────────────────────────────────────────┤
-│ 2. Cờ xuất ra đĩa cứng (-o)   │ Lưu toàn bộ JSON chi tiết vào file     │
-│                               │ thay vì xả 3.000 dòng ra màn hình chat │
+│ 2. Signature-First & Cache    │ Đọc Interface/Type/Schema trước;       │
+│                               │ cache theo commit hash để không quét lại│
 ├───────────────────────────────┼────────────────────────────────────────┤
-│ 3. Giới hạn lịch sử State     │ Luôn giữ tối đa 10 bước gần nhất,      │
-│                               │ ngăn file .qa-state.json bị phình to   │
+│ 3. Cờ xuất ra đĩa cứng (-o)   │ Lưu toàn bộ dữ liệu chi tiết vào file  │
+│                               │ thay vì xả hàng ngàn dòng ra đoạn chat │
 ├───────────────────────────────┼────────────────────────────────────────┤
 │ 4. Lấy theo từng ID (--id)    │ Khi viết code cho 1 ca test, chỉ nạp   │
 │                               │ đúng ca đó (~100 tokens) thay vì cả file│

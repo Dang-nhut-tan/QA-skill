@@ -25,7 +25,9 @@ description: >-
 stateDiagram-v2
     [*] --> INITIALIZED: Step 0 (module-intake)
     INITIALIZED --> CONTEXT_DISCOVERY: Step 1 (graphify-context-discovery)
-    CONTEXT_DISCOVERY --> GAP_ANALYSIS: Step 2 (requirement-gap-analysis)
+    CONTEXT_DISCOVERY --> GAP_ANALYSIS: Unrestricted Graphify Success
+    CONTEXT_DISCOVERY --> DISCOVERY_INCOMPLETE: Technical Blocker / Parser Failure / Timeout
+    DISCOVERY_INCOMPLETE --> CONTEXT_DISCOVERY: Retry / Resolve Technical Blocker
     
     GAP_ANALYSIS --> WAITING_FOR_REQUIREMENT_CLARIFICATION: [MANDATORY STOP 1]
     
@@ -43,7 +45,13 @@ stateDiagram-v2
     COMPLETED --> [*]
 ```
 
-## 4. Mandatory Human Approval Gates (Non-Negotiable)
+## 4. Unrestricted Discovery & Incomplete Discovery Protocol
+* **Core Rule:** **Optimize Context Consumption, NOT Discovery Coverage.**
+* Graphify được phép duyệt toàn bộ chuỗi dependency (trực tiếp, gián tiếp, xuyên module) mà không bị giới hạn cứng về số node hay độ sâu (depth).
+* Tuyệt đối không dừng phân tích hay cắt bớt dependency chỉ vì hết ngân sách token.
+* **Xử lý khi Discovery chưa hoàn tất:** Nếu gặp lỗi parser, timeout hoặc tài nguyên bị cạn kiệt, hệ thống PHẢI chuyển sang trạng thái `DISCOVERY_INCOMPLETE` và thông báo cho người dùng. Nghiêm cấm tự ý báo hoàn thành khi phân tích còn dang dở.
+
+## 5. Mandatory Human Approval Gates (Non-Negotiable)
 
 ### Gate 1: Requirement Clarification Checkpoint
 * **When:** Right after Step 2 (`requirement-gap-analysis`).
@@ -55,7 +63,7 @@ stateDiagram-v2
 * **State:** `WAITING_FOR_APPROVED_TESTCASES`.
 * **Behavior:** The agent MUST PAUSE and deliver `<module-name>-testcases.xlsx`. The agent must NEVER start writing automation test scripts until the user reviews, marks `Automation Ready = Yes`, and uploads/confirms the file.
 
-## 5. Checkpoint Resumption Protocol
+## 6. Checkpoint Resumption Protocol
 When starting a session or resuming:
 1. Check if `.qa-state.json` exists in workspace root.
 2. If it exists, run: `python scripts/state_manager.py validate`.
@@ -63,6 +71,6 @@ When starting a session or resuming:
    * If input documents or source files changed since last run, invalidate only the downstream affected analysis.
 4. Read `current_state` and resume directly from the pending step.
 
-## 6. Completion Criteria
+## 7. Completion Criteria
 * Workflow reaches `COMPLETED` state.
 * All intermediate artifacts (`module-context.md`, `<module>-gaps.md`, optional `<module>-runtime-investigation.md`, `<module>-testcases.xlsx`, test spec files, `automation-summary.md`) are verified and recorded.
