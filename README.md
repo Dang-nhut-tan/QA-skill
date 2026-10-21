@@ -49,7 +49,9 @@
 5. **Ponytail-Optimized:** Tái sử dụng tối đa Page Objects và Fixtures có sẵn, nghiêm cấm sleep cứng, cấm tạo wrapper thừa thãi.
 6. **Continuous Self-Improvement:** Gặp khó khăn hay lỗi lặp lại $\ge 2$ lần $\rightarrow$ tự tổng kết kinh nghiệm $\rightarrow$ xin duyệt $\rightarrow$ tự tiêm vào file Skill để không bao giờ tái phạm.
 7. **Bidirectional Requirement Traceability:** Truy vết yêu cầu 2 chiều và chống trùng lặp. Mỗi yêu cầu trọng yếu phải có ít nhất 1 test case; 100% test case phải có căn cứ từ code hoặc spec (chống test case ảo); triệt tiêu hoàn toàn các test case trùng lặp mục tiêu.
-8. **Non-IT Accessible Phrasing (Chuẩn Ngôn Ngữ Nghiệp Vụ Dễ Hiểu):** Tuyệt đối không dùng từ dịch máy ngô nghê ("phanh chống ngập", "chặn âm thầm") hay biệt ngữ IT ("web_anon", "RPC", "DB chèn dòng", "UI trả về"). Bất kỳ ai (nhân viên nghiệp vụ, Tester thủ công, BA, PO) đọc vào cũng hiểu ngay mục đích và tự thao tác làm theo được từng bước trên màn hình, trong khi giữ nguyên 100% số lượng và độ phủ rủi ro (7–10 Chặn, 5–7 Sai).
+8. **Dynamic Risk-Based Coverage (RBC):** Xoá bỏ hoàn toàn quota cứng (không cố định 7–10 Chặn, 5–7 Sai). Số lượng test case được điều chỉnh linh hoạt theo Cấp độ Phân hệ (Tier S: 5–8 ca, Tier M: 10–18 ca, Tier L: 18–30+ ca). Tuyệt đối không sinh test case thừa/rác chỉ để đủ chỉ tiêu. Phân định rạch ròi giữa Severity (mức độ nghiêm trọng của lỗi) và Risk Priority (độ ưu tiên rủi ro P0, P1, P2).
+9. **Non-IT Accessible Phrasing (Chuẩn Ngôn Ngữ Nghiệp Vụ Dễ Hiểu):** Tuyệt đối không dùng từ dịch máy ngô nghê ("phanh chống ngập", "chặn âm thầm") hay biệt ngữ IT ("web_anon", "RPC", "DB chèn dòng", "UI trả về"). Bất kỳ ai (nhân viên nghiệp vụ, Tester thủ công, BA, PO) đọc vào cũng hiểu ngay mục đích và tự thao tác làm theo được từng bước trên màn hình.
+10. **Strict Token Governance & Benchmark Grounding:** Khống chế ngân sách token nghiêm ngặt theo từng bước (Step 1 <= 4k tokens). Bóc tách signature-first, giới hạn độ sâu graph `max_depth <= 2`, số node `max_nodes <= 30`, và cache theo git commit/content hash. Mọi khẳng định về tỷ lệ tiết kiệm token được định vị là mục tiêu kiến trúc cần đối chứng qua benchmark thực nghiệm thay vì tuyên bố tuyệt đối.
 
 ---
 
@@ -65,7 +67,7 @@ qa-agent-system/
 │   ├── graphify-context-discovery/SKILL.md  # [BƯỚC 1] Quét AST & dựng Knowledge Graph bằng Graphify
 │   ├── requirement-gap-analysis/SKILL.md    # [BƯỚC 2] Phát hiện kẽ hở & lập bảng hỏi BA/PO ───► ĐIỂM DỪNG 1
 │   ├── playwright-investigation/SKILL.md    # [BƯỚC 3] Thám thính runtime DOM bằng Playwright MCP
-│   ├── testcase-design/SKILL.md             # [BƯỚC 4] Thiết kế test suite (7-10 Chặn, 5-7 Sai)
+│   ├── testcase-design/SKILL.md             # [BƯỚC 4] Thiết kế test suite theo Ma trận Rủi ro (RBC Matrix)
 │   ├── testcase-review-export/SKILL.md      # [BƯỚC 5] Tự soát checklist & xuất file Excel ────► ĐIỂM DỪNG 2
 │   ├── automation-readiness/SKILL.md        # [PHA 6.1] Bóc tách các ca Automation Ready = Yes
 │   ├── automation-implementation/SKILL.md   # [PHA 6.2-6.3] Tái sử dụng POM, viết test Ponytail
@@ -85,6 +87,7 @@ qa-agent-system/
 └── references/
     ├── severity-guidelines.md               # Tiêu chuẩn mức độ nghiêm trọng: Chặn / Sai / Nhỏ
     ├── business-terminology-guide.md        # Cẩm nang chuẩn hoá ngôn ngữ nghiệp vụ dễ hiểu cho Non-IT
+    ├── risk-based-coverage-matrix.md        # Ma trận độ phủ theo rủi ro động (Tier S/M/L) thay quota cứng
     ├── requirement-gaps-template.md         # Mẫu xuất báo cáo điểm bất cập (.md) tại Checkpoint 1
     ├── testcase-quality-checklist.md        # 10 Trụ cột đánh giá chất lượng test case nội bộ
     ├── project-learnings.json               # Kho lưu trữ các bài học kinh nghiệm đã được duyệt
@@ -312,13 +315,18 @@ flowchart TD
 
 ### BƯỚC 4 — Thiết Kế Bộ Test Case Theo Rủi Ro (`testcase-design`)
 * **Mục tiêu:** Thiết kế bộ test suite phân tầng rủi ro sâu sắc, đạt chuẩn **13 cột thông tin**.
-* **Chỉ tiêu phân bổ nghiêm ngặt:**
+* **Độ phủ theo Ma trận Rủi ro Động (RBC Matrix):** Xoá bỏ quota cứng nhắc. Số lượng test case co giãn linh hoạt theo Cấp độ Phân hệ (`references/risk-based-coverage-matrix.md`):
+  - **Tier S (Đơn giản — 5 đến 8 ca):** Form 1 bước, tra cứu danh mục, đổi mật khẩu đơn giản. Nghiêm cấm bịa thêm case thừa chỉ để "đủ chỉ tiêu".
+  - **Tier M (Tiêu chuẩn — 10 đến 18 ca):** Đăng nhập/Đăng ký, Đơn từ, Xếp ca, Đặt phòng, Giới hạn tần suất và chống spam click.
+  - **Tier L (Phức tạp / Trọng yếu — 18 đến 30+ ca):** Cổng thanh toán, Tính lương & thuế, Luồng duyệt đa cấp, Phân quyền bảo mật sâu.
+* **Phân định rạch ròi Severity và Risk Priority:** Severity (`Chặn`, `Sai`, `Nhỏ`) phản ánh mức độ ảnh hưởng của lỗi khi xảy ra (không phải công cụ ép số lượng); Priority (P0, P1, P2) xếp hạng ưu tiên theo Điểm số Rủi ro (Tác động x Xác suất).
+* **Quy chuẩn phân loại lỗi:**
   - **7 – 10 Test Cases cho mức Nặng / Chặn (`Chặn`):** Happy Path sống còn, crash 500, kẹt luồng bắt buộc, thủng bảo mật, rò rỉ dữ liệu, mất session, throttling.
   - **5 – 7 Test Cases cho mức Sai (`Sai`):** Sai công thức tính toán, sai trạng thái CSDL, điều hướng nhầm URL, vi phạm quy tắc validation dữ liệu.
   - **Mức Nhỏ (`Nhỏ`):** Lỗi chính tả, lệch pixel, thông báo chưa mượt.
 * **Quy tắc Automation Ready:** Đánh `Yes` khi hành vi assert được khách quan; đánh `No` bắt buộc phải ghi rõ lý do vào `Automation Blocker`.
 * **Cột trạng thái thực thi (`Status` - Cột M ngoài cùng):** Tự động gán mặc định là `Pending`. Dropdown gồm: `Pass`, `Fail`, `Pending`, `Skip`.
-* **Chuẩn hoá ngôn ngữ nghiệp vụ cho người Non-IT:** Tuyệt đối không dùng từ dịch máy thô thiển ("phanh chống ngập", "chặn âm thầm") hay biệt ngữ dev ("web_anon", "gọi RPC", "DB không chèn dòng", "UI trả về"). Diễn giải các bước thao tác rõ ràng (`1. Mở màn hình... 2. Nhập vào ô... 3. Bấm nút...`) để bất kỳ ai cũng tự làm theo được, bảo toàn 100% định mức số lượng ca test (7-10 Chặn, 5-7 Sai) theo `references/business-terminology-guide.md`.
+* **Chuẩn hoá ngôn ngữ nghiệp vụ cho người Non-IT:** Tuyệt đối không dùng từ dịch máy thô thiển ("phanh chống ngập", "chặn âm thầm") hay biệt ngữ dev ("web_anon", "gọi RPC", "DB không chèn dòng", "UI trả về"). Diễn giải các bước thao tác rõ ràng (`1. Mở màn hình... 2. Nhập vào ô... 3. Bấm nút...`) để bất kỳ ai cũng tự làm theo được theo `references/business-terminology-guide.md`.
 
 ### BƯỚC 5 — Kiểm Định Chất Lượng & Xuất Excel Doanh Nghiệp (`testcase-review-export`)
 * **Mục tiêu:** Kiểm tra 8 trụ cột chất lượng và xuất bản file Excel `<module>-testcases.xlsx`.

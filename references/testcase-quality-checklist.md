@@ -36,9 +36,10 @@ Tất cả các ca kiểm thử do Agent thiết kế phải vượt qua bảng 
   - Dữ liệu test có thể khởi tạo độc lập hoặc dọn dẹp sạch sẽ sau khi test.
 - [ ] **Nếu `Automation Ready = No`:** Bắt buộc phải điền lý do cụ thể vào cột `Automation Blocker`.
 
-## 7. Phân bổ Số lượng theo Chỉ tiêu Rủi ro (Severity Quotas)
-- [ ] **Chỉ tiêu mức Chặn (Nặng):** Đạt từ **7 đến 10 test cases** bao quát toàn bộ các luồng bế tắc, crash, bảo mật, và happy path sinh tử.
-- [ ] **Chỉ tiêu mức Sai:** Đạt từ **5 đến 7 test cases** bao quát các lỗi tính toán, sai trạng thái, validation và logic nghiệp vụ.
+## 7. Độ Phủ Theo Ma Trận Rủi Ro Động (Dynamic Risk-Based Coverage)
+- [ ] **Định lượng theo Cấp độ Phân hệ (Module Tier):** Phân hệ đơn giản (Tier S) đạt 5–8 ca; tiêu chuẩn (Tier M) đạt 10–18 ca; phức tạp/tài chính/bảo mật (Tier L) đạt 18–30+ ca theo `references/risk-based-coverage-matrix.md`. Tuyệt đối không sinh test case rác/thừa chỉ để đạt quota.
+- [ ] **Phân định rạch ròi Severity vs Priority:** Mức độ nghiêm trọng (`Chặn`, `Sai`, `Nhỏ`) phản ánh đúng tác động kỹ thuật/nghiệp vụ của lỗi khi xảy ra, không dùng để ép số lượng test case.
+- [ ] **Ưu tiên rủi ro (Risk Priority):** Các ca P0 (Critical Path / Happy path / Bảo mật / Tính toàn vẹn dữ liệu) được bao phủ đầy đủ.
 
 ## 8. Cột Trạng thái Thực thi (Execution Status - Column M)
 - [ ] **Vị trí & Giá trị hợp lệ:** Nằm ở cột ngoài cùng (Cột M / Cột 13) với dropdown gồm 4 giá trị: `Pass`, `Fail`, `Pending`, `Skip`.
