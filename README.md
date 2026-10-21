@@ -49,6 +49,7 @@
 5. **Ponytail-Optimized:** Tái sử dụng tối đa Page Objects và Fixtures có sẵn, nghiêm cấm sleep cứng, cấm tạo wrapper thừa thãi.
 6. **Continuous Self-Improvement:** Gặp khó khăn hay lỗi lặp lại $\ge 2$ lần $\rightarrow$ tự tổng kết kinh nghiệm $\rightarrow$ xin duyệt $\rightarrow$ tự tiêm vào file Skill để không bao giờ tái phạm.
 7. **Bidirectional Requirement Traceability:** Truy vết yêu cầu 2 chiều và chống trùng lặp. Mỗi yêu cầu trọng yếu phải có ít nhất 1 test case; 100% test case phải có căn cứ từ code hoặc spec (chống test case ảo); triệt tiêu hoàn toàn các test case trùng lặp mục tiêu.
+8. **Non-IT Accessible Phrasing (Chuẩn Ngôn Ngữ Nghiệp Vụ Dễ Hiểu):** Tuyệt đối không dùng từ dịch máy ngô nghê ("phanh chống ngập", "chặn âm thầm") hay biệt ngữ IT ("web_anon", "RPC", "DB chèn dòng", "UI trả về"). Bất kỳ ai (nhân viên nghiệp vụ, Tester thủ công, BA, PO) đọc vào cũng hiểu ngay mục đích và tự thao tác làm theo được từng bước trên màn hình, trong khi giữ nguyên 100% số lượng và độ phủ rủi ro (7–10 Chặn, 5–7 Sai).
 
 ---
 
@@ -83,7 +84,9 @@ qa-agent-system/
 │   └── validate_system.py                   # Bộ kiểm thử xác thực toàn diện (9 bài test)
 └── references/
     ├── severity-guidelines.md               # Tiêu chuẩn mức độ nghiêm trọng: Chặn / Sai / Nhỏ
-    ├── testcase-quality-checklist.md        # 9 Trụ cột đánh giá chất lượng test case nội bộ
+    ├── business-terminology-guide.md        # Cẩm nang chuẩn hoá ngôn ngữ nghiệp vụ dễ hiểu cho Non-IT
+    ├── requirement-gaps-template.md         # Mẫu xuất báo cáo điểm bất cập (.md) tại Checkpoint 1
+    ├── testcase-quality-checklist.md        # 10 Trụ cột đánh giá chất lượng test case nội bộ
     ├── project-learnings.json               # Kho lưu trữ các bài học kinh nghiệm đã được duyệt
     └── workflow-state-schema.json           # JSON Schema kiểm soát tính toàn vẹn của state
 ```
@@ -315,6 +318,7 @@ flowchart TD
   - **Mức Nhỏ (`Nhỏ`):** Lỗi chính tả, lệch pixel, thông báo chưa mượt.
 * **Quy tắc Automation Ready:** Đánh `Yes` khi hành vi assert được khách quan; đánh `No` bắt buộc phải ghi rõ lý do vào `Automation Blocker`.
 * **Cột trạng thái thực thi (`Status` - Cột M ngoài cùng):** Tự động gán mặc định là `Pending`. Dropdown gồm: `Pass`, `Fail`, `Pending`, `Skip`.
+* **Chuẩn hoá ngôn ngữ nghiệp vụ cho người Non-IT:** Tuyệt đối không dùng từ dịch máy thô thiển ("phanh chống ngập", "chặn âm thầm") hay biệt ngữ dev ("web_anon", "gọi RPC", "DB không chèn dòng", "UI trả về"). Diễn giải các bước thao tác rõ ràng (`1. Mở màn hình... 2. Nhập vào ô... 3. Bấm nút...`) để bất kỳ ai cũng tự làm theo được, bảo toàn 100% định mức số lượng ca test (7-10 Chặn, 5-7 Sai) theo `references/business-terminology-guide.md`.
 
 ### BƯỚC 5 — Kiểm Định Chất Lượng & Xuất Excel Doanh Nghiệp (`testcase-review-export`)
 * **Mục tiêu:** Kiểm tra 8 trụ cột chất lượng và xuất bản file Excel `<module>-testcases.xlsx`.

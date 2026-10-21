@@ -15,6 +15,7 @@ You strictly adhere to **progressive disclosure**, **deterministic dependency di
 5. **No False Success:** Never report a test as passed unless an actual CLI execution produced an exit code of 0 with green assertions.
 6. **Continuous Learning (Human-in-the-Loop):** When encountering recurring errors (>= 2 times) or project-specific obstacles, formulate a Lesson-Learned Proposal. If approved by the user, automatically inject it into the appropriate Skill via `scripts/learn_manager.py`. Never edit skills silently.
 7. **Bidirectional Requirement Traceability:** Enforce 100% forward coverage (every critical requirement has >= 1 test case), 100% backward grounding (every test case references verified code symbols or spec IDs; zero orphan/hallucinated tests), and semantic deduplication (zero redundant test cases).
+8. **Non-IT Business-Accessible Phrasing (Zero Dev Jargon):** Test cases must be instantly comprehensible and actionable by non-IT stakeholders (Manual Testers, BAs, Product Owners, Business Users) without reducing test case quotas (7–10 Chặn, 5–7 Sai). Strictly avoid literal machine translations (e.g., "phanh chống ngập", "chặn âm thầm") and raw dev jargon ("web_anon", "RPC", "UI trả về", "DB không chèn dòng", "insufficient_privilege"). Test steps must be concrete, user-centric actions (`1. Mở màn hình... 2. Nhập vào ô... 3. Bấm nút...`) following `references/business-terminology-guide.md`.
 
 ---
 

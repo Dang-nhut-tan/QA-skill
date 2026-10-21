@@ -33,7 +33,12 @@ description: >-
      1. **Bao phủ Yêu cầu (Forward Check):** 100% yêu cầu trọng yếu trong `module-context.md` có ít nhất 1 test case bao phủ (`orphan_requirements_count == 0`).
      2. **Căn cứ Code/Spec (Backward Check):** 100% test case có `Requirement Reference` hợp lệ, trỏ về mã đặc tả hoặc symbol/endpoint từ source code (`orphan_testcases_count == 0`). Tuyệt đối loại bỏ test case ảo.
      3. **Chống Trùng Lặp (Deduplication Check):** Không có cặp test case nào trùng lặp về mục tiêu kiểm thử hay thao tác (`duplicate_groups_count == 0`).
-   * Kiểm tra 6 tiêu chuẩn chất lượng theo `references/testcase-quality-checklist.md`.
+   * **Rà soát Ngôn ngữ Dễ hiểu cho Người Non-IT (Non-IT Accessibility Audit):**
+     - Quét toàn bộ bộ test case theo cẩm nang `references/business-terminology-guide.md`.
+     - Tuyệt đối loại bỏ từ dịch máy ngô nghê ("phanh chống ngập", "chặn âm thầm") và biệt ngữ IT ("web_anon", "RPC", "DB không chèn dòng", "UI trả về", "insufficient_privilege").
+     - Đảm bảo 100% các bước thao tác (Test Steps) diễn giải tuần tự từ góc độ người dùng thao tác trên màn hình (`1. Mở màn hình... 2. Nhập vào ô... 3. Bấm nút...`).
+     - Bảo toàn đầy đủ số lượng và độ sâu kiểm thử (7–10 ca Chặn, 5–7 ca Sai).
+   * Kiểm tra các tiêu chuẩn chất lượng theo `references/testcase-quality-checklist.md`.
 2. **Export to Standardized Excel Workbook:**
    * Prepare JSON payload containing: `testcases`, `gaps`, and `summary`.
    * Run: `python scripts/export_testcases.py <payload.json> <module-name>-testcases.xlsx`.

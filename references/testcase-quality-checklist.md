@@ -6,7 +6,8 @@ Tất cả các ca kiểm thử do Agent thiết kế phải vượt qua bảng 
 
 ## 1. Tính Định danh và Rõ ràng (Identification & Clarity)
 - [ ] **Mã Test Case (Test Case ID):** Có cấu trúc duy nhất, ổn định (Ví dụ: `TC-AUTH-001`), không trùng lặp.
-- [ ] **Tên Test Case (Name):** Mô tả rõ ràng hành động và mục đích kiểm thử, không viết chung chung kiểu *"Kiểm tra màn hình"*.
+- [ ] **Tên Test Case (Name):** Mô tả rõ ràng hành động và mục đích kiểm thử từ góc độ người dùng, không viết chung chung kiểu *"Kiểm tra màn hình"*.
+- [ ] **Ngôn ngữ nghiệp vụ trong sáng (Non-IT Accessible):** Tuyệt đối KHÔNG dùng từ dịch máy thô thiển ("phanh chống ngập", "chặn âm thầm") hoặc biệt ngữ IT nội bộ ("web_anon", "gọi RPC", "UI trả về", "DB chèn dòng").
 - [ ] **Mục đích độc lập:** Mỗi ca kiểm thử chỉ tập trung vào đúng MỘT mục tiêu kiểm chứng chính, tránh dồn nhiều luồng phức tạp vào một ca.
 
 ## 2. Dữ liệu và Tiền điều kiện (Preconditions & Test Data)
@@ -15,11 +16,12 @@ Tất cả các ca kiểm thử do Agent thiết kế phải vượt qua bảng 
 
 ## 3. Các bước thực hiện (Test Steps)
 - [ ] **Có đánh số thứ tự:** Từng bước được đánh số `1., 2., 3.` rõ ràng, tuần tự.
-- [ ] **Có tính tái lập (Reproducible):** Bất kỳ người kiểm thử nào đọc vào cũng có thể thao tác lại chính xác mà không cần đoán mò.
+- [ ] **Có tính làm theo được (Actionable for Non-IT):** Người không chuyên IT đọc vào có thể tự thao tác được trên màn hình (Ví dụ: `1. Mở màn hình...`, `2. Nhập vào ô [Tên ô]...`, `3. Bấm nút [Tên nút]...`).
 - [ ] **Tách biệt hành động và kiểm chứng:** Bước thực hiện chỉ nêu hành động (gõ, bấm, chọn); phần kỳ vọng kết quả để riêng ở cột Expected Result.
 
 ## 4. Kết quả Kỳ vọng (Expected Result)
 - [ ] **Khả kiểm và đo lường được (Verifiable & Measurable):** Không dùng các câu mơ hồ như *"hoạt động bình thường"*, *"chạy đúng"*. Phải nêu rõ thông điệp hiển thị, mã lỗi HTTP, URL đích, hoặc bản ghi được lưu.
+- [ ] **Cấu trúc 2 tầng (Giao diện & Dữ liệu):** Nêu rõ người dùng nhìn thấy gì trên màn hình (thông báo gì, nút đổi trạng thái gì) và hệ thống xử lý thế nào ở phía sau (không phát sinh bản ghi mới, lưu thành công với trạng thái gì).
 - [ ] **Tách biệt Thực tế và Nghiệp vụ:** Phản ánh đúng nghiệp vụ đã được thống nhất, không nhầm lẫn giữa *"code đang chạy như thế này"* với *"nghiệp vụ mong muốn"*.
 
 ## 5. Mức độ Nghiêm trọng (Severity)
@@ -47,4 +49,9 @@ Tất cả các ca kiểm thử do Agent thiết kế phải vượt qua bảng 
 - [ ] **Bao phủ Yêu cầu Trọng yếu (Forward Coverage):** 100% các quy tắc nghiệp vụ, validation rules, và flow trọng yếu trong `module-context.md` đều có ít nhất một test case tương ứng. Số lượng yêu cầu mồ côi (Orphan Requirements) = 0.
 - [ ] **Căn cứ Thực tế Không Ảo tưởng (Backward Grounding):** 100% test case đều có giá trị cột `Requirement Reference` chỉ rõ mã đặc tả spec (ví dụ: `SPEC-AU-01`) hoặc symbol/hàm/endpoint cụ thể từ mã nguồn do Graphify phát hiện (ví dụ: `useSubmitOnce`, `POST /api/login`). Nghiêm cấm hoàn toàn test case mồ côi (Orphan Test Cases) không có cơ sở thực tế.
 - [ ] **Chống Trùng lặp Mục tiêu (Deduplication):** Không có 2 test case nào trùng lặp về mục tiêu kiểm thử, thao tác giống nhau trên cùng tập tiền điều kiện và kỳ vọng cùng kết quả. Mỗi ca kiểm thử phải đại diện cho một rủi ro hoặc một kịch bản biên riêng biệt.
+
+## 10. Tiếp Cận Cho Người Non-IT Không Giảm Thiểu Định Mức (Non-IT Friendly Without Reducing Depth)
+- [ ] **Người Non-IT có thể hiểu & thực hiện được:** Bất kỳ nhân viên nghiệp vụ, BA, PO, hoặc Tester mới vào nghề nào khi đọc test case cũng hiểu ngay mục đích và tự thao tác làm theo được từng bước trên màn hình.
+- [ ] **Bảo toàn 100% độ sâu kiểm thử:** Không cắt giảm số lượng hay độ phức tạp của kịch bản (vẫn đủ 7–10 ca Chặn, 5–7 ca Sai, đầy đủ các kịch bản spam, rate limiting, bảo mật phân quyền, kiểm tra dữ liệu ngầm).
+- [ ] **Tuân thủ Cẩm nang thuật ngữ nghiệp vụ:** Áp dụng đầy đủ quy chuẩn chuyển đổi thuật ngữ theo `references/business-terminology-guide.md`, loại bỏ hoàn toàn các từ dịch thô ("phanh chống ngập", "chặn âm thầm", "DB chèn dòng", "web_anon").
 
