@@ -150,6 +150,16 @@ class WorkflowStateManager:
         self.save(state)
         return state
 
+    def set_artifact(self, artifact_key: str, file_path: str) -> Dict[str, Any]:
+        state = self.load()
+        if not state:
+            raise RuntimeError(f"Cannot set artifact: {STATE_FILE_NAME} does not exist.")
+        if "artifacts" not in state:
+            state["artifacts"] = {}
+        state["artifacts"][artifact_key] = file_path
+        self.save(state)
+        return state
+
     def validate_integrity(self) -> Dict[str, Any]:
         state = self.load()
         if not state:
@@ -203,6 +213,15 @@ if __name__ == "__main__":
         note = sys.argv[3] if len(sys.argv) > 3 else ""
         s = mgr.transition(tgt, note=note)
         print(f"[OK] State transitioned to {s['current_state']}")
+
+    elif cmd == "set-artifact":
+        if len(sys.argv) < 4:
+            print("Usage: python state_manager.py set-artifact <artifact_key> <file_path>")
+            sys.exit(1)
+        art_key = sys.argv[2]
+        art_path = sys.argv[3]
+        s = mgr.set_artifact(art_key, art_path)
+        print(f"[OK] Artifact '{art_key}' set to: {art_path}")
 
     elif cmd == "validate":
         res = mgr.validate_integrity()

@@ -45,6 +45,7 @@ def validate_file_structure():
     assert (SYSTEM_ROOT / "plugin.json").exists(), "plugin.json missing"
     assert (SYSTEM_ROOT / "templates" / "testcase-template.xlsx").exists(), "Excel template missing"
     assert (SYSTEM_ROOT / "references" / "severity-guidelines.md").exists(), "severity-guidelines.md missing"
+    assert (SYSTEM_ROOT / "references" / "requirement-gaps-template.md").exists(), "requirement-gaps-template.md missing"
     assert (SYSTEM_ROOT / "references" / "testcase-quality-checklist.md").exists(), "checklist missing"
     assert (SYSTEM_ROOT / "references" / "workflow-state-schema.json").exists(), "state schema missing"
     return "All structural directories and global files exist."

@@ -52,14 +52,21 @@ description: >-
      - `Suspected Defect`: Behavior violates general logic or safety.
      - `Requirement Still Unresolved`: Ambiguity persists despite observation.
      - `Unable to Verify`: Blocked by environment/data limits.
-5. **Generate Investigation Report:**
-   * Document steps, observed DOM states, network responses, and screenshot links.
-   * Update `module-context.md`.
-   * Transition state: `python scripts/state_manager.py transition TESTCASE_GENERATION "Completed runtime investigation"`.
+5. **Generate Standalone Investigation Report (`<module-name>-runtime-investigation.md`):**
+   * Document step-by-step reproducible exploration, observed DOM states, network payloads, and relative markdown screenshot links (`<IssueID>-step-<NN>-<description>.png`).
+   * Export standalone deliverable `<module-name>-runtime-investigation.md` (and update Section 4 of `<module-name>-gaps.md`).
+   * Register artifact in state:
+     `python scripts/state_manager.py set-artifact investigation_report <module-name>-runtime-investigation.md`
+   * Present clickable link in chat: `[<module-name>-runtime-investigation.md](file:///path/to/<module-name>-runtime-investigation.md)` so user can review the empirical investigation findings.
+   * Update `module-context.md` with runtime findings.
+   * Transition state:
+     `python scripts/state_manager.py transition TESTCASE_GENERATION "Completed runtime investigation"`
 
 ## 5. Expected Outputs
-* `runtime-investigation.md` (or updated `module-context.md`) with reproducible investigation steps, screenshot links, and confirmed observations.
-* Updated `.qa-state.json` transitioning to `TESTCASE_GENERATION`.
+* Standalone `<module-name>-runtime-investigation.md` report with screenshot evidence attachments.
+* Updated `<module-name>-gaps.md` (Section 4 populated with runtime logs).
+* State file updated to `TESTCASE_GENERATION` with `artifacts.investigation_report` recorded.
+* Clickable report link presented directly to the user in chat.
 
 ## 6. Failure Handling
 * If application is down or unreachable via Playwright MCP: report blocker immediately, mark status as `BLOCKED`, and do not fabricate fake screenshots or logs.
@@ -69,4 +76,5 @@ description: >-
 
 ## 8. Completion Criteria
 * Sufficient clarity exists to design deterministic test cases.
+* Standalone investigation report `.md` is exported and linked.
 * Workflow state is `TESTCASE_GENERATION`.

@@ -29,18 +29,22 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
 [Step 1: graphify-context-discovery]  --> Generates module-context.md
         │
         ▼
-[Step 2: requirement-gap-analysis]    --> Formulates BA/PO clarification questions
+[Step 2: requirement-gap-analysis]    --> Exports <module>-gaps.md & renders summary table
         │
         ▼
 ═══════════════════════════════════════════════════════════════════════════
 🔴 MANDATORY CHECKPOINT 1: WAITING_FOR_REQUIREMENT_CLARIFICATION
-   STOP AND ASK USER:
-   - Path A: Provide answers from BA/PO
-   - Path B: Skip clarification and verify observable behavior via Playwright MCP
+   STOP AND PRESENT DELIVERABLES TO USER:
+   1. Clickable file link to [<module>-gaps.md] (or requirement-gaps.md)
+   2. Executive discrepancy table in chat
+   3. Two actionable paths:
+      - Path A: Provide answers from BA/PO
+      - Path B: Skip clarification and verify observable behavior via Playwright MCP
 ═══════════════════════════════════════════════════════════════════════════
         │
         ▼
 [Step 3: playwright-investigation]    --> Resolves gaps via Path A or Path B
+                                          (Generates <module>-runtime-investigation.md for Path B)
         │
         ▼
 [Step 4: testcase-design]             --> Generates risk-based test cases (7–10 Chặn/Nặng, 5–7 Sai)

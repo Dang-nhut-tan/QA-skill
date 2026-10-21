@@ -244,12 +244,12 @@ Hệ thống kết hợp sức mạnh của 6 công cụ mã nguồn mở hàng 
 flowchart TD
     Start(["Bắt đầu Yêu cầu"]) --> Step0["Bước 0: module-intake\n(MarkItDown: PDF/Excel -> .md)"]
     Step0 --> Step1["Bước 1: graphify-context-discovery\n(Quét AST -> module-context.md)"]
-    Step1 --> Step2["Bước 2: requirement-gap-analysis\n(Phân tích kẽ hở & lập bảng hỏi BA/PO)"]
+    Step1 --> Step2["Bước 2: requirement-gap-analysis\n(Xuất <module>-gaps.md & bảng hỏi BA/PO)"]
     
-    Step2 --> Gate1{"ĐIỂM DỪNG 1\nWAITING_FOR_REQUIREMENT_CLARIFICATION\n(Người dùng chọn hướng đi?)"}
+    Step2 --> Gate1{"ĐIỂM DỪNG 1\nWAITING_FOR_REQUIREMENT_CLARIFICATION\n(Hiển thị link file .md & chờ người dùng chọn)"}
     
     Gate1 -- "Path A: Đưa câu trả lời" --> Step3A["Bước 3: Nạp câu trả lời BA/PO\n(Đối soát không xung đột code)"]
-    Gate1 -- "Path B: Bỏ qua câu hỏi" --> Step3B["Bước 3: playwright-investigation\n(Duyệt DOM & chụp ảnh màn hình)"]
+    Gate1 -- "Path B: Bỏ qua câu hỏi" --> Step3B["Bước 3: playwright-investigation\n(Duyệt DOM, xuất runtime-investigation.md)"]
     
     Step3A --> Step4["Bước 4: testcase-design\n(7-10 ca Chặn/Nặng · 5-7 ca Sai)"]
     Step3B --> Step4
@@ -298,13 +298,13 @@ flowchart TD
   - Phân loại bằng chứng: `[CODE-CONFIRMED]`, `[DOC-CONFIRMED]`, `[INFERRED]`.
 
 ### BƯỚC 2 — Phân Tích Kẽ Hở & Lập Bảng Hỏi BA/PO (`requirement-gap-analysis`)
-* **Mục tiêu:** Soát lỗi logic giữa tài liệu và code thực tế.
-* **Quy trình:** Phát hiện 5 dạng kẽ hở (mơ hồ, lỗi tiềm ẩn, thiếu tài liệu, giới hạn môi trường, lỗi xác định). Lập bảng câu hỏi BA/PO chuyên sâu với các giả thuyết đề xuất A/B/C.
-* **ĐIỂM DỪNG 1:** Dừng toàn bộ tiến trình, chuyển state sang `WAITING_FOR_REQUIREMENT_CLARIFICATION`.
+* **Mục tiêu:** Soát lỗi logic giữa tài liệu và code thực tế, xuất báo cáo điểm bất cập rõ ràng.
+* **Quy trình:** Phát hiện 5 dạng kẽ hở (mơ hồ, lỗi tiềm ẩn, thiếu tài liệu, giới hạn môi trường, lỗi xác định). Lập bảng câu hỏi BA/PO chuyên sâu với các giả thuyết đề xuất A/B/C. Xuất file báo cáo độc lập `<module-name>-gaps.md` theo chuẩn `references/requirement-gaps-template.md` và lưu link vào `.qa-state.json`. Trình bày link có thể nhấp cùng bảng tóm tắt trực tiếp trong chat.
+* **ĐIỂM DỪNG 1:** Dừng toàn bộ tiến trình, chuyển state sang `WAITING_FOR_REQUIREMENT_CLARIFICATION` và chờ người dùng chọn hướng xử lý (Path A hoặc Path B).
 
 ### BƯỚC 3 — Làm Rõ Hoặc Thám Thính Runtime (`playwright-investigation`)
 * **Path A (Người dùng trả lời):** Nạp câu trả lời vào `module-context.md`, phát hiện mâu thuẫn nếu câu trả lời trái ngược code.
-* **Path B (Thám thính Runtime qua Playwright MCP):** Mở browser thật, tương tác qua các luồng nghi vấn, chụp ảnh màn hình lưu vết (`ISSUE-NN-step-NN.png`).
+* **Path B (Thám thính Runtime qua Playwright MCP):** Mở browser thật, tương tác qua các luồng nghi vấn, chụp ảnh màn hình lưu vết (`<IssueID>-step-<NN>-<description>.png`), và xuất file báo cáo độc lập `<module-name>-runtime-investigation.md` kèm link ảnh trực quan.
 * *Nguyên tắc nhận thức:* Hành vi quan sát được ở runtime chỉ chứng minh *code đang chạy thế nào*, không tự động biến nó thành *nghiệp vụ đúng*.
 
 ### BƯỚC 4 — Thiết Kế Bộ Test Case Theo Rủi Ro (`testcase-design`)
@@ -340,7 +340,7 @@ flowchart TD
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
 │ ĐIỂM DỪNG 1: WAITING_FOR_REQUIREMENT_CLARIFICATION                     │
-│ AI trình bày bảng câu hỏi BA/PO và DỪNG LẠI.                           │
+│ AI xuất file <module>-gaps.md, gửi link xem trực tiếp và DỪNG LẠI.     │
 │ Người dùng chọn:                                                        │
 │   • Lựa chọn 1: Cung cấp câu trả lời từ BA/PO                          │
 │   • Lựa chọn 2: Bỏ qua và dùng Playwright MCP thám thính runtime       │

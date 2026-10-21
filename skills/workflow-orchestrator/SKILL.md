@@ -48,7 +48,7 @@ stateDiagram-v2
 ### Gate 1: Requirement Clarification Checkpoint
 * **When:** Right after Step 2 (`requirement-gap-analysis`).
 * **State:** `WAITING_FOR_REQUIREMENT_CLARIFICATION`.
-* **Behavior:** The agent MUST PAUSE and ask the user to choose between supplying BA/PO answers (Path A) or verifying actual behavior with Playwright MCP (Path B). The agent must NEVER proceed to test case generation without this user decision.
+* **Behavior:** The agent MUST PAUSE, generate the standalone Markdown report `<module-name>-gaps.md` (or `requirement-gaps.md`), present a clickable file link and summary table directly in chat, and ask the user to choose between supplying BA/PO answers (Path A) or verifying actual behavior with Playwright MCP (Path B). The agent must NEVER proceed to test case generation without this user decision.
 
 ### Gate 2: Approved Test Cases Workbook Checkpoint
 * **When:** Right after Step 5 (`testcase-review-export`).
@@ -65,4 +65,4 @@ When starting a session or resuming:
 
 ## 6. Completion Criteria
 * Workflow reaches `COMPLETED` state.
-* All intermediate artifacts (`module-context.md`, `<module>-testcases.xlsx`, test spec files, `automation-summary.md`) are verified and recorded.
+* All intermediate artifacts (`module-context.md`, `<module>-gaps.md`, optional `<module>-runtime-investigation.md`, `<module>-testcases.xlsx`, test spec files, `automation-summary.md`) are verified and recorded.
