@@ -14,6 +14,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 VALID_STATES = [
     "INITIALIZED",
     "CONTEXT_DISCOVERY",
@@ -140,15 +146,32 @@ class WorkflowStateManager:
                 else:
                     state[k] = v
 
-        state.setdefault("history", []).append({
+        history = state.setdefault("history", [])
+        history.append({
             "from_state": prev_state,
             "to_state": target_state,
             "timestamp": self._now(),
             "note": note
         })
+        # Keep history capped to last 10 entries to prevent token bloat
+        if len(history) > 12:
+            state["history"] = history[-10:]
 
         self.save(state)
         return state
+
+    def get_field(self, field_path: str) -> Any:
+        state = self.load()
+        if not state:
+            return None
+        parts = field_path.strip().split(".")
+        curr = state
+        for p in parts:
+            if isinstance(curr, dict) and p in curr:
+                curr = curr[p]
+            else:
+                return None
+        return curr
 
     def set_artifact(self, artifact_key: str, file_path: str) -> Dict[str, Any]:
         state = self.load()
@@ -200,10 +223,31 @@ if __name__ == "__main__":
             print(f"[ERROR] No {STATE_FILE_NAME} found in current directory.")
             sys.exit(1)
         s = mgr.load()
-        print(f"Module: {s.get('module_name')}")
-        print(f"Current State: {s.get('current_state')}")
-        print(f"Pending Approval: {s.get('pending_approval')}")
-        print(f"Completed Steps: {', '.join(s.get('completed_steps', []))}")
+        if "--compact" in sys.argv or "-c" in sys.argv:
+            pa = s.get('pending_approval')
+            pa_str = pa.get('checkpoint') if isinstance(pa, dict) else "None"
+            print(f"Module: {s.get('module_name')} | State: {s.get('current_state')} | Pending: {pa_str}")
+        else:
+            pa = s.get('pending_approval')
+            pa_desc = f"{pa.get('checkpoint')} ({pa.get('status')})" if isinstance(pa, dict) else "None"
+            arts = [f"{k}={v}" for k, v in s.get("artifacts", {}).items() if v]
+            print(f"Module: {s.get('module_name')}")
+            print(f"Current State: {s.get('current_state')}")
+            print(f"Pending Approval: {pa_desc}")
+            print(f"Completed Steps: {', '.join(s.get('completed_steps', [])) or 'None'}")
+            print(f"Artifacts: {', '.join(arts) if arts else 'None'}")
+
+    elif cmd == "get":
+        if len(sys.argv) < 3:
+            print("Usage: python state_manager.py get <field_path>")
+            sys.exit(1)
+        val = mgr.get_field(sys.argv[2])
+        if val is None:
+            print("null")
+        elif isinstance(val, (dict, list)):
+            print(json.dumps(val, ensure_ascii=False))
+        else:
+            print(val)
 
     elif cmd == "transition":
         if len(sys.argv) < 3:
@@ -225,4 +269,12 @@ if __name__ == "__main__":
 
     elif cmd == "validate":
         res = mgr.validate_integrity()
-        print(json.dumps(res, indent=2))
+        if "--json" in sys.argv:
+            print(json.dumps(res, indent=2))
+        else:
+            if res.get("valid"):
+                print(f"[OK] State is valid & resumable at: {res.get('current_state')}")
+            else:
+                print(f"[FAIL] State invalid: {res.get('reason', 'Documents modified')}")
+                for d in res.get("changed_documents", []):
+                    print(f"  - Modified file: {d['path']}")

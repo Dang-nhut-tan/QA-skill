@@ -9,6 +9,13 @@ import sys
 import json
 from pathlib import Path
 from typing import Dict, Any, List
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 import openpyxl
 
 REQUIRED_COLUMNS = [
@@ -92,11 +99,72 @@ def parse_approved_workbook(excel_path: Path) -> Dict[str, Any]:
         "skipped_testcases": skipped_cases
     }
 
+def print_summary(res: Dict[str, Any]):
+    print(f"[OK] Ingested: {Path(res['excel_path']).name}")
+    print(f"Total: {res['total_cases']} | Ready: {res['automation_ready_count']} | Skipped: {res['skipped_count']}")
+    if res["ready_testcases"]:
+        print("\nAutomation Ready Test Cases:")
+        for tc in res["ready_testcases"]:
+            print(f"  - [{tc['id']}] {tc['name']} ({tc['severity']})")
+    if res["skipped_testcases"]:
+        print("\nSkipped Test Cases (Manual/Blocked):")
+        for tc in res["skipped_testcases"]:
+            blocker = f" - Reason: {tc['automation_blocker']}" if tc.get("automation_blocker") else ""
+            print(f"  - [{tc['id']}] {tc['name']}{blocker}")
+
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python read_approved_testcases.py <approved_workbook.xlsx>")
+    import argparse
+    parser = argparse.ArgumentParser(description="Read and validate approved Excel test case workbook.")
+    parser.add_argument("workbook", help="Path to approved Excel workbook (.xlsx)")
+    parser.add_argument("-o", "--output", help="Write full JSON to file instead of stdout (saves LLM tokens)")
+    parser.add_argument("--summary", action="store_true", help="Print only executive summary table")
+    parser.add_argument("--ready-only", action="store_true", help="Output only automation-ready test cases")
+    parser.add_argument("--id", dest="tc_id", help="Extract a single test case by ID")
+    parser.add_argument("--json", action="store_true", help="Output raw JSON to stdout")
+
+    args = parser.parse_args()
+
+    file_p = Path(args.workbook)
+    res = parse_approved_workbook(file_p)
+
+    if not res.get("success"):
+        print(f"[ERROR] {res.get('error')}", file=sys.stderr)
         sys.exit(1)
 
-    file_p = Path(sys.argv[1])
-    res = parse_approved_workbook(file_p)
-    print(json.dumps(res, indent=2, ensure_ascii=False))
+    # 1. If output file requested, write full JSON to disk
+    if args.output:
+        out_p = Path(args.output)
+        out_p.parent.mkdir(parents=True, exist_ok=True)
+        with open(out_p, "w", encoding="utf-8") as f:
+            json.dump(res, f, indent=2, ensure_ascii=False)
+        print(f"[SAVED] Full test cases saved to: {out_p}")
+        print_summary(res)
+        sys.exit(0)
+
+    # 2. If single ID requested
+    if args.tc_id:
+        target = next((tc for tc in res["ready_testcases"] + res["skipped_testcases"] if tc["id"].lower() == args.tc_id.lower()), None)
+        if target:
+            print(json.dumps(target, indent=2, ensure_ascii=False))
+        else:
+            print(f"[ERROR] Test case '{args.tc_id}' not found.", file=sys.stderr)
+            sys.exit(1)
+        sys.exit(0)
+
+    # 3. If ready-only requested
+    if args.ready_only:
+        payload = {
+            "success": True,
+            "total_ready": len(res["ready_testcases"]),
+            "ready_testcases": res["ready_testcases"]
+        }
+        print(json.dumps(payload, indent=2 if args.json else None, ensure_ascii=False))
+        sys.exit(0)
+
+    # 4. If raw JSON requested
+    if args.json:
+        print(json.dumps(res, indent=2, ensure_ascii=False))
+        sys.exit(0)
+
+    # 5. Default / --summary: Print high-signal token-optimized summary
+    print_summary(res)

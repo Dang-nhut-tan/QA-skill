@@ -322,7 +322,7 @@ flowchart TD
 * **ĐIỂM DỪNG 2:** Dừng tiến trình, chuyển state sang `WAITING_FOR_APPROVED_TESTCASES` và bàn giao file Excel cho người dùng duyệt.
 
 ### BƯỚC 6 — Hiện Thực Hoá & Thực Thi Automation (`automation-implementation` & `debugging`)
-* **Pha 6.1:** Đọc file Excel người dùng vừa tải lên, chỉ bóc tách các ca có `Automation Ready = Yes`.
+* **Pha 6.1:** Đọc file Excel người dùng vừa tải lên qua `read_approved_testcases.py` (tối ưu token bằng các cờ `--summary`, `-o <file.json>`, `--id <TC_ID>` giúp giảm tới 95% token ngữ cảnh), chỉ bóc tách các ca có `Automation Ready = Yes`.
 * **Pha 6.2 - 6.3:** Khảo sát POM có sẵn của dự án, viết script Playwright chuẩn Ponytail (tối giản, không sleep cứng, sinh dữ liệu test chống đụng độ, map chuẩn ID test case).
 * **Pha 6.4:** Chạy test thật qua CLI (`npx playwright test`), tự sửa lỗi selector/setup tối đa 2 lần rerun, xuất báo cáo `automation-summary.md`.
 

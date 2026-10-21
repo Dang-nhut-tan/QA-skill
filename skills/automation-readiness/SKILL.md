@@ -27,6 +27,11 @@ description: >-
 ## 4. Step-by-step Execution Instructions
 1. **Workbook Inspection & Column Validation:**
    * Run: `python scripts/read_approved_testcases.py <approved_workbook.xlsx>`.
+   * *Token Optimization Tip:* To avoid dumping thousands of JSON tokens into the LLM context, use:
+     - `python scripts/read_approved_testcases.py <file.xlsx>` for a clean 10-line executive summary.
+     - `python scripts/read_approved_testcases.py <file.xlsx> -o approved-cases.json` to persist the full payload to disk without flooding the chat.
+     - `python scripts/read_approved_testcases.py <file.xlsx> --ready-only` to retrieve only cases ready for automation.
+     - `python scripts/read_approved_testcases.py <file.xlsx> --id <TC_ID>` to retrieve only the single test case needed for coding a specific test file.
    * Verify sheet `Test Cases` contains all required columns: `Test Case ID`, `Module`, `Test Case Name`, `Preconditions`, `Test Data`, `Test Steps`, `Expected Result`, `Severity`, `Automation Ready`.
 2. **Filter Automation-Ready Test Cases:**
    * Extract ONLY rows where `Automation Ready` column equals `Yes` (case-insensitive).

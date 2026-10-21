@@ -9,6 +9,13 @@ import sys
 import json
 from pathlib import Path
 from typing import Dict, Any, List
+
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.worksheet.datavalidation import DataValidation
@@ -328,7 +335,10 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
 
     output_path.parent.mkdir(parents=True, exist_ok=True)
     wb.save(output_path)
-    print(f"[OK] Exported polished executive Excel workbook: {output_path}")
+    try:
+        print(f"[OK] Exported: {output_path} (Total: {len(testcases)} | Chặn: {chan_count} | Sai: {sai_count} | Nhỏ: {nho_count} | Ready: {ready_count})")
+    except UnicodeEncodeError:
+        print(f"[OK] Exported: {output_path} (Total: {len(testcases)} | Chan: {chan_count} | Sai: {sai_count} | Nho: {nho_count} | Ready: {ready_count})")
 
 if __name__ == "__main__":
     if len(sys.argv) < 3:

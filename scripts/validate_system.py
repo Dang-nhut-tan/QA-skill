@@ -12,6 +12,12 @@ import shutil
 import subprocess
 from pathlib import Path
 
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 SYSTEM_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(SYSTEM_ROOT))
 sys.path.insert(0, str(SYSTEM_ROOT / "scripts"))
@@ -30,11 +36,15 @@ EXPECTED_SKILLS = [
     "workflow-orchestrator"
 ]
 
-def check(name, fn):
-    print(f"\n[RUNNING] {name}...")
+def check(name, fn, compact=False):
+    if not compact:
+        print(f"\n[RUNNING] {name}...")
     try:
         res = fn()
-        print(f"  [PASS] {name}: {res}")
+        if compact:
+            print(f"[{name.split('.')[0]}/9 PASS] {name.split('. ', 1)[-1]}")
+        else:
+            print(f"  [PASS] {name}: {res}")
         return True, res
     except Exception as e:
         print(f"  [FAIL] {name}: {str(e)}")
@@ -280,28 +290,34 @@ def validate_traceability_engine():
     return "Traceability validator correctly enforces Forward Coverage, Backward Grounding, and Deduplication."
 
 def main():
-    print("=" * 60)
-    print("QA AGENT SYSTEM — VERIFICATION & VALIDATION SUITE")
-    print("=" * 60)
+    compact = "--compact" in sys.argv or "-c" in sys.argv
+    if not compact:
+        print("=" * 60)
+        print("QA AGENT SYSTEM — VERIFICATION & VALIDATION SUITE")
+        print("=" * 60)
 
     results = []
-    results.append(check("1. Directory & File Structure", validate_file_structure))
-    results.append(check("2. Skill Metadata & Frontmatter", validate_skill_metadata))
-    results.append(check("3. Excel Template Schema", validate_excel_template))
-    results.append(check("4. Graphify CLI Verification", check_graphify_tool))
-    results.append(check("5. Playwright CLI Verification", check_playwright_cli))
-    results.append(check("6. MarkItDown CLI Verification", check_markitdown_tool))
-    results.append(check("7. MCP Server Configurations", check_mcp_config))
-    results.append(check("8. End-to-End Dry-Run Simulation", run_dry_run_simulation))
-    results.append(check("9. Requirement Traceability & Deduplication", validate_traceability_engine))
+    results.append(check("1. Directory & File Structure", validate_file_structure, compact))
+    results.append(check("2. Skill Metadata & Frontmatter", validate_skill_metadata, compact))
+    results.append(check("3. Excel Template Schema", validate_excel_template, compact))
+    results.append(check("4. Graphify CLI Verification", check_graphify_tool, compact))
+    results.append(check("5. Playwright CLI Verification", check_playwright_cli, compact))
+    results.append(check("6. MarkItDown CLI Verification", check_markitdown_tool, compact))
+    results.append(check("7. MCP Server Configurations", check_mcp_config, compact))
+    results.append(check("8. End-to-End Dry-Run Simulation", run_dry_run_simulation, compact))
+    results.append(check("9. Requirement Traceability & Deduplication", validate_traceability_engine, compact))
 
-    print("\n" + "=" * 60)
     all_passed = all(r[0] for r in results)
-    if all_passed:
-        print("[SUCCESS] All architectural validations and dry-run tests PASSED!")
+    if compact:
+        status_tag = "[SUCCESS]" if all_passed else "[WARNING]"
+        print(f"{status_tag} {sum(1 for r in results if r[0])}/9 Architectural Validations PASSED!")
     else:
-        print("[WARNING] Some checks reported warnings or non-zero status.")
-    print("=" * 60)
+        print("\n" + "=" * 60)
+        if all_passed:
+            print("[SUCCESS] All architectural validations and dry-run tests PASSED!")
+        else:
+            print("[WARNING] Some checks reported warnings or non-zero status.")
+        print("=" * 60)
 
 if __name__ == "__main__":
     main()

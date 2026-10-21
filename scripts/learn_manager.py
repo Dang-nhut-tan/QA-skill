@@ -13,6 +13,12 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 SYSTEM_ROOT = Path(__file__).resolve().parent.parent
 LEARNINGS_FILE = SYSTEM_ROOT / "references" / "project-learnings.json"
 
@@ -111,20 +117,23 @@ def approve_learning(proposal_id: str) -> Dict[str, Any]:
     
     return proposal
 
-def list_learnings() -> None:
+def list_learnings(as_json: bool = False) -> None:
     data = load_learnings()
-    print("=== PENDING LEARNING PROPOSALS ===")
-    if not data.get("proposals"):
-        print("  (No pending proposals)")
-    for p in data.get("proposals", []):
-        print(f"[{p['id']}] {p['title']} -> Target: {p['target_skill']}")
-        print(f"      Issue: {p['issue']}")
-        print(f"      Solution: {p['solution']}")
-    print("\n=== APPLIED LEARNINGS ===")
-    if not data.get("applied"):
-        print("  (No applied learnings)")
-    for a in data.get("applied", []):
-        print(f"[{a['id']}] {a['title']} -> Injected into: {a['target_skill']} on {a.get('applied_at')}")
+    if as_json:
+        print(json.dumps(data, indent=2, ensure_ascii=False))
+        return
+
+    props = data.get("proposals", [])
+    apps = data.get("applied", [])
+    print(f"[LEARNINGS] Pending: {len(props)} | Applied: {len(apps)}")
+    if props:
+        print("\nPending Proposals:")
+        for p in props:
+            print(f"  - [{p['id']}] {p['title']} (Target: {p['target_skill']})")
+    if apps:
+        print("\nApplied Learnings:")
+        for a in apps:
+            print(f"  - [{a['id']}] {a['title']} -> {a['target_skill']}")
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:

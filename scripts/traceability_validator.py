@@ -15,6 +15,12 @@ import re
 from pathlib import Path
 from typing import Dict, Any, List, Set, Tuple
 
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 def normalize_text(text: str) -> str:
     """Normalize text for semantic comparison (lowercase, trimmed, collapsed whitespace)."""
     if not text:
@@ -161,39 +167,37 @@ def validate_traceability(data: Dict[str, Any]) -> Dict[str, Any]:
         "covered_requirements": covered_requirements
     }
 
-def print_report(audit_result: Dict[str, Any]):
+def print_report(audit_result: Dict[str, Any], compact: bool = False):
     m = audit_result["metrics"]
-    print("=" * 60)
-    print("REQUIREMENT TRACEABILITY & DEDUPLICATION AUDIT REPORT")
-    print("=" * 60)
-    print(f"Status:                      {'[PASS] VALID' if audit_result['valid'] else '[FAIL] VIOLATIONS FOUND'}")
-    print(f"Total Test Cases:            {m['total_testcases']}")
-    print(f"Total Requirements:          {m['total_requirements']}")
-    print(f"Covered Requirements:        {m['covered_requirements_count']} ({m['coverage_percentage']}%)")
-    print(f"Orphan Requirements (0 TCs): {m['orphan_requirements_count']}")
-    print(f"Orphan Test Cases (No Ref):  {m['orphan_testcases_count']}")
-    print(f"Duplicate Test Groups:       {m['duplicate_groups_count']}")
-    print("-" * 60)
+    if audit_result["valid"]:
+        if compact:
+            print(f"[PASS] Traceability: 100% valid (TCs: {m['total_testcases']}, Reqs: {m['total_requirements']})")
+        else:
+            print(f"[PASS] Traceability & Deduplication Audit: 100% Valid")
+            print(f"Metrics: Total TCs: {m['total_testcases']} | Reqs: {m['covered_requirements_count']}/{m['total_requirements']} ({m['coverage_percentage']}%) | Orphans: 0 | Duplicates: 0")
+        return
+
+    print("[FAIL] Traceability & Deduplication Violations Found:")
+    print(f"Metrics: TCs: {m['total_testcases']} | Reqs: {m['covered_requirements_count']}/{m['total_requirements']} | Orphan Reqs: {m['orphan_requirements_count']} | Orphan TCs: {m['orphan_testcases_count']} | Duplicates: {m['duplicate_groups_count']}")
     
     if audit_result["orphan_requirements"]:
-        print("\n[!] ORPHAN REQUIREMENTS DETECTED:")
+        print("\nOrphan Requirements (0 TCs mapped):")
         for o in audit_result["orphan_requirements"]:
             print(f"  - {o['requirement']}: {o['reason']}")
             
     if audit_result["orphan_testcases"]:
-        print("\n[!] ORPHAN TEST CASES (HALLUCINATIONS) DETECTED:")
+        print("\nOrphan Test Cases (No code/spec reference):")
         for o in audit_result["orphan_testcases"]:
-            print(f"  - [{o['id']}] {o['name']}: {o['reason']}")
+            print(f"  - [{o['id']}] {o['name']}")
             
     if audit_result["duplicate_groups"]:
-        print("\n[!] DUPLICATE / REDUNDANT TEST CASES DETECTED:")
+        print("\nDuplicate / Redundant Test Pairs:")
         for d in audit_result["duplicate_groups"]:
             print(f"  - Pair {d['pair']}: {d['reason']}")
-    print("=" * 60)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python traceability_validator.py <payload.json>")
+        print("Usage: python traceability_validator.py <payload.json> [--compact|--json]")
         sys.exit(1)
         
     p = Path(sys.argv[1])
@@ -205,5 +209,9 @@ if __name__ == "__main__":
         payload = json.load(f)
         
     res = validate_traceability(payload)
-    print_report(res)
+    if "--json" in sys.argv:
+        print(json.dumps(res, indent=2, ensure_ascii=False))
+    else:
+        is_compact = "--compact" in sys.argv or "-c" in sys.argv
+        print_report(res, compact=is_compact)
     sys.exit(0 if res["valid"] else 1)
