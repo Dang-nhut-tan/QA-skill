@@ -7,6 +7,7 @@ zebra striping, custom row heights, and auto-filters.
 """
 
 import sys
+import math
 from pathlib import Path
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
@@ -62,8 +63,8 @@ BORDER_HEADER_BOTTOM = Border(
     bottom=Side(style='medium', color='0F172A')
 )
 
-ALIGN_CENTER = Alignment(horizontal="center", vertical="center", wrap_text=True)
-ALIGN_LEFT = Alignment(horizontal="left", vertical="center", wrap_text=True)
+ALIGN_DATA_CENTER = Alignment(horizontal="center", vertical="top", wrap_text=True)
+ALIGN_DATA_LEFT = Alignment(horizontal="left", vertical="top", wrap_text=True)
 ALIGN_HEADER = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
 def style_severity_cell(cell):
@@ -77,7 +78,7 @@ def style_severity_cell(cell):
     elif "nhỏ" in val:
         cell.fill = FILL_NHO
         cell.font = FONT_NHO
-    cell.alignment = ALIGN_CENTER
+    cell.alignment = ALIGN_DATA_CENTER
 
 def style_ready_cell(cell):
     val = str(cell.value or "").strip().lower()
@@ -87,7 +88,7 @@ def style_ready_cell(cell):
     else:
         cell.fill = FILL_READY_NO
         cell.font = FONT_READY_NO
-    cell.alignment = ALIGN_CENTER
+    cell.alignment = ALIGN_DATA_CENTER
 
 def style_status_cell(cell):
     val = str(cell.value or "").strip().lower()
@@ -103,7 +104,57 @@ def style_status_cell(cell):
     else:  # Mặc định: Pending
         cell.fill = FILL_SAI
         cell.font = FONT_SAI
-    cell.alignment = ALIGN_CENTER
+    cell.alignment = ALIGN_DATA_CENTER
+
+def auto_fit_rows_and_view(
+    ws,
+    col_widths: dict,
+    min_row: int = 2,
+    min_height: int = 28,
+    line_height: int = 16,
+    padding: int = 12,
+    zoom_scale: int = 85
+):
+    try:
+        if hasattr(ws, "views") and ws.views.sheetView:
+            ws.views.sheetView[0].zoomScale = zoom_scale
+        elif hasattr(ws, "sheet_view"):
+            ws.sheet_view.zoomScale = zoom_scale
+    except Exception:
+        pass
+
+    try:
+        ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
+        ws.page_setup.paperSize = ws.PAPERSIZE_A4
+        ws.page_setup.fitToWidth = 1
+        ws.page_setup.fitToHeight = 0
+        ws.sheet_properties.pageSetUpPr.fitToPage = True
+    except Exception:
+        pass
+
+    for r in range(min_row, ws.max_row + 1):
+        max_lines = 1
+        for c in range(1, ws.max_column + 1):
+            cell = ws.cell(row=r, column=c)
+            val = cell.value
+            if not val:
+                continue
+            text = str(val).strip()
+            if not text:
+                continue
+            col_letter = get_column_letter(c)
+            w = col_widths.get(col_letter, 25)
+            usable_chars = max(8, int(w * 0.92) - 2)
+            cell_lines = 0
+            for paragraph in text.split("\n"):
+                p = paragraph.strip()
+                if not p:
+                    cell_lines += 1
+                else:
+                    cell_lines += max(1, math.ceil(len(p) / usable_chars))
+            if cell_lines > max_lines:
+                max_lines = cell_lines
+        ws.row_dimensions[r].height = max(min_height, max_lines * line_height + padding)
 
 def build_template(output_path: Path):
     wb = openpyxl.Workbook()
@@ -215,7 +266,6 @@ def build_template(output_path: Path):
         cell.border = BORDER_HEADER_BOTTOM
 
     for row_idx, row in enumerate(ws_tc.iter_rows(min_row=2, max_row=len(sample_rows) + 1, min_col=1, max_col=len(tc_headers)), start=2):
-        ws_tc.row_dimensions[row_idx].height = 28
         is_odd = (row_idx % 2 == 1)
         row_fill = FILL_ZEBRA_ODD if is_odd else FILL_ZEBRA_EVEN
 
@@ -226,25 +276,27 @@ def build_template(output_path: Path):
 
             if cell.column == 1: # ID
                 cell.font = BOLD_DATA_FONT
-                cell.alignment = ALIGN_CENTER
+                cell.alignment = ALIGN_DATA_CENTER
             elif cell.column == 8: # Severity
                 style_severity_cell(cell)
             elif cell.column == 9: # Automation Ready
                 style_ready_cell(cell)
             elif cell.column == 12: # Notes
                 cell.font = NOTE_FONT
-                cell.alignment = ALIGN_LEFT
+                cell.alignment = ALIGN_DATA_LEFT
             elif cell.column == 13: # Status
                 style_status_cell(cell)
             else:
-                cell.alignment = ALIGN_LEFT
+                cell.alignment = ALIGN_DATA_LEFT
 
     col_widths_tc = {
-        "A": 16, "B": 18, "C": 32, "D": 28, "E": 28, "F": 38,
-        "G": 38, "H": 15, "I": 18, "J": 26, "K": 22, "L": 26, "M": 16
+        "A": 14, "B": 15, "C": 30, "D": 26, "E": 26, "F": 36,
+        "G": 36, "H": 13, "I": 14, "J": 22, "K": 20, "L": 22, "M": 14
     }
     for col_letter, width in col_widths_tc.items():
         ws_tc.column_dimensions[col_letter].width = width
+
+    auto_fit_rows_and_view(ws_tc, col_widths_tc, min_row=2, min_height=28, zoom_scale=85)
 
     # ====================================================
     # Sheet 2: Requirement Gaps
@@ -299,7 +351,6 @@ def build_template(output_path: Path):
         cell.border = BORDER_HEADER_BOTTOM
 
     for row_idx, row in enumerate(ws_gaps.iter_rows(min_row=2, max_row=len(sample_gaps) + 1, min_col=1, max_col=len(gap_headers)), start=2):
-        ws_gaps.row_dimensions[row_idx].height = 28
         row_fill = FILL_ZEBRA_ODD if (row_idx % 2 == 1) else FILL_ZEBRA_EVEN
 
         for cell in row:
@@ -309,7 +360,7 @@ def build_template(output_path: Path):
 
             if cell.column == 1:
                 cell.font = BOLD_DATA_FONT
-                cell.alignment = ALIGN_CENTER
+                cell.alignment = ALIGN_DATA_CENTER
             elif cell.column == 8: # Status
                 st = str(cell.value or "").strip().lower()
                 if st == "answered":
@@ -321,23 +372,25 @@ def build_template(output_path: Path):
                 else:
                     cell.fill = FILL_READY_NO
                     cell.font = FONT_READY_NO
-                cell.alignment = ALIGN_CENTER
+                cell.alignment = ALIGN_DATA_CENTER
             else:
-                cell.alignment = ALIGN_LEFT
+                cell.alignment = ALIGN_DATA_LEFT
 
     col_widths_gap = {
-        "A": 14, "B": 24, "C": 28, "D": 32, "E": 28, "F": 36, "G": 32, "H": 16
+        "A": 13, "B": 22, "C": 26, "D": 30, "E": 26, "F": 34, "G": 30, "H": 14
     }
     for col_letter, width in col_widths_gap.items():
         ws_gaps.column_dimensions[col_letter].width = width
+
+    auto_fit_rows_and_view(ws_gaps, col_widths_gap, min_row=2, min_height=28, zoom_scale=85)
 
     # ====================================================
     # Sheet 3: Coverage Summary (Executive KPI Card View)
     # ====================================================
     ws_sum = wb.create_sheet(title="Coverage Summary")
     ws_sum.views.sheetView[0].showGridLines = True
-    ws_sum.column_dimensions["A"].width = 28
-    ws_sum.column_dimensions["B"].width = 65
+    ws_sum.column_dimensions["A"].width = 30
+    ws_sum.column_dimensions["B"].width = 70
 
     # Title Banner
     ws_sum.row_dimensions[1].height = 40
@@ -349,7 +402,7 @@ def build_template(output_path: Path):
 
     summary_items = [
         ("Tên Phân hệ / Module:", "Authentication / Đăng nhập"),
-        ("Tổng số Test Cases Thiết kế:", "3 (Mẫu - Tiêu chuẩn thực tế: 7–10 Chặn, 5–7 Sai)"),
+        ("Tổng số Test Cases Thiết kế:", "3 ca mẫu (Phân bổ theo Risk-Based Coverage)"),
         ("Số ca Sẵn sàng Tự động hoá (Yes):", "3 (100%)"),
         ("Số ca Yêu cầu Kiểm thử Thủ công (No):", "0"),
         ("Phân bổ Mức độ Nghiêm trọng:", "Chặn (Nặng): 2 | Sai: 1 | Nhỏ: 0"),
@@ -365,20 +418,33 @@ def build_template(output_path: Path):
     for label, val in summary_items:
         ws_sum.append([label, val])
 
+    try:
+        if hasattr(ws_sum, "views") and ws_sum.views.sheetView:
+            ws_sum.views.sheetView[0].zoomScale = 90
+        elif hasattr(ws_sum, "sheet_view"):
+            ws_sum.sheet_view.zoomScale = 90
+    except Exception:
+        pass
+
     for row_idx in range(2, len(summary_items) + 2):
-        ws_sum.row_dimensions[row_idx].height = 30
         cell_lbl = ws_sum.cell(row=row_idx, column=1)
         cell_val = ws_sum.cell(row=row_idx, column=2)
 
         cell_lbl.font = BOLD_DATA_FONT
         cell_lbl.fill = PatternFill(start_color="F1F5F9", end_color="F1F5F9", fill_type="solid")
         cell_lbl.border = BORDER_SUBTLE
-        cell_lbl.alignment = Alignment(horizontal="left", vertical="center", indent=1)
+        cell_lbl.alignment = Alignment(horizontal="left", vertical="top", indent=1)
 
         cell_val.font = DATA_FONT
         cell_val.fill = FILL_ZEBRA_EVEN
         cell_val.border = BORDER_SUBTLE
-        cell_val.alignment = ALIGN_LEFT
+        cell_val.alignment = ALIGN_DATA_LEFT
+
+        val_text = str(cell_val.value or "").strip()
+        lines = 0
+        for p in val_text.split("\n"):
+            lines += max(1, math.ceil(len(p) / 65))
+        ws_sum.row_dimensions[row_idx].height = max(28, lines * 16 + 10)
 
     # Save
     output_path.parent.mkdir(parents=True, exist_ok=True)
