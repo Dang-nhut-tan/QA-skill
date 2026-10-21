@@ -10,84 +10,280 @@
 
 <br/>
 
-**Hệ thống Kỹ năng Kiểm thử Tự động hoá Thông minh dành cho Google Antigravity, Cursor, Claude Code & AI Coding Agents**
+**Hệ thống Trợ lý Kiểm thử Phần mềm Thông minh (Smart QA Testing System)**  
+*Dành cho Google Antigravity, Cursor, Claude Code, GitHub Copilot & AI Coding Agents*
 
-*“Biến AI từ người đoán mò thành Kiến trúc sư QA thấu hiểu tường tận cấu trúc mã nguồn thực tế.”*
+*"Biến AI từ người đoán mò thành Kiến trúc sư QA thấu hiểu mã nguồn, nói ngôn ngữ nghiệp vụ và luôn phục vụ dưới sự kiểm soát của con người."*
 
 </div>
 
 ---
 
-## Mục Lục Nhanh
-- [1. Triết Lý Thiết Kế Cốt Lõi](#1-triết-lý-thiết-kế-cốt-lõi)
-- [2. Cấu Trúc Thư Mục & 11 Skills Độc Lập](#2-cấu-trúc-thư-mục--11-skills-độc-lập)
-- [3. Danh Sách GitHub Repositories & Lệnh Cài Đặt](#3-danh-sách-github-repositories--lệnh-cài-đặt)
-- [4. Sơ Đồ Kiến Trúc & Vòng Đời Quy Trình](#4-sơ-đồ-kiến-trúc--vòng-đời-quy-trình)
-- [5. Mô Tả Nghiệp Vụ Chuyên Sâu Từ Bước 0 Đến Bước 7](#5-mô-tả-nghiệp-vụ-chuyên-sâu-từ-bước-0-đến-bước-7)
-- [6. Hai Điểm Dừng Phê Duyệt Bắt Buộc (Human Gates)](#6-hai-điểm-dừng-phê-duyệt-bắt-buộc-human-gates)
-- [7. Tiêu Chuẩn Phân Bổ Test Case & Giao Diện Excel Mới](#7-tiêu-chuẩn-phân-bổ-test-case--giao-diện-excel-mới)
-- [8. Cơ Chế Học Hỏi & Tiến Hóa Kỹ Năng (Continuous Learning)](#8-cơ-chế-học-hỏi--tiến-hóa-kỹ-năng-continuous-learning)
-- [9. Hướng Dẫn Nhúng Vào Dự Án Mới & Vận Hành](#9-hướng-dẫn-nhúng-vào-dự-án-mới--vận-hành)
-- [10. Bảng Tổng Hợp Thay Đổi (Changelog)](#10-bảng-tổng-hợp-thay-đổi-changelog)
+## Mục Lục
+- [1. Giới Thiệu Dành Cho Người Mới Bắt Đầu](#1-giới-thiệu-dành-cho-người-mới-bắt-đầu)
+- [2. Hướng Dẫn Bắt Đầu Nhanh Trong 3 Phút](#2-hướng-dẫn-bắt-đầu-nhanh-trong-3-phút)
+- [3. Sơ Đồ Quy Trình Hoạt Động](#3-sơ-đồ-quy-trình-hoạt-động)
+- [4. Hai Điểm Dừng Phê Duyệt Bắt Buộc (Human Gates)](#4-hai-điểm-dừng-phê-duyệt-bắt-buộc-human-gates)
+- [5. Ma Trận Độ Phủ Rủi Ro Động (Tier S, M, L)](#5-ma-trận-độ-phủ-rủi-ro-động-tier-s-m-l)
+- [6. Tiêu Chuẩn Ngôn Ngữ Dễ Hiểu Cho Người Non-IT](#6-tiêu-chuẩn-ngôn-ngữ-dễ-hiểu-cho-người-non-it)
+- [7. Giải Thích 7 Bước Chi Tiết](#7-giải-thích-7-bước-chi-tiết)
+- [8. Cơ Chế Quản Trị & Tiết Kiệm Token](#8-cơ-chế-quản-trị--tiết-kiệm-token)
+- [9. Cấu Trúc Thư Mục & 11 Kỹ Năng Độc Lập](#9-cấu-trúc-thư-mục--11-kỹ-năng-độc-lập)
+- [10. Bảng Giải Thích Thuật Ngữ Cho Người Mới](#10-bảng-giải-thích-thuật-ngữ-cho-người-mới)
+- [11. Hướng Dẫn Cài Đặt Công Cụ & Nhúng Vào Dự Án](#11-hướng-dẫn-cài-đặt-công-cụ--nhúng-vào-dự-án)
 
 ---
 
-## 1. Triết Lý Thiết Kế Cốt Lõi
+## 1. Giới Thiệu Dành Cho Người Mới Bắt Đầu
 
-```text
-  ┌──────────────────┐      ┌──────────────────┐      ┌──────────────────┐
-  │  GRAPHIFY AST    │ ───► │  HUMAN CONTROL   │ ───► │ PONYTAIL CODING  │
-  │  Thấu hiểu code  │      │  Quyền quyết định│      │  Không sinh rác  │
-  │  không đoán mò   │      │  luôn là con người│     │  chạy siêu tốc   │
-  └──────────────────┘      └──────────────────┘      └──────────────────┘
+### Hệ thống này là gì?
+Nếu bạn là sinh viên thực tập, Tester mới vào nghề (Fresher/Junior), BA, hay Product Owner, bạn có thể hiểu đơn giản:  
+**Đây là một Trợ lý QA AI thông minh hỗ trợ bạn từ A đến Z trong công việc kiểm thử phần mềm.**
+
+Thay vì bạn phải ngồi hàng ngày để đọc code, nghĩ kịch bản test case, gõ từng dòng vào file Excel rồi tự viết code tự động hóa Playwright, hệ thống này giúp bạn:
+1. **Đọc hiểu cấu trúc mã nguồn thực tế:** Tự động quét code dự án để biết màn hình có những nút nào, API nào và cơ sở dữ liệu lưu ra sao (không đoán mò).
+2. **Tìm kẽ hở nghiệp vụ:** Chỉ ra những điểm tài liệu viết chưa rõ hoặc code chạy khác với tài liệu, xuất ra file báo cáo `.md` rõ ràng cho bạn xem.
+3. **Thiết kế bảng Test Case bằng Excel cực đẹp:** Xuất ra file `.xlsx` chuyên nghiệp với đầy đủ màu sắc, bộ lọc, danh sách chọn (dropdown) và các bước làm theo rất dễ hiểu.
+4. **Viết code kiểm thử tự động (Automation Test):** Tự động viết kịch bản Playwright và chạy thử trên trình duyệt thật, tự sửa lỗi nếu script bị trục trặc.
+
+### Sự khác biệt so với việc chat thông thường với ChatGPT / Claude:
+* **Không đoán mò (No Hallucination):** Chat AI thông thường không thấy được toàn bộ code nên hay tự bịa ra kịch bản test không có thật. Hệ thống này quét trực tiếp từ cây cú pháp mã nguồn (AST) nên 100% test case đều có căn cứ từ code thật.
+* **Con người luôn nắm quyền kiểm soát (Human-in-the-Loop):** AI không bao giờ tự ý làm bừa. Nó bắt buộc phải dừng lại ở 2 trạm kiểm soát để xin phép bạn duyệt trước khi đi tiếp.
+* **Ngôn ngữ dễ hiểu:** Không dùng từ ngữ kỹ thuật đánh đố người dùng. Bất kỳ ai đọc vào cũng có thể tự thao tác làm theo được trên màn hình.
+
+---
+
+## 2. Hướng Dẫn Bắt Đầu Nhanh Trong 3 Phút
+
+### Bước 1: Kiểm tra tính sẵn sàng của hệ thống
+Mở cửa sổ dòng lệnh (Terminal / PowerShell) tại thư mục dự án và chạy:
+```powershell
+python scripts/validate_system.py --compact
+```
+Khi thấy dòng chữ `[SUCCESS] 9/9 Architectural Validations PASSED!` xuất hiện, hệ thống đã sẵn sàng 100%.
+
+### Bước 2: Ra lệnh cho AI bắt đầu làm việc
+Trong khung chat với AI (Antigravity, Cursor, hoặc Claude Code), bạn chỉ cần gõ một câu lệnh tự nhiên:
+> *"Hãy tiến hành quy trình QA kiểm thử cho phân hệ Đăng Nhập (Login)."*
+
+### Bước 3: Xem kết quả và duyệt 2 lần
+* **Lần duyệt 1 (Tại Điểm dừng 1):** AI sẽ gửi cho bạn một file báo cáo kẽ hở nghiệp vụ `requirement-gaps.md`. Bạn chỉ cần đọc lướt qua và trả lời câu hỏi nghiệp vụ, hoặc bảo AI tự mở trình duyệt lên kiểm tra thực tế.
+* **Lần duyệt 2 (Tại Điểm dừng 2):** AI tạo ra file Excel `<module>-testcases.xlsx`. Bạn mở file lên xem, thấy kịch bản nào cần chạy tự động hoá thì đánh dấu `Yes`. Sau đó bảo AI: *"Tôi đã duyệt file, hãy viết code automation"*.
+* **Hoàn tất:** AI tự viết code và chạy test tự động trên trình duyệt thật cho bạn.
+
+---
+
+## 3. Sơ Đồ Quy Trình Hoạt Động
+
+Dưới đây là bức tranh toàn cảnh về cách AI phối hợp cùng bạn qua từng giai đoạn:
+
+```mermaid
+flowchart TD
+    Start(["Bắt đầu: Bạn yêu cầu kiểm thử 1 phân hệ"]) --> Step0["Bước 0: Tiền xử lý tài liệu\n(Chuyển PDF / Excel / Word thành Markdown)"]
+    Step0 --> Step1["Bước 1: Khám phá mã nguồn\n(Quét cây cú pháp AST để vẽ bản đồ luồng chạy)"]
+    Step1 --> Step2["Bước 2: Tìm kẽ hở nghiệp vụ\n(Soát lỗi logic giữa tài liệu và code thực tế)"]
+    
+    Step2 --> Gate1{"ĐIỂM DỪNG 1 (BẮT BUỘC)\nAI xuất file requirement-gaps.md\nvà tạm dừng chờ bạn chọn hướng đi"}
+    
+    Gate1 -- "Hướng A: Bạn đưa câu trả lời BA/PO" --> Step3A["Bước 3A: Cập nhật nghiệp vụ đã chốt vào hệ thống"]
+    Gate1 -- "Hướng B: Bạn bảo AI tự kiểm tra" --> Step3B["Bước 3B: AI bật trình duyệt thật thám thính runtime\n(Chụp ảnh màn hình lưu vết)"]
+    
+    Step3A --> Step4["Bước 4: Thiết kế Test Case theo rủi ro (RBC Matrix)\n(Ngôn ngữ dễ hiểu, ai cũng làm theo được)"]
+    Step3B --> Step4
+    
+    Step4 --> Step5["Bước 5: Xuất bản file Excel doanh nghiệp\n(<module>-testcases.xlsx chuẩn 13 cột)"]
+    
+    Step5 --> Gate2{"ĐIỂM DỪNG 2 (BẮT BUỘC)\nAI trao file Excel cho bạn\nvà dừng lại chờ bạn xem & duyệt"}
+    
+    Gate2 -- "Bạn xác nhận đã duyệt file" --> Step61["Pha 6.1: Lọc các ca Automation Ready = Yes"]
+    Step61 --> Step62["Pha 6.2: Viết mã Playwright tự động hoá tối giản"]
+    Step62 --> Step64["Pha 6.4: Chạy test thật trên CLI & tự sửa lỗi nếu có"]
+    
+    Step64 --> Step7["Bước 7: Đúc kết kinh nghiệm dự án\n(Tự học hỏi để không tái phạm lỗi cũ)"]
+    Step7 --> EndNode(["Hoàn tất: Bàn giao báo cáo kiểm thử hoàn chỉnh"])
+
+    classDef humanStop fill:#FEE2E2,stroke:#DC2626,stroke-width:2px,color:#991B1B,font-weight:bold;
+    classDef aiStep fill:#EFF6FF,stroke:#3B82F6,stroke-width:1.5px,color:#1E3A8A;
+    classDef successNode fill:#DCFCE7,stroke:#16A34A,stroke-width:1.5px,color:#166534;
+
+    class Gate1,Gate2 humanStop;
+    class Step0,Step1,Step2,Step3A,Step3B,Step4,Step5,Step61,Step62,Step64,Step7 aiStep;
+    class Start,EndNode successNode;
 ```
 
-1. **Graphify-First Discovery:** Sử dụng cây cú pháp tĩnh (AST) để bóc tách 100% các điểm vào (entry points), cây phụ thuộc (call trees) và CSDL trước khi nghĩ đến việc viết test.
-2. **Microsoft MarkItDown Ingestion:** Biến đổi mọi tài liệu nhị phân phong phú (PDF, Excel, Word) thành Markdown sạch sẽ để bảo toàn bảng biểu và giảm hao phí token.
-3. **Evidence-Based Reasoning:** Phân loại rạch ròi giữa `[CODE-CONFIRMED]`, `[DOC-CONFIRMED]`, `[RUNTIME-CONFIRMED]`, và `[INFERRED]`. Nghiêm cấm bịa đặt nghiệp vụ.
-4. **Human-in-the-Loop:** Tuyệt đối không tự động vượt qua 2 trạm dừng bắt buộc: duyệt câu hỏi BA/PO và phê duyệt file test case Excel.
-5. **Ponytail-Optimized:** Tái sử dụng tối đa Page Objects và Fixtures có sẵn, nghiêm cấm sleep cứng, cấm tạo wrapper thừa thãi.
-6. **Continuous Self-Improvement:** Gặp khó khăn hay lỗi lặp lại $\ge 2$ lần $\rightarrow$ tự tổng kết kinh nghiệm $\rightarrow$ xin duyệt $\rightarrow$ tự tiêm vào file Skill để không bao giờ tái phạm.
-7. **Bidirectional Requirement Traceability:** Truy vết yêu cầu 2 chiều và chống trùng lặp. Mỗi yêu cầu trọng yếu phải có ít nhất 1 test case; 100% test case phải có căn cứ từ code hoặc spec (chống test case ảo); triệt tiêu hoàn toàn các test case trùng lặp mục tiêu.
-8. **Dynamic Risk-Based Coverage (RBC):** Xoá bỏ hoàn toàn quota cứng (không cố định 7–10 Chặn, 5–7 Sai). Số lượng test case được điều chỉnh linh hoạt theo Cấp độ Phân hệ (Tier S: 5–8 ca, Tier M: 10–18 ca, Tier L: 18–30+ ca). Tuyệt đối không sinh test case thừa/rác chỉ để đủ chỉ tiêu. Phân định rạch ròi giữa Severity (mức độ nghiêm trọng của lỗi) và Risk Priority (độ ưu tiên rủi ro P0, P1, P2).
-9. **Non-IT Accessible Phrasing (Chuẩn Ngôn Ngữ Nghiệp Vụ Dễ Hiểu):** Tuyệt đối không dùng từ dịch máy ngô nghê ("phanh chống ngập", "chặn âm thầm") hay biệt ngữ IT ("web_anon", "RPC", "DB chèn dòng", "UI trả về"). Bất kỳ ai (nhân viên nghiệp vụ, Tester thủ công, BA, PO) đọc vào cũng hiểu ngay mục đích và tự thao tác làm theo được từng bước trên màn hình.
-10. **Strict Token Governance & Benchmark Grounding:** Khống chế ngân sách token nghiêm ngặt theo từng bước (Step 1 <= 4k tokens). Bóc tách signature-first, giới hạn độ sâu graph `max_depth <= 2`, số node `max_nodes <= 30`, và cache theo git commit/content hash. Mọi khẳng định về tỷ lệ tiết kiệm token được định vị là mục tiêu kiến trúc cần đối chứng qua benchmark thực nghiệm thay vì tuyên bố tuyệt đối.
+---
+
+## 4. Hai Điểm Dừng Phê Duyệt Bắt Buộc (Human Gates)
+
+> [!IMPORTANT]
+> Đây là 2 "chốt chặn thép" bảo đảm AI luôn là người trợ lý phục vụ bạn, không bao giờ tự ý đưa ra quyết định thay con người.
+
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│ ĐIỂM DỪNG 1: WAITING_FOR_REQUIREMENT_CLARIFICATION                     │
+│ AI xuất file requirement-gaps.md, gửi link mở file và DỪNG LẠI.        │
+│ Bạn có 2 lựa chọn:                                                     │
+│   • Lựa chọn 1 (Path A): Cung cấp câu trả lời từ BA/PO                 │
+│   • Lựa chọn 2 (Path B): Yêu cầu AI mở trình duyệt lên kiểm tra thực tế│
+└────────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────┐
+│ ĐIỂM DỪNG 2: WAITING_FOR_APPROVED_TESTCASES                            │
+│ AI tạo file Excel <module>-testcases.xlsx và DỪNG LẠI bàn giao cho bạn.│
+│ Bạn mở file lên xem, chỉnh sửa nếu cần, đánh dấu Automation Ready = Yes.│
+│ AI TUYỆT ĐỐI BỊ CẤM viết code tự động hoá khi bạn chưa xác nhận duyệt! │
+└────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 2. Cấu Trúc Thư Mục & 11 Skills Độc Lập
+## 5. Ma Trận Độ Phủ Rủi Ro Động (Tier S, M, L)
+
+Hệ thống **không áp dụng số lượng test case cố định một cách máy móc** (tránh tình trạng một màn hình đơn giản mà bắt tạo hàng chục test case vô nghĩa, hoặc một chức năng thanh toán phức tạp lại làm quá sơ sài).
+
+Số lượng test case co giãn linh hoạt dựa trên độ phức tạp và mức độ rủi ro theo [`references/risk-based-coverage-matrix.md`](references/risk-based-coverage-matrix.md):
+
+| Quy Mô Phân Hệ (Tier) | Đặc Điểm Nghiệp Vụ Thực Tế | Số Lượng Test Case Hợp Lý | Ví Dụ Điển Hình |
+| :--- | :--- | :---: | :--- |
+| **Tier S — Đơn Giản** | Màn hình tĩnh, form nhập 1 bước, tra cứu danh mục, đổi mật khẩu cơ bản. | **5 – 8 Test Cases** | Đổi avatar, xem thông tin phòng ban, cập nhật ghi chú. |
+| **Tier M — Tiêu Chuẩn** | Đăng nhập/Đăng ký, gửi đơn từ nghỉ phép, xếp ca làm việc, đặt phòng họp. | **10 – 18 Test Cases** | Đăng nhập đa kênh, duyệt đơn chấm công, phân quyền vai trò. |
+| **Tier L — Phức Tạp / Trọng Yếu** | Cổng thanh toán, tính lương thưởng & thuế, luồng duyệt đa cấp, bảo mật cao. | **18 – 30+ Test Cases** | Thanh toán trực tuyến, chốt bảng lương cuối tháng, phân quyền bảo mật. |
+
+### Phân định rạch ròi giữa Mức Độ Nghiêm Trọng (Severity) và Độ Ưu Tiên (Priority)
+* **Severity (`Chặn`, `Sai`, `Nhỏ`):** Phản ánh hậu quả khi lỗi xảy ra (`Chặn`: sập web, mất tiền, mất dữ liệu; `Sai`: sai số liệu tính toán, sai trạng thái; `Nhỏ`: lệch pixel, lỗi chính tả). Đây là thước đo kỹ thuật, **không phải chỉ tiêu đếm số lượng**.
+* **Risk Priority (P0, P1, P2):** Phản ánh thứ tự ưu tiên kiểm thử:
+  $$\text{Điểm Rủi Ro} = \text{Mức Độ Tác Động (1–3)} \times \text{Xác Suất Gặp Lỗi (1–3)}$$
+  - **P0:** Kịch bản luồng chính (Happy Path) và các lỗi bảo mật sống còn.
+  - **P1:** Kịch bản giá trị biên, ràng buộc dữ liệu phức tạp.
+  - **P2:** Kịch bản phụ, lỗi hiển thị nhỏ.
+
+---
+
+## 6. Tiêu Chuẩn Ngôn Ngữ Dễ Hiểu Cho Người Non-IT
+
+> [!TIP]
+> Tất cả câu chữ trong file Test Case đều tuân thủ Cẩm nang: [`references/business-terminology-guide.md`](references/business-terminology-guide.md).  
+> **Nguyên tắc vàng:** Bất kỳ ai (dù không biết gì về lập trình) đọc vào cũng hiểu ngay mục đích và tự tay thao tác làm theo được trên màn hình.
+
+### Bảng tra cứu từ ngữ: Nói KHÔNG với từ dịch máy thô thiển và tiếng lóng Dev
+
+| Từ ngữ cũ gây khó hiểu | Chuẩn nghiệp vụ mới (Ai cũng hiểu được) |
+| :--- | :--- |
+| *Phanh chống ngập / Throttling* | **Giới hạn số lần gửi yêu cầu / Chặn spam liên tục** |
+| *Chặn âm thầm (Silent drop)* | **Báo thành công chung để bảo mật, nhưng không tạo yêu cầu mới** |
+| *UI trả về thông báo...* | **Màn hình hiển thị thông báo... / Giao diện xuất hiện...** |
+| *DB không chèn dòng mới* | **Hệ thống dữ liệu không phát sinh bản ghi mới** |
+| *Dùng vai trò web_anon gọi RPC* | **Người dùng chưa đăng nhập thực hiện thao tác qua đường dẫn** |
+| *Lỗi insufficient_privilege* | **Hệ thống từ chối và báo lỗi không có quyền truy cập** |
+
+### Minh họa một ca test chuẩn mực:
+* **Tên Test Case:** Kiểm tra giới hạn số lần yêu cầu: Chặn gửi thêm khi tài khoản gửi quá 3 lần trong 24 giờ.
+* **Các bước thực hiện:**
+  1. Mở màn hình Quên Mật Khẩu.
+  2. Nhập Mã nhân viên `NV-102` vào ô nhập liệu.
+  3. Bấm nút "Gửi Yêu Cầu" (đây là lần gửi thứ 4).
+  4. Quan sát thông báo hiển thị trên màn hình.
+* **Kết quả kỳ vọng:**
+  - *Trên màn hình:* Xuất hiện thông báo thành công chung nhằm bảo vệ an toàn thông tin, không để lộ việc tài khoản đã bị chặn.
+  - *Trong hệ thống dữ liệu:* Không tạo thêm yêu cầu xử lý mới do đã vượt quá 3 lần trong ngày.
+
+---
+
+## 7. Giải Thích 7 Bước Chi Tiết
+
+### BƯỚC 0 — Tiếp Nhận & Chuẩn Hóa Tài Liệu (`module-intake`)
+* **Nhiệm vụ:** Tiếp nhận tài liệu spec từ bạn. Nếu tài liệu là file PDF, Excel hoặc Word, hệ thống tự động dùng **Microsoft MarkItDown** chuyển thành file `.md` sạch sẽ để giữ nguyên bảng biểu và tiết kiệm bộ nhớ.
+
+### BƯỚC 1 — Khám Phá Cấu Trúc Mã Nguồn (`graphify-context-discovery`)
+* **Nhiệm vụ:** Dùng **Graphify** quét cây cú pháp tĩnh (AST) để vẽ bản đồ liên kết giữa màn hình, các dịch vụ xử lý và cơ sở dữ liệu.
+* **Nguyên tắc tiết kiệm:** Chỉ lấy định nghĩa kiểu (Interface/Types) trước, giới hạn độ sâu $\le 2$, cache theo mã băm commit để không đọc lại file cũ.
+
+### BƯỚC 2 — Phát Hiện Kẽ Hở Nghiệp Vụ (`requirement-gap-analysis`)
+* **Nhiệm vụ:** Đối soát giữa tài liệu bạn đưa và code thực tế. Phát hiện 5 nhóm bất cập (mơ hồ, lỗi tiềm ẩn, thiếu spec, giới hạn môi trường, lỗi xác định).
+* **Bàn giao:** Xuất file báo cáo Markdown độc lập `requirement-gaps.md` kèm link mở trực tiếp và dừng lại tại **Điểm dừng 1**.
+
+### BƯỚC 3 — Làm Rõ Hoặc Thám Thính Thực Tế (`playwright-investigation`)
+* **Path A:** Nếu bạn trả lời các câu hỏi nghiệp vụ, AI ghi nhận vào tài liệu hệ thống.
+* **Path B:** Nếu bạn muốn kiểm chứng thực tế, AI dùng **Playwright MCP** tự mở trình duyệt lên thao tác, chụp ảnh màn hình lưu vết từng bước.
+
+### BƯỚC 4 — Thiết Kế Test Case Theo Rủi Ro (`testcase-design`)
+* **Nhiệm vụ:** Áp dụng Ma trận Rủi ro (Tier S/M/L) và Cẩm nang ngôn ngữ dễ hiểu để thiết kế bộ test case hoàn chỉnh gồm 13 cột thông tin.
+* **Truy vết 2 chiều (Bidirectional RTM):** Đảm bảo 100% yêu cầu quan trọng đều có test case, 100% test case đều có căn cứ từ code thật (0% test ảo), và triệt tiêu các ca trùng lặp.
+
+### BƯỚC 5 — Xuất File Excel Doanh Nghiệp (`testcase-review-export`)
+* **Nhiệm vụ:** Dùng thư viện `openpyxl` tạo ra file `<module>-testcases.xlsx` với font chữ Segoe UI, bảng màu Corporate Navy, đóng băng dòng, bộ lọc dữ liệu và danh sách chọn dropdown.
+* **Bàn giao:** Giao file Excel cho bạn và dừng lại tại **Điểm dừng 2**.
+
+### BƯỚC 6 — Hiện Thực Hóa & Chạy Tự Động Hóa (`automation-implementation` & `debugging`)
+* **Pha 6.1:** Đọc file Excel bạn đã duyệt, chỉ lọc các dòng có `Automation Ready = Yes`.
+* **Pha 6.2 - 6.3:** Viết mã Playwright theo phong cách **Ponytail** (tối giản, tận dụng Page Objects có sẵn, không sleep cứng, chạy cực nhanh).
+* **Pha 6.4:** Chạy test thật qua giao diện dòng lệnh (`npx playwright test`), tự động phân tích vết lỗi (Trace) và tự sửa script tối đa 2 lần nếu gặp trục trặc.
+
+### BƯỚC 7 — Tự Học Hỏi & Tích Lũy Kinh Nghiệm (`continuous-learning`)
+* **Nhiệm vụ:** Khi gặp một lỗi lặp lại $\ge 2$ lần trong dự án, AI tự động đúc kết thành bài học kinh nghiệm. Khi bạn bấm duyệt, AI tự ghi bài học vào file kỹ năng để các lần sau không bao giờ phạm lại lỗi đó nữa.
+
+---
+
+## 8. Cơ Chế Quản Trị & Tiết Kiệm Token
+
+Để giảm thiểu chi phí API và giúp AI phản hồi nhanh chóng, hệ thống trang bị các cơ chế tối ưu hoá độc quyền:
+
+```text
+┌────────────────────────────────────────────────────────────────────────┐
+│ 4 TẤM KHIÊN BẢO VỆ TOKEN                                               │
+├───────────────────────────────┬────────────────────────────────────────┤
+│ 1. Giới hạn độ sâu Graphify   │ max_depth <= 2, max_nodes <= 30.       │
+│                               │ Tiết kiệm 80% so với nhồi code thô.   │
+├───────────────────────────────┼────────────────────────────────────────┤
+│ 2. Cờ xuất ra đĩa cứng (-o)   │ Lưu toàn bộ JSON chi tiết vào file     │
+│                               │ thay vì xả 3.000 dòng ra màn hình chat │
+├───────────────────────────────┼────────────────────────────────────────┤
+│ 3. Giới hạn lịch sử State     │ Luôn giữ tối đa 10 bước gần nhất,      │
+│                               │ ngăn file .qa-state.json bị phình to   │
+├───────────────────────────────┼────────────────────────────────────────┤
+│ 4. Lấy theo từng ID (--id)    │ Khi viết code cho 1 ca test, chỉ nạp   │
+│                               │ đúng ca đó (~100 tokens) thay vì cả file│
+└───────────────────────────────┴────────────────────────────────────────┘
+```
+
+> [!NOTE]
+> Mức độ tiết kiệm token cụ thể phụ thuộc vào dung lượng mã nguồn của từng dự án và được xem là mục tiêu kiến trúc cần đối chứng thực nghiệm (benchmark).
+
+---
+
+## 9. Cấu Trúc Thư Mục & 11 Kỹ Năng Độc Lập
 
 ```text
 qa-agent-system/
-├── AGENTS.md                                # Quy chuẩn chỉ dẫn điều phối toàn cục
-├── plugin.json                              # Manifest đóng gói plugin cho Google Antigravity
-├── README.md                                # Tài liệu cẩm nang vận hành chuyên nghiệp
+├── AGENTS.md                                # Cẩm nang chỉ dẫn điều phối toàn cục cho AI
+├── plugin.json                              # Tệp manifest đóng gói plugin cho Google Antigravity
+├── README.md                                # Cẩm nang vận hành chi tiết này
 ├── skills/                                  # 11 Kỹ năng chuyên biệt hóa (Modular Skills)
-│   ├── module-intake/SKILL.md               # [BƯỚC 0] Tiếp nhận, tiền xử lý MarkItDown & init state
-│   ├── graphify-context-discovery/SKILL.md  # [BƯỚC 1] Quét AST & dựng Knowledge Graph bằng Graphify
-│   ├── requirement-gap-analysis/SKILL.md    # [BƯỚC 2] Phát hiện kẽ hở & lập bảng hỏi BA/PO ───► ĐIỂM DỪNG 1
-│   ├── playwright-investigation/SKILL.md    # [BƯỚC 3] Thám thính runtime DOM bằng Playwright MCP
-│   ├── testcase-design/SKILL.md             # [BƯỚC 4] Thiết kế test suite theo Ma trận Rủi ro (RBC Matrix)
-│   ├── testcase-review-export/SKILL.md      # [BƯỚC 5] Tự soát checklist & xuất file Excel ────► ĐIỂM DỪNG 2
+│   ├── module-intake/SKILL.md               # [BƯỚC 0] Tiếp nhận, chuẩn hóa tài liệu bằng MarkItDown
+│   ├── graphify-context-discovery/SKILL.md  # [BƯỚC 1] Khám phá AST và lập bản đồ luồng chạy
+│   ├── requirement-gap-analysis/SKILL.md    # [BƯỚC 2] Tìm kẽ hở & xuất requirement-gaps.md -> ĐIỂM DỪNG 1
+│   ├── playwright-investigation/SKILL.md    # [BƯỚC 3] Thám thính runtime bằng Playwright MCP
+│   ├── testcase-design/SKILL.md             # [BƯỚC 4] Thiết kế Test Case theo Ma trận Rủi ro (Tier S/M/L)
+│   ├── testcase-review-export/SKILL.md      # [BƯỚC 5] Tự soát chất lượng & xuất file Excel -> ĐIỂM DỪNG 2
 │   ├── automation-readiness/SKILL.md        # [PHA 6.1] Bóc tách các ca Automation Ready = Yes
 │   ├── automation-implementation/SKILL.md   # [PHA 6.2-6.3] Tái sử dụng POM, viết test Ponytail
-│   ├── test-execution-debugging/SKILL.md    # [PHA 6.4] Chạy Playwright CLI, auto-repair & rerun
-│   ├── continuous-learning/SKILL.md         # [BƯỚC 7] Đúc kết kinh nghiệm & nạp tự động vào Skill
+│   ├── test-execution-debugging/SKILL.md    # [PHA 6.4] Chạy Playwright CLI & tự động sửa lỗi kịch bản
+│   ├── continuous-learning/SKILL.md         # [BƯỚC 7] Đúc kết bài học dự án & tự cập nhật vào Skill
 │   └── workflow-orchestrator/SKILL.md       # Cỗ máy trạng thái điều phối trung tâm
 ├── templates/
-│   └── testcase-template.xlsx               # File mẫu Excel giao diện doanh nghiệp cao cấp
+│   └── testcase-template.xlsx               # File Excel mẫu chuẩn doanh nghiệp cao cấp
 ├── scripts/
-│   ├── state_manager.py                     # Quản trị vòng đời state (.qa-state.json)
-│   ├── learn_manager.py                     # Quản lý đề xuất và tự động tiêm tri thức vào Skill
+│   ├── state_manager.py                     # Quản lý vòng đời trạng thái (.qa-state.json)
+│   ├── learn_manager.py                     # Quản lý đề xuất và nạp bài học vào Skill
 │   ├── generate_template.py                 # Tạo/cập nhật file Excel mẫu với badge pastel
 │   ├── export_testcases.py                  # Xuất bộ test case ra file .xlsx hoàn chỉnh
 │   ├── traceability_validator.py            # Kiểm soát truy vết yêu cầu 2 chiều & chống trùng lặp
-│   ├── read_approved_testcases.py           # Phân tích file Excel người dùng duyệt
+│   ├── read_approved_testcases.py           # Đọc và phân tích file Excel người dùng duyệt
 │   └── validate_system.py                   # Bộ kiểm thử xác thực toàn diện (9 bài test)
 └── references/
-    ├── severity-guidelines.md               # Tiêu chuẩn mức độ nghiêm trọng: Chặn / Sai / Nhỏ
+    ├── severity-guidelines.md               # Hướng dẫn phân loại mức độ nghiêm trọng (Chặn / Sai / Nhỏ)
     ├── business-terminology-guide.md        # Cẩm nang chuẩn hoá ngôn ngữ nghiệp vụ dễ hiểu cho Non-IT
-    ├── risk-based-coverage-matrix.md        # Ma trận độ phủ theo rủi ro động (Tier S/M/L) thay quota cứng
+    ├── risk-based-coverage-matrix.md        # Ma trận độ phủ theo rủi ro động (Tier S / M / L)
     ├── requirement-gaps-template.md         # Mẫu xuất báo cáo điểm bất cập (.md) tại Checkpoint 1
     ├── testcase-quality-checklist.md        # 10 Trụ cột đánh giá chất lượng test case nội bộ
     ├── project-learnings.json               # Kho lưu trữ các bài học kinh nghiệm đã được duyệt
@@ -96,382 +292,56 @@ qa-agent-system/
 
 ---
 
-## 3. Danh Sách GitHub Repositories & Vai Trò, Lợi Ích Chi Tiết
+## 10. Bảng Giải Thích Thuật Ngữ Cho Người Mới
 
-Hệ thống kết hợp sức mạnh của 6 công cụ mã nguồn mở hàng đầu nhằm tạo nên một giải pháp kiểm thử toàn diện, chặt chẽ từ mã nguồn đến giao diện:
+Nếu bạn mới bước chân vào ngành kiểm thử, bảng tra cứu này sẽ giúp bạn hiểu ngay mọi thuật ngữ trong dự án:
 
-| Công cụ / Repository | Vai trò cốt lõi trong hệ thống | Lợi ích vượt trội cho QA & Dự án |
-| :--- | :--- | :--- |
-| **[Graphify](https://github.com/Graphify-Labs/graphify)** | Động cơ phân tích AST & Lập Đồ thị tri thức mã nguồn | Xoá bỏ điểm mù (Blind spots), phân tích tác động (Impact Analysis) chuẩn xác, tiết kiệm 80-90% token ngữ cảnh. |
-| **[Ponytail](https://github.com/DietrichGebert/ponytail)** | Định hình tư duy viết mã tối giản YAGNI | Ngăn chặn AI sinh mã rác (anti-overengineering), ép tái sử dụng POM/Fixture có sẵn, code test ngắn gọn và chạy nhanh. |
-| **[Microsoft Playwright](https://github.com/microsoft/playwright)** | Framework thực thi tự động hoá E2E Test qua CLI | Auto-waiting thông minh triệt tiêu lỗi chập chờn (flaky), web-first assertions, hỗ trợ Trace Viewer bắt lỗi chính xác. |
-| **[Playwright MCP](https://github.com/microsoft/playwright)** | Cầu nối điều khiển browser thám thính runtime | Cung cấp bằng chứng thực nghiệm khách quan khi spec bị thiếu, tự động chụp ảnh màn hình DOM lưu vết từng bước. |
-| **[Microsoft MarkItDown](https://github.com/microsoft/markitdown)** | Bộ chuyển đổi tài liệu đa định dạng (PDF, Excel, Word -> .md) | Giữ nguyên cấu trúc bảng biểu của spec, giảm token so với file nhị phân, hỗ trợ đối soát kẽ hở theo từng dòng. |
-| **[OpenPyXL](https://github.com/openpyxl/openpyxl)** | Thư viện xử lý và định dạng bảng tính Excel `.xlsx` | Xuất bản file Excel thực thụ chuẩn doanh nghiệp, đóng băng dòng, autofilter, dropdown validation, pill badges pastel. |
-
----
-
-### 3.1. Graphify (`Graphify-Labs/graphify`)
-* **Repository GitHub:** [https://github.com/Graphify-Labs/graphify](https://github.com/Graphify-Labs/graphify)
-* **Vai trò trong hệ thống:**  
-  Là "con mắt X-quang" của hệ thống ở **Bước 1**. Graphify sử dụng các bộ parser Tree-sitter cục bộ để bóc tách cây cú pháp trừu tượng (AST) của hơn 40 ngôn ngữ lập trình, sau đó áp dụng thuật toán phân cụm Leiden để dựng thành Đồ thị tri thức (Knowledge Graph) hoàn chỉnh mà không cần đến Vector Database đắt đỏ.
-* **Lợi ích khi sử dụng:**
-  - **Xóa sổ "Điểm Mù" (Zero Blind Spots):** Lần theo toàn bộ luồng gọi chéo (UI Component $\rightarrow$ Service $\rightarrow$ Repository $\rightarrow$ SQL Schema). QA thấy được cả những đoạn code ngầm mà Dev cài cắm nhưng không ghi trong spec (như bẫy khoá tài khoản, két mã PIN PBKDF2, cảnh báo thiết bị lạ).
-  - **Định vị "Tử Huyệt" (God Nodes & Hotspots):** Tự động phát hiện các class/hàm có hàng trăm kết nối phụ thuộc. Bất kỳ thay đổi nào đụng vào đây đều được QA ưu tiên dựng test suite bao vây rủi ro.
-  - **Impact Analysis & Regression Scope chuẩn xác:** Khi Dev sửa 1 hàm, bạn chạy `graphify explain "tenHam"` là biết chính xác 5 chỗ khác đang gọi đến nó. Khoanh vùng kiểm thử hồi quy chuẩn 100%, không cần đoán mò.
-  - **Tiết kiệm Token & Chống ảo giác (Anti-Hallucination):** Thay vì quăng cả repo 1,600 files vào prompt khiến AI bị tràn bộ nhớ và trả lời ngáo, Graphify chỉ trích xuất đúng các node liên quan, tiết kiệm đến 85% chi phí token.
-* **Lệnh cài đặt chi tiết:**
-  ```powershell
-  # Cài đặt công cụ toàn cục qua uv tool (Khuyên dùng):
-  uv tool install graphifyy
-
-  # Cài đặt kèm tính năng trích xuất PDF hoặc Office:
-  uv tool install "graphifyy[pdf]"
-  uv tool install "graphifyy[office]"
-
-  # Hoặc clone mã nguồn từ GitHub để tự cài đặt:
-  git clone https://github.com/Graphify-Labs/graphify.git
-  cd graphify
-  pip install -e .
-  ```
+| Thuật ngữ | Ý nghĩa dân dã, dễ hiểu |
+| :--- | :--- |
+| **AST (Abstract Syntax Tree)** | Cây cấu trúc mã nguồn. Giống như chụp X-quang một ngôi nhà để thấy rõ đường điện, đường nước ngầm bên trong tường mà không cần đập tường ra xem. |
+| **Happy Path** | Kịch bản suôn sẻ nhất. Người dùng nhập đúng mọi thông tin và hệ thống hoạt động thành công ngay từ lần đầu tiên. |
+| **POM (Page Object Model)** | Cách lập trình gom các nút bấm và ô nhập liệu của một màn hình vào chung một nơi để sau này nếu giao diện đổi vị trí nút, bạn chỉ cần sửa ở đúng 1 chỗ. |
+| **Flaky Test** | Kịch bản kiểm thử chập chờn: lúc thì chạy đạt, lúc lại báo lỗi mà không rõ nguyên nhân (thường do mạng lag hoặc code test bị ép chờ cứng). |
+| **RTM (Traceability Matrix)** | Bảng đối soát truy vết 2 chiều: đảm bảo mọi yêu cầu trong tài liệu đều có kịch bản test, và mọi kịch bản test đều có căn cứ từ code thật, không có test ảo. |
+| **Human Gate / Checkpoint** | Điểm dừng bắt buộc. AI phải dừng lại để xin ý kiến con người phê duyệt mới được tiếp tục, không bao giờ được tự tung tự tác. |
+| **Token** | Đơn vị tính dung lượng từ ngữ mà AI xử lý (khoảng 0.75 từ tiếng Anh hoặc 1 từ tiếng Việt). Tiết kiệm token giúp AI chạy nhanh hơn và tốn ít chi phí hơn. |
 
 ---
 
-### 3.2. Ponytail (`DietrichGebert/ponytail`)
-* **Repository GitHub:** [https://github.com/DietrichGebert/ponytail](https://github.com/DietrichGebert/ponytail)
-* **Vai trò trong hệ thống:**  
-  Là "chiếc kéo cắt tỉa rác" ở **Pha 6.2 - 6.3**. Ponytail cài cắm vào AI tư duy của một "Kỹ sư Senior lười biếng" (*The Laziest Senior Developer*) với châm ngôn: *"Dòng code tốt nhất là dòng code bạn không bao giờ phải viết."*
-* **Lợi ích khi sử dụng:**
-  - **Triệt tiêu căn bệnh "Over-engineering" của AI:** Mặc định AI rất hay tự chế thêm class wrapper, tự viết hàm retry/sleep lung tung, biến 1 file test đơn giản thành một đống code rác 300 dòng khó bảo trì. Ponytail dẹp bỏ hoàn toàn thói quen xấu này.
-  - **Ép buộc tái sử dụng triệt để (YAGNI & Reuse):** Trước khi viết 1 dòng code mới, Ponytail ép AI phải kiểm tra xem trong repo đã có sẵn Page Object (`LoginPage.mjs`), Fixture hay Helper nào chưa. Nếu có rồi, gọi dùng ngay lập tức.
-  - **Code test ngắn, sạch, chạy ổn định:** Test script sinh ra chỉ từ 35–50 dòng, dùng native assertions của Playwright, diff ngắn nhất, phản hồi nhanh và giảm 50-70% token đầu ra.
-* **Lệnh cài đặt chi tiết:**
-  ```powershell
-  # Cài đặt plugin vào Google Antigravity:
-  agy plugin install https://github.com/DietrichGebert/ponytail
+## 11. Hướng Dẫn Cài Đặt Công Cụ & Nhúng Vào Dự Án
 
-  # Cài đặt cho Gemini CLI:
-  gemini extensions install https://github.com/DietrichGebert/ponytail
-
-  # Cài đặt cho Claude Code:
-  /plugin marketplace add DietrichGebert/ponytail
-  /plugin install ponytail@ponytail
-
-  # Cài đặt cho Codex / GitHub Copilot CLI:
-  codex plugin marketplace add DietrichGebert/ponytail
-  codex plugin install ponytail@ponytail
-  ```
-
----
-
-### 3.3. Microsoft Playwright (`microsoft/playwright`)
-* **Repository GitHub:** [https://github.com/microsoft/playwright](https://github.com/microsoft/playwright)
-* **Vai trò trong hệ thống:**  
-  Là "cỗ xe tăng bọc thép" thực thi toàn bộ kịch bản kiểm thử tự động E2E ở **Pha 6.4**. Điều khiển các trình duyệt hiện đại (Chromium, Firefox, WebKit) thông qua giao thức DevTools tốc độ cao.
-* **Lợi ích khi sử dụng:**
-  - **Cơ chế Auto-waiting thông minh:** Tự động chờ element sẵn sàng (visible, enabled, stable) trước khi thực hiện click hoặc gõ phím. Chấm dứt hoàn toàn tình trạng test chập chờn (flaky tests) và nói KHÔNG với `sleep()` cứng.
-  - **Web-First Assertions:** Các lệnh kiểm chứng như `await expect(locator).toBeVisible()` tự động retry ngầm cho đến khi điều kiện thoả mãn hoặc hết timeout, giúp kịch bản test ổn định ngay cả khi mạng chậm.
-  - **Trace Viewer & Debugging chuyên sâu:** Khi một ca test bị fail, Playwright tự động ghi lại toàn bộ video, timeline, ảnh chụp DOM snapshot và network log tại đúng khoảnh khắc xảy ra lỗi, giúp QA tìm ra nguyên nhân chỉ trong vài giây.
-* **Lệnh cài đặt & thực thi chi tiết:**
-  ```powershell
-  # Cài đặt các dependencies trong package.json:
-  npm install
-
-  # Tải toàn bộ binary trình duyệt headless (Chromium, Firefox, WebKit):
-  npx playwright install
-
-  # Chạy kiểm thử tự động với Playwright CLI:
-  npm test
-  # Hoặc chạy có giao diện UI trực quan:
-  npm run test:ui
-  ```
-
----
-
-### 3.4. Playwright MCP Server (`@playwright/mcp`)
-* **Nguồn chính thức:** Model Context Protocol Server for Playwright
-* **Vai trò trong hệ thống:**  
-  Là "giác quan thực nghiệm" của AI ở **Bước 3 (Runtime Investigation)**. Cho phép AI trực tiếp điều khiển trình duyệt headless để khám phá ứng dụng trước khi thiết kế test case.
-* **Lợi ích khi sử dụng:**
-  - **Bằng chứng khách quan (Empirical Verification):** Khi tài liệu BA viết chưa rõ ràng hoặc mâu thuẫn với code, AI không cần đoán mò. Nó tự mở app, đăng nhập thử, thao tác qua luồng nghi vấn và xem thực tế ứng dụng phản hồi ra sao.
-  - **Tự động chụp ảnh màn hình lưu vết:** Chụp lại các bằng chứng trực quan theo mã chuẩn `<IssueID>-step-<NN>-<description>.png` để kẹp vào báo cáo, giúp QA và Dev có ngay bằng chứng tái lập lỗi không thể chối cãi.
-  - **Phân định rạch ròi:** AI quan sát để biết *code đang chạy thế nào*, nhưng vẫn giữ nguyên tắc không coi hành vi đó là *nghiệp vụ đúng* nếu chưa có xác nhận của BA.
-* **Cấu hình kích hoạt trong file `~/.gemini/config/mcp_config.json`:**
-  ```json
-  {
-    "mcpServers": {
-      "playwright": {
-        "command": "npx",
-        "args": ["-y", "@playwright/mcp@latest"]
-      }
-    }
-  }
-  ```
-
----
-
-### 3.5. Microsoft MarkItDown (`microsoft/markitdown`)
-* **Repository GitHub:** [https://github.com/microsoft/markitdown](https://github.com/microsoft/markitdown)
-* **Vai trò trong hệ thống:**  
-  Là "bộ lọc tiêu chuẩn hoá tài liệu" ở **Bước 0 (Module Intake)**. Chuyển đổi mọi định dạng tài liệu đặc tả nhị phân hoặc phong phú của người dùng (`.pdf`, `.xlsx`, `.xls`, `.docx`, `.pptx`) thành định dạng Markdown (`.md`) tinh khiết.
-* **Lợi ích khi sử dụng:**
-  - **Bảo toàn hoàn hảo Bảng biểu & Tiêu đề:** Các bảng nghiệp vụ phức tạp trong file Excel/Word khi chuyển sang Markdown table vẫn giữ nguyên hàng và cột, giúp AI và Graphify đọc hiểu luồng logic nghiệp vụ mà không bị xô lệch dữ liệu.
-  - **Tiết kiệm Token & Chi phí tối đa:** Nén dung lượng từ các file nhị phân nặng hàng chục Megabytes xuống chỉ còn vài Kilobytes văn bản thuần, giúp AI đọc hiểu nhanh hơn gấp 10 lần.
-  - **Kiểm soát tính toàn vẹn (Integrity & Traceability):** Đưa mọi tài liệu về chuẩn `.md` duy nhất giúp hệ thống dễ dàng băm mã SHA-256 để phát hiện ngay khi tài liệu bị sửa đổi ngầm.
-* **Lệnh cài đặt chi tiết:**
-  ```powershell
-  # Cài đặt qua pip:
-  pip install markitdown
-
-  # Cài đặt đầy đủ các plugin mở rộng (cho file Excel, PDF, Audio):
-  pip install "markitdown[all]"
-  ```
-
----
-
-### 3.6. OpenPyXL (`openpyxl/openpyxl`)
-* **Repository GitHub:** [https://github.com/openpyxl/openpyxl](https://github.com/openpyxl/openpyxl)
-* **Vai trò trong hệ thống:**  
-  Là "xưởng in ấn cao cấp" ở **Bước 5** và **Pha 6.1**. Phụ trách tạo mới, định dạng và phân tích cú pháp các file bảng tính Excel `.xlsx`.
-* **Lợi ích khi sử dụng:**
-  - **Tạo file Excel thực thụ (Native `.xlsx`):** Không phải dạng file CSV đổi đuôi giả mạo. File xuất ra có cấu trúc nhiều sheets (*Test Cases*, *Requirement Gaps*, *Coverage Summary*).
-  - **Giao diện chuẩn Doanh nghiệp (Executive Design):** Hỗ trợ đóng băng dòng tiêu đề (*Freeze Panes*), gắn bộ lọc tự động (*AutoFilter*), thiết lập danh sách chọn Dropdown validation cho cột `Severity` và `Automation Ready`.
-  - **Tô màu Pill Badges & Kẻ sọc Zebra:** Giúp ban lãnh đạo, Product Owner và QA dễ dàng phân biệt ngay các ca kiểm thử mức `Chặn` (màu hồng đỏ), `Sai` (màu hổ phách) hay `Automation Ready` (màu xanh mint).
-* **Lệnh cài đặt chi tiết:**
-  ```powershell
-  pip install openpyxl
-  ```
-
----
-
-## 4. Sơ Đồ Kiến Trúc & Vòng Đời Quy Trình
-
-```mermaid
-flowchart TD
-    Start(["Bắt đầu Yêu cầu"]) --> Step0["Bước 0: module-intake\n(MarkItDown: PDF/Excel -> .md)"]
-    Step0 --> Step1["Bước 1: graphify-context-discovery\n(Quét AST -> module-context.md)"]
-    Step1 --> Step2["Bước 2: requirement-gap-analysis\n(Xuất <module>-gaps.md & bảng hỏi BA/PO)"]
-    
-    Step2 --> Gate1{"ĐIỂM DỪNG 1\nWAITING_FOR_REQUIREMENT_CLARIFICATION\n(Hiển thị link file .md & chờ người dùng chọn)"}
-    
-    Gate1 -- "Path A: Đưa câu trả lời" --> Step3A["Bước 3: Nạp câu trả lời BA/PO\n(Đối soát không xung đột code)"]
-    Gate1 -- "Path B: Bỏ qua câu hỏi" --> Step3B["Bước 3: playwright-investigation\n(Duyệt DOM, xuất runtime-investigation.md)"]
-    
-    Step3A --> Step4["Bước 4: testcase-design\n(7-10 ca Chặn/Nặng · 5-7 ca Sai)"]
-    Step3B --> Step4
-    
-    Step4 --> Step5["Bước 5: testcase-review-export\n(Tự soát checklist & xuất Excel đẹp)"]
-    
-    Step5 --> Gate2{"ĐIỂM DỪNG 2\nWAITING_FOR_APPROVED_TESTCASES\n(Chờ người dùng duyệt file Excel)"}
-    
-    Gate2 -- "Người dùng xác nhận đã duyệt" --> Step61["Pha 6.1: automation-readiness\n(Lọc Automation Ready = Yes)"]
-    Step61 --> Step62["Pha 6.2 - 6.3: automation-implementation\n(Tái sử dụng POM, viết test Ponytail)"]
-    Step62 --> Step64["Pha 6.4: test-execution-debugging\n(Chạy Playwright CLI & auto-repair)"]
-    
-    Step64 --> Step7["Bước 7: continuous-learning\n(Lỗi lặp lại? Đúc kết kinh nghiệm)"]
-    Step7 --> Gate3{"DUYỆT BÀI HỌC?\n(Người dùng đồng ý?)"}
-    Gate3 -- "Đồng ý" --> Ingest["Tự động tiêm kiến thức\nvào SKILL.md"]
-    Gate3 -- "Từ chối" --> EndNode(["Hoàn tất Quy trình"])
-    Ingest --> EndNode
-
-    classDef stopGate fill:#FEE2E2,stroke:#DC2626,stroke-width:2px,color:#991B1B,font-weight:bold;
-    classDef stepBox fill:#EFF6FF,stroke:#3B82F6,stroke-width:1.5px,color:#1E3A8A;
-    classDef successBox fill:#DCFCE7,stroke:#16A34A,stroke-width:1.5px,color:#166534;
-
-    class Gate1,Gate2 stopGate;
-    class Step0,Step1,Step2,Step3A,Step3B,Step4,Step5,Step61,Step62,Step64,Step7 stepBox;
-    class Ingest,EndNode successBox;
-```
-
----
-
-## 5. Mô Tả Nghiệp Vụ Chuyên Sâu Từ Bước 0 Đến Bước 7
-
-### BƯỚC 0 — Tiếp Nhận Yêu Cầu & Tiền Xử Lý Tài Liệu (`module-intake`)
-* **Mục tiêu:** Định vị phân hệ, chuyển đổi toàn bộ tài liệu đầu vào sang định dạng Markdown sạch sẽ và thiết lập cơ chế giám sát state.
-* **Quy tắc bắt buộc:** Nếu người dùng cung cấp tài liệu dạng nhị phân (`.pdf`, `.xlsx`, `.docx`, `.pptx`), hệ thống tự động chạy **Microsoft MarkItDown**:
-  ```bash
-  markitdown "specs/tai_lieu.pdf" -o "specs/tai_lieu.md"
-  ```
-* **Khởi tạo state:** Khởi tạo `.qa-state.json` và lưu trữ mã băm SHA-256 của các tài liệu để chống thay đổi ngầm.
-
-### BƯỚC 1 — Bóc Tách AST Bằng Graphify (`graphify-context-discovery`)
-* **Mục tiêu:** Thấu hiểu bản đồ kiến trúc thực tế thông qua phân tích tĩnh, không đoán mò.
-* **Quy trình:**
-  - Chạy `graphify update .` để quét mã nguồn.
-  - Phân tích luồng gọi chéo (UI Component $\rightarrow$ Service $\rightarrow$ Repository $\rightarrow$ Database).
-  - Phân tích phụ thuộc liên đới: Ví dụ với `Login`, phải rà soát cả Đăng ký, Quên mật khẩu, Mở khoá PIN, Throttling và Cảnh báo máy lạ.
-  - Phân loại bằng chứng: `[CODE-CONFIRMED]`, `[DOC-CONFIRMED]`, `[INFERRED]`.
-
-### BƯỚC 2 — Phân Tích Kẽ Hở & Lập Bảng Hỏi BA/PO (`requirement-gap-analysis`)
-* **Mục tiêu:** Soát lỗi logic giữa tài liệu và code thực tế, xuất báo cáo điểm bất cập rõ ràng.
-* **Quy trình:** Phát hiện 5 dạng kẽ hở (mơ hồ, lỗi tiềm ẩn, thiếu tài liệu, giới hạn môi trường, lỗi xác định). Lập bảng câu hỏi BA/PO chuyên sâu với các giả thuyết đề xuất A/B/C. Xuất file báo cáo độc lập `<module-name>-gaps.md` theo chuẩn `references/requirement-gaps-template.md` và lưu link vào `.qa-state.json`. Trình bày link có thể nhấp cùng bảng tóm tắt trực tiếp trong chat.
-* **ĐIỂM DỪNG 1:** Dừng toàn bộ tiến trình, chuyển state sang `WAITING_FOR_REQUIREMENT_CLARIFICATION` và chờ người dùng chọn hướng xử lý (Path A hoặc Path B).
-
-### BƯỚC 3 — Làm Rõ Hoặc Thám Thính Runtime (`playwright-investigation`)
-* **Path A (Người dùng trả lời):** Nạp câu trả lời vào `module-context.md`, phát hiện mâu thuẫn nếu câu trả lời trái ngược code.
-* **Path B (Thám thính Runtime qua Playwright MCP):** Mở browser thật, tương tác qua các luồng nghi vấn, chụp ảnh màn hình lưu vết (`<IssueID>-step-<NN>-<description>.png`), và xuất file báo cáo độc lập `<module-name>-runtime-investigation.md` kèm link ảnh trực quan.
-* *Nguyên tắc nhận thức:* Hành vi quan sát được ở runtime chỉ chứng minh *code đang chạy thế nào*, không tự động biến nó thành *nghiệp vụ đúng*.
-
-### BƯỚC 4 — Thiết Kế Bộ Test Case Theo Rủi Ro (`testcase-design`)
-* **Mục tiêu:** Thiết kế bộ test suite phân tầng rủi ro sâu sắc, đạt chuẩn **13 cột thông tin**.
-* **Độ phủ theo Ma trận Rủi ro Động (RBC Matrix):** Xoá bỏ quota cứng nhắc. Số lượng test case co giãn linh hoạt theo Cấp độ Phân hệ (`references/risk-based-coverage-matrix.md`):
-  - **Tier S (Đơn giản — 5 đến 8 ca):** Form 1 bước, tra cứu danh mục, đổi mật khẩu đơn giản. Nghiêm cấm bịa thêm case thừa chỉ để "đủ chỉ tiêu".
-  - **Tier M (Tiêu chuẩn — 10 đến 18 ca):** Đăng nhập/Đăng ký, Đơn từ, Xếp ca, Đặt phòng, Giới hạn tần suất và chống spam click.
-  - **Tier L (Phức tạp / Trọng yếu — 18 đến 30+ ca):** Cổng thanh toán, Tính lương & thuế, Luồng duyệt đa cấp, Phân quyền bảo mật sâu.
-* **Phân định rạch ròi Severity và Risk Priority:** Severity (`Chặn`, `Sai`, `Nhỏ`) phản ánh mức độ ảnh hưởng của lỗi khi xảy ra (không phải công cụ ép số lượng); Priority (P0, P1, P2) xếp hạng ưu tiên theo Điểm số Rủi ro (Tác động x Xác suất).
-* **Quy chuẩn phân loại lỗi:**
-  - **7 – 10 Test Cases cho mức Nặng / Chặn (`Chặn`):** Happy Path sống còn, crash 500, kẹt luồng bắt buộc, thủng bảo mật, rò rỉ dữ liệu, mất session, throttling.
-  - **5 – 7 Test Cases cho mức Sai (`Sai`):** Sai công thức tính toán, sai trạng thái CSDL, điều hướng nhầm URL, vi phạm quy tắc validation dữ liệu.
-  - **Mức Nhỏ (`Nhỏ`):** Lỗi chính tả, lệch pixel, thông báo chưa mượt.
-* **Quy tắc Automation Ready:** Đánh `Yes` khi hành vi assert được khách quan; đánh `No` bắt buộc phải ghi rõ lý do vào `Automation Blocker`.
-* **Cột trạng thái thực thi (`Status` - Cột M ngoài cùng):** Tự động gán mặc định là `Pending`. Dropdown gồm: `Pass`, `Fail`, `Pending`, `Skip`.
-* **Chuẩn hoá ngôn ngữ nghiệp vụ cho người Non-IT:** Tuyệt đối không dùng từ dịch máy thô thiển ("phanh chống ngập", "chặn âm thầm") hay biệt ngữ dev ("web_anon", "gọi RPC", "DB không chèn dòng", "UI trả về"). Diễn giải các bước thao tác rõ ràng (`1. Mở màn hình... 2. Nhập vào ô... 3. Bấm nút...`) để bất kỳ ai cũng tự làm theo được theo `references/business-terminology-guide.md`.
-
-### BƯỚC 5 — Kiểm Định Chất Lượng & Xuất Excel Doanh Nghiệp (`testcase-review-export`)
-* **Mục tiêu:** Kiểm tra 8 trụ cột chất lượng và xuất bản file Excel `<module>-testcases.xlsx`.
-* **Giao diện bảng tính:** Áp dụng font Segoe UI, bảng màu Corporate Navy, kẻ sọc Zebra striping, pill badges màu pastel cho Severity/Readiness/Status, đầy đủ 13 cột chuẩn mực.
-* **ĐIỂM DỪNG 2:** Dừng tiến trình, chuyển state sang `WAITING_FOR_APPROVED_TESTCASES` và bàn giao file Excel cho người dùng duyệt.
-
-### BƯỚC 6 — Hiện Thực Hoá & Thực Thi Automation (`automation-implementation` & `debugging`)
-* **Pha 6.1:** Đọc file Excel người dùng vừa tải lên qua `read_approved_testcases.py` (tối ưu token bằng các cờ `--summary`, `-o <file.json>`, `--id <TC_ID>` giúp giảm tới 95% token ngữ cảnh), chỉ bóc tách các ca có `Automation Ready = Yes`.
-* **Pha 6.2 - 6.3:** Khảo sát POM có sẵn của dự án, viết script Playwright chuẩn Ponytail (tối giản, không sleep cứng, sinh dữ liệu test chống đụng độ, map chuẩn ID test case).
-* **Pha 6.4:** Chạy test thật qua CLI (`npx playwright test`), tự sửa lỗi selector/setup tối đa 2 lần rerun, xuất báo cáo `automation-summary.md`.
-
-### BƯỚC 7 — Tự Động Học Hỏi & Tiến Hóa Kỹ Năng (`continuous-learning`)
-* **Mục tiêu:** Biến các bài học xương máu thành tài sản tri thức vĩnh viễn của dự án.
-* **Quy trình:** Khi phát hiện lỗi lặp lại $\ge 2$ lần, AI tự động đúc kết kinh nghiệm qua `scripts/learn_manager.py propose`. Khi người dùng xác nhận duyệt, AI tự động tiêm kinh nghiệm vào file `SKILL.md` tương ứng để không bao giờ tái phạm.
-
----
-
-## 6. Hai Điểm Dừng Phê Duyệt Bắt Buộc (Human Gates)
-
-> [!IMPORTANT]
-> Đây là 2 "chốt chặn thép" bảo đảm AI luôn phục vụ dưới sự kiểm soát của con người:
-
-```text
-┌────────────────────────────────────────────────────────────────────────┐
-│ ĐIỂM DỪNG 1: WAITING_FOR_REQUIREMENT_CLARIFICATION                     │
-│ AI xuất file <module>-gaps.md, gửi link xem trực tiếp và DỪNG LẠI.     │
-│ Người dùng chọn:                                                        │
-│   • Lựa chọn 1: Cung cấp câu trả lời từ BA/PO                          │
-│   • Lựa chọn 2: Bỏ qua và dùng Playwright MCP thám thính runtime       │
-└────────────────────────────────────────────────────────────────────────┘
-
-┌────────────────────────────────────────────────────────────────────────┐
-│ ĐIỂM DỪNG 2: WAITING_FOR_APPROVED_TESTCASES                            │
-│ AI xuất file Excel và DỪNG LẠI, bàn giao file cho người dùng.          │
-│ Người dùng mở file, chỉnh sửa, đánh dấu Automation Ready = Yes.         │
-│ AI CẤM viết code automation trước khi người dùng xác nhận duyệt file!   │
-└────────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## 7. Tiêu Chuẩn Phân Bổ Test Case & Giao Diện Excel Mới
-
-Giao diện bảng tính trong [`templates/testcase-template.xlsx`](templates/testcase-template.xlsx) được thiết kế theo chuẩn **Executive Spreadsheet Design System** gồm 3 Sheets chuyên nghiệp:
-
-### 7.1. Cấu Trúc 13 Cột Chuẩn Mực (Sheet 1 — Test Cases)
-1. **`Test Case ID` (Cột A):** Mã định danh duy nhất, font đậm căn giữa (`TC-AUTH-001`).
-2. **`Module` (Cột B):** Phân hệ kiểm thử (`Authentication`).
-3. **`Test Case Name` (Cột C):** Tên ca kiểm thử rõ ràng, súc tích.
-4. **`Preconditions` (Cột D):** Tiền điều kiện môi trường, dữ liệu, auth session.
-5. **`Test Data` (Cột E):** Dữ liệu kiểm thử cụ thể, giá trị biên.
-6. **`Test Steps` (Cột F):** Các bước thực hiện đánh số `1., 2., 3.` tách biệt.
-7. **`Expected Result` (Cột G):** Kết quả kỳ vọng đo lường được, rõ ràng.
-8. **`Severity` (Cột H):** Mức độ nghiêm trọng (`Chặn`, `Sai`, `Nhỏ`) kèm dropdown validation.
-9. **`Automation Ready` (Cột I):** Đánh dấu sẵn sàng tự động hoá (`Yes`, `No`) kèm dropdown.
-10. **`Automation Blocker` (Cột J):** Rào cản kỹ thuật nếu `Automation Ready = No`.
-11. **`Requirement Reference` (Cột K):** Mã ký hiệu code/tài liệu tham chiếu (`SPEC-AU-01`).
-12. **`Notes` (Cột L):** Ghi chú bổ sung, font nghiêng màu Slate.
-13. **`Status` (Cột M — Ngoài Cùng):** Trạng thái thực thi (`Pass`, `Fail`, `Pending`, `Skip`), **mặc định là `Pending`** kèm dropdown validation.
-
-### 7.2. Bảng Phối Màu Pill Badges (Severity, Readiness & Status)
-
-| Phân Loại & Giá Trị | Chỉ Tiêu / Vị Trí | Phối Màu Pill Badge Pastel trong Excel | Ý Nghĩa Nghiệp Vụ |
-| :--- | :---: | :---: | :--- |
-| **`Chặn` (Blocking)** | **7 – 10 Test Cases** | Nền hồng pastel (`#FEE2E2`)<br>Chữ đỏ thẫm (`#991B1B`, Bold) | Bế tắc luồng chính, crash hệ thống, lỗi 500, thủng bảo mật, mất mát dữ liệu, throttling. |
-| **`Sai` (Incorrect)** | **5 – 7 Test Cases** | Nền hổ phách pastel (`#FEF3C7`)<br>Chữ nâu sẫm (`#92400E`, Bold) | Sai lệch công thức tính tiền/ngày công, sai trạng thái CSDL, điều hướng nhầm URL, lỗi validation. |
-| **`Nhỏ` (Minor)** | *(Linh hoạt bổ sung)* | Nền xanh trời pastel (`#E0F2FE`)<br>Chữ xanh biển (`#075985`, Bold) | Lệch pixel UI, lỗi chính tả, câu dịch i18n chưa mượt. |
-| **`Automation Ready = Yes`** | — | Nền xanh mint pastel (`#DCFCE7`)<br>Chữ xanh lá đậm (`#166534`, Bold) | Sẵn sàng tự động hoá hoàn toàn, assert được khách quan. |
-| **`Status: Pending` (Mặc định)** | Cột M (Ngoài cùng) | Nền hổ phách pastel (`#FEF3C7`)<br>Chữ nâu sẫm (`#92400E`, Bold) | Trạng thái khởi tạo mặc định, đang chờ kiểm thử thủ công hoặc chạy script Playwright. |
-| **`Status: Pass`** | Cột M (Ngoài cùng) | Nền xanh mint pastel (`#DCFCE7`)<br>Chữ xanh lá đậm (`#166534`, Bold) | Ca kiểm thử đã chạy thực tế và vượt qua toàn bộ assertions thành công. |
-| **`Status: Fail`** | Cột M (Ngoài cùng) | Nền hồng pastel (`#FEE2E2`)<br>Chữ đỏ thẫm (`#991B1B`, Bold) | Ca kiểm thử phát hiện lỗi thật (Defect) hoặc assert không đạt. |
-| **`Status: Skip`** | Cột M (Ngoài cùng) | Nền xám slate pastel (`#F1F5F9`)<br>Chữ xám trung tính (`#475569`) | Ca kiểm thử tạm thời bỏ qua do rào cản môi trường hoặc yêu cầu huỷ. |
-
----
-
-## 8. Cơ Chế Học Hỏi & Tiến Hóa Kỹ Năng (Continuous Learning)
-
-Khi bạn gặp một lỗi đặc thù trong dự án (ví dụ nút bấm bị chặn bởi hook `useSubmitOnce` hoặc độ trễ mã hoá PBKDF2), AI sẽ xuất hiện đề xuất:
-
-```text
-AI PHÁT HIỆN BÀI HỌC KINH NGHIỆM DỰ ÁN CẦN NẠP VÀO SKILL:
-- Mã đề xuất: LRN-001
-- Vấn đề: Nút Đăng nhập bị click liên tục khi mạng lag làm tài khoản bị khoá
-- Nguyên nhân: Dự án có hook useSubmitOnce xử lý bất đồng bộ
-- Giải pháp: Playwright test phải assert trạng thái disabled trước khi thao tác tiếp
-- Skill tiếp nhận: automation-implementation
-
-Bạn có đồng ý duyệt để AI tự động nạp kinh nghiệm này vào Skill không? (Đồng ý / Từ chối)
-```
-
-Khi bạn gõ **"Đồng ý"**, AI sẽ chạy:
-```powershell
-python scripts/learn_manager.py approve LRN-001
-```
-Nội dung này được ghi thẳng vào mục `## Project-Specific Learnings & Best Practices` của file `skills/automation-implementation/SKILL.md`. Trong tất cả các lần kiểm thử sau, AI sẽ **tự động áp dụng kinh nghiệm này mà bạn không cần phải dặn lại!**
-
----
-
-## 9. Hướng Dẫn Nhúng Vào Dự Án Mới & Vận Hành
-
-### Nhúng vào repository bất kỳ
-Hệ thống được thiết kế hoàn toàn **độc lập, không fix cứng bất kỳ đường dẫn nào** (zero hardcoded paths). Để tích hợp vào dự án của bạn:
+### 11.1. Cài đặt các công cụ phụ trợ (Chỉ cần làm 1 lần)
 
 ```powershell
-# Cách 1: Copy toàn bộ thư mục hệ thống kỹ năng vào thư mục dự án cần kiểm thử
-Copy-Item -Recurse ".\qa-agent-system\*" ".\your-project\"
+# 1. Cài đặt thư viện xử lý Excel và tài liệu:
+pip install openpyxl markitdown "markitdown[all]"
 
-# Hoặc nếu bạn đang đứng trực tiếp tại thư mục qa-agent-system:
-Copy-Item -Recurse ".\*" "..\your-project\"
+# 2. Cài đặt Graphify (công cụ phân tích cấu trúc mã nguồn):
+uv tool install graphifyy
+# Hoặc cài qua pip:
+pip install graphifyy
+
+# 3. Cài đặt Playwright (công cụ tự động hoá trình duyệt):
+npm install -g playwright
+npx playwright install
 ```
 
-Hoặc cài đặt như một Plugin cục bộ trong Antigravity:
+### 11.2. Nhúng hệ thống kỹ năng vào dự án phần mềm của bạn
+Hệ thống hoàn toàn độc lập và không phụ thuộc vào đường dẫn cố định. Bạn chỉ cần sao chép thư mục hệ thống vào dự án:
+
 ```powershell
-# Cài đặt từ thư mục hiện tại:
-agy plugin install .
-
-# Hoặc cài đặt qua đường dẫn tương đối:
-agy plugin install ".\qa-agent-system"
+# Sao chép thư mục hệ thống kỹ năng vào dự án của bạn:
+Copy-Item -Recurse ".\qa-agent-system" "C:\du_an_cua_ban\.agent"
 ```
 
-### Các câu lệnh khởi động mẫu:
-* **Bắt đầu kiểm thử:**
-  > *"Hãy áp dụng quy trình QA testing kiểm thử phân hệ Đăng nhập (`Login`)."*
-* **Khi AI dừng ở Điểm dừng 1:**
-  > *"Trả lời GAP-001: Khóa 15 phút sau 5 lần nhập sai."* hoặc  
-  > *"Bỏ qua câu hỏi, hãy bật Playwright MCP thám thính runtime thực tế."*
-* **Khi AI dừng ở Điểm dừng 2:**
-  > *"Tôi đã duyệt file `Login-testcases.xlsx`, hãy tiến hành viết code automation cho các ca đã đánh dấu."*
-* **Khôi phục phiên khi bị gián đoạn:**
-  > *"Kiểm tra trạng thái trong `.qa-state.json` và tiếp tục quy trình."*
-
----
-
-## 10. Bảng Tổng Hợp Thay Đổi (Changelog)
-
-| Phiên bản | Hạng mục thay đổi | Mô tả chi tiết |
-| :---: | :--- | :--- |
-| **v1.0.0** | **Khởi tạo hệ thống** | 10 kỹ năng cốt lõi, tích hợp Graphify, Playwright MCP/CLI, Ponytail coding style. |
-| **v1.1.0** | **Tiền xử lý Microsoft MarkItDown** | Tự động biến đổi PDF, Excel, Word sang Markdown để nạp vào Graphify. |
-| **v1.2.0** | **Tái cấu trúc Severity Quotas** | Phân tầng bắt buộc: 7–10 ca Chặn (Nặng) và 5–7 ca Sai. |
-| **v1.3.0** | **Continuous Learning Engine** | Thêm skill `continuous-learning` và `scripts/learn_manager.py` tự tiến hóa kỹ năng khi người dùng duyệt. |
-| **v1.4.0** | **Đại tu giao diện Excel** | Nâng cấp Segoe UI, corporate navy palette, kẻ sọc zebra, pastel pill badges cho Severity/Readiness. |
+### 11.3. Cài đặt như một Plugin trong Google Antigravity
+```powershell
+# Cài đặt trực tiếp:
+agy plugin install .\qa-agent-system
+```
 
 ---
 
 <div align="center">
-  <b>QA Agent Testing System — Được xây dựng cho các Kỹ sư QA & SDET chuyên nghiệp</b>
+  <b>QA Agent Testing System — Xây dựng theo tiêu chuẩn công nghiệp cho Kỹ sư QA & Tester hiện đại</b>
 </div>
