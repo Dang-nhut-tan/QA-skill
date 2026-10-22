@@ -1,80 +1,83 @@
 ---
 name: playwright-investigation
 description: >-
-  Investigates observable runtime application behavior using Playwright MCP or incorporates
-  BA/PO clarification answers to resolve requirement gaps before test design.
-  Captures step-by-step evidence and screenshots without making unverified assumptions.
+  Verifies discovered requirement gaps and ambiguous behaviors directly on the live UI using Playwright MCP.
+  Executes reproduction steps, captures screenshot evidence, and embeds visual proof into the BA clarification ticket
+  before halting at Human Gate 1 for user confirmation to proceed.
 ---
 
-# Skill: Playwright Runtime Investigation & Clarification Handling (Step 3)
+# Skill: Playwright UI Verification & Gap Evidence Capture (Step 3)
 
 ## 1. Description & Trigger Conditions
-* **Purpose:** Process the human checkpoint from Step 2:
-  * **Path A:** Integrate BA/PO answers into the system context.
-  * **Path B:** Launch Playwright MCP to execute observable UI interactions, capture screenshots, and document empirical application behavior.
+* **Purpose:** Proactively verify on the actual web interface whether the requirement gaps and potential defects identified in Step 2 (`requirement-gap-analysis`) actually occur. Execute step-by-step reproduction, capture high-resolution screenshot evidence, and embed them into the BA Clarification Ticket (`<module-name>-gaps.md`) so that stakeholders can effortlessly understand and reproduce the issues.
 * **Triggers:**
-  * User provides answers to BA/PO questions, OR
-  * User selects to skip clarification and investigate runtime behavior.
-  * Workflow state was `WAITING_FOR_REQUIREMENT_CLARIFICATION`.
+  * Discovered points of discrepancy (gaps) from `requirement-gap-analysis`.
+  * State transitions from `GAP_ANALYSIS` $\rightarrow$ `RUNTIME_INVESTIGATION`.
 
 ## 2. Inputs
 * **Required:**
-  * User decision (Path A answers or Path B directive).
-  * `module-context.md` with pending `clarification_issues`.
-  * Application base URL and valid credentials/environment (if Path B).
+  * Target module URL / route and environment credentials.
+  * List of identified `clarification_issues` (`GAP-xxx`) from Step 2.
+  * `module-context.md` from Step 1.
 
 ## 3. Prerequisites
-* For Path B: **Playwright MCP** server configured and active, target application running/accessible.
+* **Playwright MCP** server configured and operational.
+* Target web application running and accessible (local dev server or staging).
 
-## 4. Step-by-step Execution Instructions
+## 4. Step-by-Step Execution Instructions
 
-### Path A — User Provides BA/PO Answers:
-1. Parse user answers against each `Issue ID` in `.qa-state.json`.
-2. Check for contradictions with existing source code AST evidence. If a serious discrepancy exists, flag it explicitly to the user.
-3. Update `module-context.md` with newly confirmed business rules, referencing the user/BA as the source.
-4. Mark issue statuses as `Answered` in `.qa-state.json`.
-5. Transition state to `TESTCASE_GENERATION`.
+### 4.1. Identify Observable UI Gaps
+* Lọc danh sách các điểm bất cập từ Step 2 để xác định các ca có thể kiểm chứng trên giao diện (ví dụ: validation form, thông báo lỗi, nút bấm bị khóa, modal cảnh báo, chuyển tab, redirect).
+* Đối với các vấn đề backend thuần túy (không có giao diện): Ghi chú rõ `[Xác minh bằng AST - Không có giao diện trực quan]`.
 
-### Path B — Playwright MCP Runtime Investigation:
-1. **Accessibility Check:** Verify the application endpoint is reachable using `browser_navigate`.
-2. **Execute Exploration Steps:**
-   * Navigate through the disputed workflow.
-   * Observe actual UI rendering, field behaviors, and error messages.
-3. **Capture Evidence & Screenshots:**
-   * Take screenshot at each meaningful state.
-   * Use descriptive naming convention: `<IssueID>-step-<NN>-<description>.png`.
-   * Store screenshots in project artifacts directory.
-4. **Enforce Critical Epistemic Restriction:**
-   > [!WARNING]
-   > Playwright MCP observes **WHAT the application currently does**, not whether that behavior is **CORRECT according to business intent**.
-   * Classify findings as:
-     - `Observed Behavior Confirmed`: Matches consistent pattern.
-     - `Suspected Defect`: Behavior violates general logic or safety.
-     - `Requirement Still Unresolved`: Ambiguity persists despite observation.
-     - `Unable to Verify`: Blocked by environment/data limits.
-5. **Generate Standalone Investigation Report (`<module-name>-runtime-investigation.md`):**
-   * Document step-by-step reproducible exploration, observed DOM states, network payloads, and relative markdown screenshot links (`<IssueID>-step-<NN>-<description>.png`).
-   * Export standalone deliverable `<module-name>-runtime-investigation.md` (and update Section 4 of `<module-name>-gaps.md`).
-   * Register artifact in state:
-     `python scripts/state_manager.py set-artifact investigation_report <module-name>-runtime-investigation.md`
-   * Present clickable link in chat: `[<module-name>-runtime-investigation.md](file:///path/to/<module-name>-runtime-investigation.md)` so user can review the empirical investigation findings.
-   * Update `module-context.md` with runtime findings.
-   * Transition state:
-     `python scripts/state_manager.py transition TESTCASE_GENERATION "Completed runtime investigation"`
+### 4.2. Execute Live UI Reproduction & Capture Screenshots
+* Với từng điểm bất cập có giao diện:
+  1. **Điều hướng:** Dùng `browser_navigate` mở trang tương ứng.
+  2. **Thao tác tái hiện:** Thực hiện các bước cụ thể để tái hiện tình huống bất cập (ví dụ: nhập sai 5 lần, để trống trường bắt buộc, bấm liên tiếp nhiều lần).
+  3. **Chụp ảnh minh chứng:** Dùng `browser_take_screenshot` chụp lại màn hình ngay tại thời điểm xuất hiện lỗi hoặc trạng thái bất thường.
+  4. **Lưu trữ:** Đặt tên tệp theo quy chuẩn: `screenshots/<IssueID>-evidence.png` (ví dụ: `screenshots/GAP-001-evidence.png`).
+  5. **Ghi lại các bước tái hiện:** Mô tả chi tiết các bước từ góc nhìn người dùng:
+     - `1. Mở trang...`
+     - `2. Thao tác trên ô...`
+     - `3. Quan sát kết quả...`
+
+### 4.3. Epistemic Restriction (Cảnh báo nhận thức)
+> [!WARNING]
+> Playwright MCP chỉ ghi nhận **GIAO DIỆN HIỆN TẠI ĐANG CHẠY THẾ NÀO**, không tự động coi hành vi đó là **NGHIỆP VỤ ĐÚNG**. Mọi hành vi cần có sự đối soát và phê duyệt từ BA/PO hoặc người dùng.
+
+### 4.4. Embed Visual Proof into BA Ticket (`<module-name>-gaps.md`)
+* Nhúng trực tiếp đường dẫn ảnh chụp màn hình và các bước tái hiện vào từng thẻ `GAP-xxx` trong `<module-name>-gaps.md`.
+* Xuất báo cáo chi tiết và đăng ký tệp artifact:
+  `python scripts/state_manager.py set-artifact gap_analysis <module-name>-gaps.md`
+
+### 4.5. Transition to Mandatory Human Gate 1 & HALT EXECUTION
+* Cập nhật trạng thái workflow sang điểm dừng phê duyệt:
+  `python scripts/state_manager.py transition WAITING_FOR_REQUIREMENT_CLARIFICATION "Verified gaps on UI with screenshots. Halting for user proceed command"`
+* **DỪNG LẠI HOÀN TOÀN TẠI ĐÂY.**
+
+### 4.6. Resumption Protocol (Khi người dùng phản hồi)
+* **Trường hợp 1 — Người dùng bảo "tiếp tục":**
+  - Khi người dùng nhắn `"tiếp tục"`, `"ok tiếp tục"`, hoặc `"proceed"`:
+  - Hệ thống ghi nhận xác nhận, chuyển trạng thái sang `TESTCASE_GENERATION` và bắt đầu Bước 4 (Thiết kế Test Case).
+* **Trường hợp 2 — Người dùng cung cấp câu trả lời từ BA/PO:**
+  - Cập nhật quy tắc nghiệp vụ đã làm rõ vào `module-context.md`.
+  - Đánh dấu `status: "Answered"` cho các mã GAP tương ứng.
+  - Chuyển trạng thái sang `TESTCASE_GENERATION` để thiết kế test case chuẩn xác theo nghiệp vụ mới chốt.
 
 ## 5. Expected Outputs
-* Standalone `<module-name>-runtime-investigation.md` report with screenshot evidence attachments.
-* Updated `<module-name>-gaps.md` (Section 4 populated with runtime logs).
-* State file updated to `TESTCASE_GENERATION` with `artifacts.investigation_report` recorded.
-* Clickable report link presented directly to the user in chat.
+* Thư mục `screenshots/` chứa các ảnh chụp minh chứng: `screenshots/<IssueID>-evidence.png`.
+* Tệp phiếu làm rõ hoàn chỉnh `<module-name>-gaps.md` có đầy đủ:
+  - Bằng chứng mã nguồn AST.
+  - Các bước tái hiện chi tiết trên UI.
+  - Ảnh chụp màn hình minh chứng thực tế từ Playwright MCP.
+  - Câu hỏi và phương án đề xuất cho BA/PO.
+* Trạng thái workflow được đặt thành `WAITING_FOR_REQUIREMENT_CLARIFICATION`.
+* Đường link tệp báo cáo và bảng tóm tắt kèm ảnh minh chứng được hiển thị trực tiếp trong đoạn chat.
 
 ## 6. Failure Handling
-* If application is down or unreachable via Playwright MCP: report blocker immediately, mark status as `BLOCKED`, and do not fabricate fake screenshots or logs.
+* Nếu môi trường web không truy cập được hoặc Playwright MCP gặp lỗi: Báo cáo rõ trở ngại môi trường, đánh dấu `[UNABLE_TO_VERIFY_UI]` và giữ nguyên bằng chứng mã nguồn AST trong phiếu BA; không bịa đặt ảnh chụp.
 
-## 7. Human Approval Requirements
-* If Path A reveals direct conflict between BA answer and source code, confirm with user before writing test cases.
-
-## 8. Completion Criteria
-* Sufficient clarity exists to design deterministic test cases.
-* Standalone investigation report `.md` is exported and linked.
-* Workflow state is `TESTCASE_GENERATION`.
+## 7. Completion Criteria
+* Toàn bộ điểm bất cập quan sát được trên UI đều đã được kiểm chứng và có ảnh chụp màn hình kèm các bước tái hiện.
+* Phiếu làm rõ `<module-name>-gaps.md` đã hoàn tất và giao cho người dùng.
+* **Hệ thống đã dừng lại và chỉ tiếp tục sang Bước 4 khi người dùng bảo "tiếp tục" hoặc cung cấp câu trả lời.**

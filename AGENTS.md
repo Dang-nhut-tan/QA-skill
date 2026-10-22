@@ -32,27 +32,27 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
 [Step 0: module-intake]
         │
         ▼
-[Step 1: graphify-context-discovery]  --> Generates module-context.md
+[Step 1: graphify-context-discovery]  --> Generates module-context.md (Unrestricted AST Discovery)
         │
         ▼
-[Step 2: requirement-gap-analysis]    --> Exports <module>-gaps.md & renders summary table
+[Step 2: requirement-gap-analysis]    --> Identifies specification & logic discrepancies (GAP-xxx)
+        │
+        ▼
+[Step 3: playwright-investigation]    --> Verifies UI behavior via Playwright MCP,
+                                          captures screenshot evidence, and embeds into <module>-gaps.md
         │
         ▼
 ═══════════════════════════════════════════════════════════════════════════
 🔴 MANDATORY CHECKPOINT 1: WAITING_FOR_REQUIREMENT_CLARIFICATION
-   STOP AND PRESENT DELIVERABLES TO USER:
-   1. Clickable file link to [<module>-gaps.md] (or requirement-gaps.md)
+   STOP COMPLETELY AND PRESENT DELIVERABLES TO USER:
+   1. Clickable file link to [<module>-gaps.md] (with embedded screenshots & reproduction steps)
    2. Executive discrepancy table in chat
-   3. Two actionable paths:
-      - Path A: Provide answers from BA/PO
-      - Path B: Skip clarification and verify observable behavior via Playwright MCP
+   3. WAIT FOR USER INSTRUCTION:
+      - User commands "tiếp tục" (or provides BA answers) --> Proceed to Step 4
+      - STRICT PROHIBITION: DO NOT PROCEED TO STEP 4 WITHOUT USER "TIẾP TỤC" OR BA ANSWERS!
 ═══════════════════════════════════════════════════════════════════════════
         │
-        ▼
-[Step 3: playwright-investigation]    --> Resolves gaps via Path A or Path B
-                                          (Generates <module>-runtime-investigation.md for Path B)
-        │
-        ▼
+        ▼ (Only when user explicitly commands "tiếp tục" or provides BA answers)
 [Step 4: testcase-design]             --> Generates dynamic risk-based test cases (Tier S: 5–8, M: 10–18, L: 18–30+)
         │
         ▼
@@ -91,6 +91,7 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
 
 ## 4. Strict Guardrails & Prohibitions
 
+* **PROHIBITED:** Proceeding from Checkpoint 1 (`WAITING_FOR_REQUIREMENT_CLARIFICATION`) to test case design without user commanding "tiếp tục" or providing BA clarification answers.
 * **PROHIBITED:** Writing automation code before the user approves and submits the Excel test cases.
 * **PROHIBITED:** Modifying user-approved expected results during test debugging.
 * **PROHIBITED:** Using hardcoded waits (`sleep`, `waitForTimeout`). Use web-first assertions only.

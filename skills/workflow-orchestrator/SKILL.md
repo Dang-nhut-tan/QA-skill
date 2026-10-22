@@ -29,16 +29,15 @@ stateDiagram-v2
     CONTEXT_DISCOVERY --> DISCOVERY_INCOMPLETE: Technical Blocker / Parser Failure / Timeout
     DISCOVERY_INCOMPLETE --> CONTEXT_DISCOVERY: Retry / Resolve Technical Blocker
     
-    GAP_ANALYSIS --> WAITING_FOR_REQUIREMENT_CLARIFICATION: [MANDATORY STOP 1]
+    GAP_ANALYSIS --> RUNTIME_INVESTIGATION: Step 3 (playwright-investigation: UI verification & screenshots)
+    RUNTIME_INVESTIGATION --> WAITING_FOR_REQUIREMENT_CLARIFICATION: [MANDATORY STOP 1: Gửi phiếu BA kèm ảnh & Dừng]
     
-    WAITING_FOR_REQUIREMENT_CLARIFICATION --> TESTCASE_GENERATION: Path A (User Answers)
-    WAITING_FOR_REQUIREMENT_CLARIFICATION --> RUNTIME_INVESTIGATION: Path B (Skip to Playwright MCP)
-    RUNTIME_INVESTIGATION --> TESTCASE_GENERATION: Step 3 (playwright-investigation)
+    WAITING_FOR_REQUIREMENT_CLARIFICATION --> TESTCASE_GENERATION: Người dùng bảo "Tiếp tục" / duyệt phiếu
     
     TESTCASE_GENERATION --> TESTCASE_REVIEW: Step 4 (testcase-design)
-    TESTCASE_REVIEW --> WAITING_FOR_APPROVED_TESTCASES: Step 5 [MANDATORY STOP 2]
+    TESTCASE_REVIEW --> WAITING_FOR_APPROVED_TESTCASES: Step 5 [MANDATORY STOP 2: duyệt file Excel]
     
-    WAITING_FOR_APPROVED_TESTCASES --> AUTOMATION_IMPLEMENTATION: Phase 6.1 (automation-readiness)
+    WAITING_FOR_APPROVED_TESTCASES --> AUTOMATION_IMPLEMENTATION: Phase 6.1 (Lọc ca Ready = Yes)
     AUTOMATION_IMPLEMENTATION --> AUTOMATION_EXECUTION: Phase 6.2 & 6.3 (automation-implementation)
     AUTOMATION_EXECUTION --> COMPLETED: Phase 6.4 (test-execution-debugging)
     AUTOMATION_EXECUTION --> BLOCKED: Unresolvable Environment Blocker
@@ -53,10 +52,16 @@ stateDiagram-v2
 
 ## 5. Mandatory Human Approval Gates (Non-Negotiable)
 
-### Gate 1: Requirement Clarification Checkpoint
-* **When:** Right after Step 2 (`requirement-gap-analysis`).
+### Gate 1: Requirement Clarification & Visual Evidence Checkpoint
+* **When:** Right after Step 3 (`playwright-investigation` verifies UI gaps and captures screenshots).
 * **State:** `WAITING_FOR_REQUIREMENT_CLARIFICATION`.
-* **Behavior:** The agent MUST PAUSE, generate the standalone Markdown report `<module-name>-gaps.md` (or `requirement-gaps.md`), present a clickable file link and summary table directly in chat, and ask the user to choose between supplying BA/PO answers (Path A) or verifying actual behavior with Playwright MCP (Path B). The agent must NEVER proceed to test case generation without this user decision.
+* **Behavior:**
+  1. Xuất file báo cáo Markdown độc lập `<module-name>-gaps.md` đã tích hợp đầy đủ **bước tái hiện** và **ảnh chụp màn hình minh chứng thực tế từ Playwright MCP**.
+  2. Gửi link clickable mở trực tiếp file báo cáo và bảng tóm tắt kèm ảnh minh chứng trong chat.
+  3. **DỪNG LẠI HOÀN TOÀN.**
+  4. **ĐIỀU KIỆN TIẾP TỤC BẮT BUỘC:** AI TUYỆT ĐỐI KHÔNG ĐƯỢC PHÉP tự ý chuyển sang bước tiếp theo (`testcase-design`). AI chỉ được tiếp tục khi và chỉ khi:
+     - Người dùng gõ: **`tiếp tục`** (hoặc `proceed`, `ok tiếp tục`), HOẶC
+     - Người dùng cung cấp phản hồi / câu trả lời giải đáp từ BA/PO.
 
 ### Gate 2: Approved Test Cases Workbook Checkpoint
 * **When:** Right after Step 5 (`testcase-review-export`).

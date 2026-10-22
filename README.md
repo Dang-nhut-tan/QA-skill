@@ -82,14 +82,11 @@ flowchart TD
     Start(["Bắt đầu: Bạn yêu cầu kiểm thử 1 phân hệ"]) --> Step0["Bước 0: Tiền xử lý tài liệu\n(Chuyển PDF / Excel / Word thành Markdown)"]
     Step0 --> Step1["Bước 1: Khám phá mã nguồn\n(Quét cây cú pháp AST để vẽ bản đồ luồng chạy)"]
     Step1 --> Step2["Bước 2: Tìm kẽ hở nghiệp vụ\n(Soát lỗi logic giữa tài liệu và code thực tế)"]
+    Step2 --> Step3["Bước 3: Xác minh giao diện bằng Playwright MCP\n(Thao tác tái hiện & Chụp ảnh màn hình minh chứng)"]
     
-    Step2 --> Gate1{"ĐIỂM DỪNG 1 (BẮT BUỘC)\nAI xuất file requirement-gaps.md\nvà tạm dừng chờ bạn chọn hướng đi"}
+    Step3 --> Gate1{"ĐIỂM DỪNG 1 (BẮT BUỘC)\nAI xuất phiếu BA kèm ảnh minh chứng\nvà DỪNG LẠI chờ bạn bảo 'tiếp tục'"}
     
-    Gate1 -- "Hướng A: Bạn đưa câu trả lời BA/PO" --> Step3A["Bước 3A: Cập nhật nghiệp vụ đã chốt vào hệ thống"]
-    Gate1 -- "Hướng B: Bạn bảo AI tự kiểm tra" --> Step3B["Bước 3B: AI bật trình duyệt thật thám thính runtime\n(Chụp ảnh màn hình lưu vết)"]
-    
-    Step3A --> Step4["Bước 4: Thiết kế Test Case theo rủi ro (RBC Matrix)\n(Ngôn ngữ dễ hiểu, ai cũng làm theo được)"]
-    Step3B --> Step4
+    Gate1 -- "Bạn bảo 'tiếp tục' hoặc đưa lời giải BA" --> Step4["Bước 4: Thiết kế Test Case theo rủi ro (RBC Matrix)\n(Ngôn ngữ dễ hiểu, ai cũng làm theo được)"]
     
     Step4 --> Step5["Bước 5: Xuất bản file Excel doanh nghiệp\n(<module>-testcases.xlsx chuẩn 13 cột)"]
     
@@ -107,7 +104,7 @@ flowchart TD
     classDef successNode fill:#DCFCE7,stroke:#16A34A,stroke-width:1.5px,color:#166534;
 
     class Gate1,Gate2 humanStop;
-    class Step0,Step1,Step2,Step3A,Step3B,Step4,Step5,Step61,Step62,Step64,Step7 aiStep;
+    class Step0,Step1,Step2,Step3,Step4,Step5,Step61,Step62,Step64,Step7 aiStep;
     class Start,EndNode successNode;
 ```
 
@@ -121,10 +118,11 @@ flowchart TD
 ```text
 ┌────────────────────────────────────────────────────────────────────────┐
 │ ĐIỂM DỪNG 1: WAITING_FOR_REQUIREMENT_CLARIFICATION                     │
-│ AI xuất file requirement-gaps.md, gửi link mở file và DỪNG LẠI.        │
-│ Bạn có 2 lựa chọn:                                                     │
-│   • Lựa chọn 1 (Path A): Cung cấp câu trả lời từ BA/PO                 │
-│   • Lựa chọn 2 (Path B): Yêu cầu AI mở trình duyệt lên kiểm tra thực tế│
+│ AI xuất phiếu BA requirement-gaps.md ĐÃ KÈM ẢNH CHỤP MINH CHỨNG thực tế│
+│ từ Playwright MCP, gửi link mở file và DỪNG LẠI HOÀN TOÀN.             │
+│ AI TUYỆT ĐỐI KHÔNG TỰ CHẠY TIẾP. Hệ thống chỉ tiếp tục khi:            │
+│   • Bạn nhắn: "tiếp tục" (proceed), HOẶC                               │
+│   • Bạn cung cấp câu trả lời giải đáp từ BA/PO                         │
 └────────────────────────────────────────────────────────────────────────┘
 
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -199,12 +197,13 @@ Số lượng test case co giãn linh hoạt dựa trên độ phức tạp và 
 * **Nguyên tắc cốt lõi:** **Tối ưu tiêu thụ ngữ cảnh, KHÔNG thu hẹp phạm vi khám phá (Optimize Context Consumption, NOT Discovery Coverage).** Graphify được tự do khám phá 100% dependency liên quan, bao gồm cả phụ thuộc gián tiếp và xuyên module. LLM chỉ nạp theo nhu cầu (Signature-first) để tiết kiệm token mà không bao giờ bỏ sót góc khuất nghiệp vụ.
 
 ### BƯỚC 2 — Phát Hiện Kẽ Hở Nghiệp Vụ (`requirement-gap-analysis`)
-* **Nhiệm vụ:** Đối soát giữa tài liệu bạn đưa và code thực tế. Phát hiện 5 nhóm bất cập (mơ hồ, lỗi tiềm ẩn, thiếu spec, giới hạn môi trường, lỗi xác định).
-* **Bàn giao:** Xuất file báo cáo Markdown độc lập `requirement-gaps.md` kèm link mở trực tiếp và dừng lại tại **Điểm dừng 1**.
+* **Nhiệm vụ:** Đối soát giữa tài liệu đặc tả và mã nguồn thực tế. Phân loại 5 nhóm bất cập (mơ hồ yêu cầu, nghi ngờ lỗi code, thiếu spec, giới hạn môi trường, lỗi xác định).
 
-### BƯỚC 3 — Làm Rõ Hoặc Thám Thính Thực Tế (`playwright-investigation`)
-* **Path A:** Nếu bạn trả lời các câu hỏi nghiệp vụ, AI ghi nhận vào tài liệu hệ thống.
-* **Path B:** Nếu bạn muốn kiểm chứng thực tế, AI dùng **Playwright MCP** tự mở trình duyệt lên thao tác, chụp ảnh màn hình lưu vết từng bước.
+### BƯỚC 3 — Xác Minh Giao Diện Thực Tế & Chụp Ảnh Minh Chứng (`playwright-investigation`)
+* **Nhiệm vụ:** Đối với các điểm bất cập, AI dùng **Playwright MCP** tự động mở trình duyệt thật để kiểm chứng xem trên giao diện có xảy ra hiện tượng đó hay không.
+* **Minh chứng trực quan:** Chụp ảnh màn hình thực tế lưu vết (`screenshots/GAP-xxx-evidence.png`), ghi lại từng bước thao tác tái hiện chi tiết (1. Mở... 2. Nhập... 3. Quan sát...).
+* **Bàn giao phiếu BA:** Đính kèm trực tiếp ảnh chụp và các bước tái hiện vào phiếu `requirement-gaps.md` để bạn và BA/PO dễ dàng đối chiếu, rồi dừng lại tại **Điểm dừng 1**.
+* **Nguyên tắc tiếp tục:** AI **DỪNG LẠI HOÀN TOÀN** và chỉ được tiếp tục sang Bước 4 khi bạn nhắn **"tiếp tục"** (hoặc gửi câu trả lời đã chốt từ BA/PO).
 
 ### BƯỚC 4 — Thiết Kế Test Case Theo Rủi Ro (`testcase-design`)
 * **Nhiệm vụ:** Áp dụng Ma trận Rủi ro (Tier S/M/L) và Cẩm nang ngôn ngữ dễ hiểu để thiết kế bộ test case hoàn chỉnh gồm 13 cột thông tin.

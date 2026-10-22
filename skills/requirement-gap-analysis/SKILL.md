@@ -42,32 +42,37 @@ description: >-
      * `Question for BA/PO`
      * `Suggested Options` (Hypotheses A, B, C)
      * `Status` (`Pending`)
-3. **Generate Standalone Markdown Deliverable (`<module-name>-gaps.md`):**
-   * **MANDATORY:** Generate a standalone Markdown report file (e.g. `<module-name>-gaps.md` or `requirement-gaps.md`) based on `references/requirement-gaps-template.md`.
-   * Structure:
-     - Section 1: Executive investigation overview and risk breakdown.
-     - Section 2: 5-category discrepancy table with exact source code references and AST line numbers.
-     - Section 3: Detailed BA/PO question cards with code evidence, business impact, and concrete hypotheses (Option A, Option B).
-     - Section 4: Reserved placeholder for runtime investigation logs (Playwright MCP observations if Path B is selected).
-     - Section 5: Checkpoint 1 instructions for user response.
-4. **Persist State Checkpoint & Register Artifact:**
-   * Save questions into `.qa-state.json` under `clarification_issues`.
-   * Register the generated report artifact:
+3. **Trigger Playwright MCP UI Verification & Screenshot Capture (Step 3 Integration):**
+   * **Bắt buộc kiểm chứng giao diện trước khi gửi phiếu BA:**
+     - Đối với mọi điểm bất cập có thể kiểm chứng được qua giao diện web:
+     - Kích hoạt kỹ năng `playwright-investigation` để điều hướng đến màn hình thực tế.
+     - Thực hiện các bước thao tác để kiểm tra xem vấn đề có xuất hiện trên màn hình hay không.
+     - **Chụp ảnh màn hình minh chứng (`.png`)** lưu vào thư mục `screenshots/` (ví dụ: `GAP-001-evidence.png`).
+     - Ghi chép chi tiết các bước tái hiện (Reproduction Steps: 1. Mở... 2. Nhập... 3. Quan sát...).
+     - Nếu là logic ngầm backend không có UI: ghi rõ `[Xác minh qua mã nguồn AST - Không có giao diện trực quan]`.
+4. **Generate Standalone Deliverable (`<module-name>-gaps.md`):**
+   * Tạo tệp báo cáo hoàn chỉnh dựa trên `references/requirement-gaps-template.md`:
+     - Tóm tắt tổng quan và phân loại 5 nhóm bất cập.
+     - Từng phiếu câu hỏi cho BA được **đính kèm trực tiếp ảnh chụp màn hình minh chứng từ Playwright MCP** và các bước tái hiện rõ ràng.
+     - Câu hỏi trực diện cho BA/PO và các phương án đề xuất (Phương án A, Phương án B).
+5. **Persist State Checkpoint & Register Artifact:**
+   * Lưu các vấn đề vào `.qa-state.json` dưới `clarification_issues`.
+   * Đăng ký tệp báo cáo đã tạo:
      `python scripts/state_manager.py set-artifact gap_analysis <module-name>-gaps.md`
-   * Update workflow state:
-     `python scripts/state_manager.py transition WAITING_FOR_REQUIREMENT_CLARIFICATION "Awaiting user choice: BA answers or Playwright runtime investigation"`
+   * Cập nhật trạng thái workflow sang điểm dừng chờ người dùng:
+     `python scripts/state_manager.py transition WAITING_FOR_REQUIREMENT_CLARIFICATION "Gaps verified via Playwright MCP with screenshots. Awaiting user confirmation to proceed"`
 
-## 5. Mandatory Human Checkpoint (CRITICAL)
+## 5. Mandatory Human Checkpoint 1 (DỪNG LẠI BẮT BUỘC)
 > [!IMPORTANT]
-> **YOU MUST STOP THE WORKFLOW HERE.**
-> Before awaiting user input, the agent MUST:
-> 1. Deliver the clickable markdown link to the generated report file: `[<module-name>-gaps.md](file:///path/to/<module-name>-gaps.md)`.
-> 2. Present an executive summary table directly in chat showing Issue ID, Category, Flow, Risk Level, and Question.
-> 3. Prompt the user with two clear choices:
->    - **Lựa chọn 1 (Path A):** Cung cấp câu trả lời từ BA / Product Owner (theo cú pháp: `Trả lời GAP-001: [Phương án / Quy định]`).
->    - **Lựa chọn 2 (Path B):** Bỏ qua làm rõ và dùng Playwright MCP để kiểm chứng hành vi thực tế của ứng dụng (Observable Runtime Investigation).
+> **AI PHẢI DỪNG LẠI HOÀN TOÀN TẠI ĐÂY.**
+> Trước khi dừng lại, AI phải:
+> 1. Gửi đường link tệp báo cáo phiếu BA kèm ảnh minh chứng: `[<module-name>-gaps.md](file:///path/to/<module-name>-gaps.md)`.
+> 2. Hiển thị bảng tóm tắt trực tiếp trong chat gồm: Mã GAP, Phân loại, Luồng, Ảnh minh chứng, và Câu hỏi cho BA/PO.
+> 3. **DỪNG LẠI CHỜ PHẢN HỒI:**
+>    - **Khi người dùng nhắn "tiếp tục" (hoặc "proceed"):** AI mới được phép tiếp tục bước tiếp theo (`testcase-design`).
+>    - **Nếu người dùng cung cấp câu trả lời giải đáp từ BA:** AI cập nhật quy tắc nghiệp vụ vào `module-context.md`, ghi nhận `Answered` và chuyển sang bước tiếp theo.
 >
-> **DO NOT PROCEED TO STEP 3 OR STEP 4 WITHOUT EXPLICIT USER INPUT.**
+> **TUYỆT ĐỐI KHÔNG TỰ ĐỘNG CHUYỂN BƯỚC NẾU NGƯỜI DÙNG CHƯA BẢO "TIẾP TỤC" HOẶC CHƯA DUYỆT.**
 
 ## 6. Expected Outputs
 * Dedicated Markdown file: `<module-name>-gaps.md` (or `requirement-gaps.md`) exported into workspace root following `references/requirement-gaps-template.md`.
