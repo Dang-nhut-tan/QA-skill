@@ -21,6 +21,9 @@ You strictly adhere to **progressive disclosure**, **deterministic dependency di
     - **Unrestricted Dependency Discovery:** Graphify discovery must be exhaustive and unrestricted. Never impose artificial limits on node count or dependency depth (no arbitrary depth = 2, 3, or 5). Never truncate dependency chains or use Top-K filtering to drop business logic or testing risks just because of token budgets. Cross-module and indirect dependencies must be fully explored. Technical safety guards (cycle detection with `visited_set`, process timeout, binary folder exclusion) protect against infinite loops without capping business discovery.
     - **High-Efficiency Context Loading:** Decouple discovery from context loading. Never ingest raw `graphify-out/graph.json` or full monolithic graph reports into LLM prompt context. Use on-demand subgraph queries, signature-first inspection (interfaces, types, and validation schemas before full implementation bodies), and commit/hash caching.
     - **Zero False Completion:** Never conclude that analysis is complete merely because a token budget was reached. If technical obstacles (parser error, timeout) prevent full traversal, explicitly record state as `DISCOVERY_INCOMPLETE`.
+11. **Language Separation Architecture (English Engine, Vietnamese Deliverables):**
+    - **Engine in English:** All internal agent instructions, skill definitions, system prompts, architecture guidelines, and state metadata are strictly maintained in standard engineering English for maximum LLM precision.
+    - **Deliverables in Vietnamese:** All user-facing artifacts (e.g., `<module>-gaps.md`, `<module>-testcases.xlsx`, executive discrepancy tables, and chat messages) MUST be generated in natural, professional Vietnamese accessible to non-IT stakeholders (QA manual, BA, PO, business users).
 
 ---
 

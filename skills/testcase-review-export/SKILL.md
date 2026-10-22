@@ -30,22 +30,22 @@ description: >-
 1. **Internal Quality Review & Traceability Validation (Self-Audit):**
    * Execute programmatic validation: `python scripts/traceability_validator.py <payload.json>`.
    * Enforce the 3 core Traceability Gates before export:
-     1. **Bao phủ Yêu cầu (Forward Check):** 100% yêu cầu trọng yếu trong `module-context.md` có ít nhất 1 test case bao phủ (`orphan_requirements_count == 0`).
-     2. **Căn cứ Code/Spec (Backward Check):** 100% test case có `Requirement Reference` hợp lệ, trỏ về mã đặc tả hoặc symbol/endpoint từ source code (`orphan_testcases_count == 0`). Tuyệt đối loại bỏ test case ảo.
-     3. **Chống Trùng Lặp (Deduplication Check):** Không có cặp test case nào trùng lặp về mục tiêu kiểm thử hay thao tác (`duplicate_groups_count == 0`).
-   * **Rà soát Ngôn ngữ Dễ hiểu cho Người Non-IT (Non-IT Accessibility Audit):**
-     - Quét toàn bộ bộ test case theo cẩm nang `references/business-terminology-guide.md`.
-     - Tuyệt đối loại bỏ từ dịch máy ngô nghê ("phanh chống ngập", "chặn âm thầm") và biệt ngữ IT ("web_anon", "RPC", "DB không chèn dòng", "UI trả về", "insufficient_privilege").
-     - Đảm bảo 100% các bước thao tác (Test Steps) diễn giải tuần tự từ góc độ người dùng thao tác trên màn hình (`1. Mở màn hình... 2. Nhập vào ô... 3. Bấm nút...`).
-     - Bảo toàn đầy đủ số lượng và độ sâu kiểm thử (7–10 ca Chặn, 5–7 ca Sai).
-   * Kiểm tra các tiêu chuẩn chất lượng theo `references/testcase-quality-checklist.md`.
+     1. **Requirement Coverage (Forward Check):** 100% of critical requirements in `module-context.md` have at least 1 covering test case (`orphan_requirements_count == 0`).
+     2. **Code/Spec Grounding (Backward Check):** 100% of test cases have a valid `Requirement Reference` pointing to an explicit spec code or source code symbol/endpoint (`orphan_testcases_count == 0`). Strictly eliminate hallucinated test cases.
+     3. **Deduplication Check:** Zero duplicate test cases in terms of test objectives or concrete actions (`duplicate_groups_count == 0`).
+   * **Non-IT Business Accessibility Audit:**
+     - Audit the entire test suite against `references/business-terminology-guide.md`.
+     - Strictly eliminate clumsy machine translations and technical jargon (e.g., replace internal DB/RPC/code flags with natural user-observable terms).
+     - Ensure 100% of Test Steps are articulated sequentially from the end-user screen perspective (`1. Mở màn hình... 2. Nhập vào ô... 3. Bấm nút...`).
+     - Preserve dynamic Risk-Based Coverage depth (comprehensive boundary, negative, and permission cases based on business impact).
+   * Check quality criteria according to `references/testcase-quality-checklist.md`.
 2. **Export to Standardized Excel Workbook:**
    * Prepare JSON payload containing: `testcases`, `gaps`, and `summary`.
    * Run: `python scripts/export_testcases.py <payload.json> <module-name>-testcases.xlsx`.
    * Verify workbook contains 3 sheets:
-     * `Sheet 1 — Test Cases`: 13 columns (bao gồm cột ngoài cùng `Status` với dropdown `Pass, Fail, Pending, Skip`, mặc định là `Pending`), dropdown validations, frozen header, autofilter, badges màu pastel.
+     * `Sheet 1 — Test Cases`: 13 columns (including rightmost column `Status` with dropdown `Pass, Fail, Pending, Skip`, default `Pending`), dropdown validations, frozen header, autofilter, and pastel priority badges.
      * `Sheet 2 — Requirement Gaps`: Open and resolved issues.
-     * `Sheet 3 — Coverage Summary`: High-level metrics, Bảng đối soát Ma trận Truy vết Yêu cầu (RTM), covered flows, and uncovered risks.
+     * `Sheet 3 — Coverage Summary`: High-level metrics, Requirements Traceability Matrix (RTM) cross-check table, covered flows, and residual risks.
 3. **Persist State Checkpoint:**
    * Record exported file path in `.qa-state.json` under `artifacts.excel_testcases`.
    * Update workflow state:

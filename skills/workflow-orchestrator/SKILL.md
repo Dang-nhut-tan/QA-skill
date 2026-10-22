@@ -30,14 +30,14 @@ stateDiagram-v2
     DISCOVERY_INCOMPLETE --> CONTEXT_DISCOVERY: Retry / Resolve Technical Blocker
     
     GAP_ANALYSIS --> RUNTIME_INVESTIGATION: Step 3 (playwright-investigation: UI verification & screenshots)
-    RUNTIME_INVESTIGATION --> WAITING_FOR_REQUIREMENT_CLARIFICATION: [MANDATORY STOP 1: Gửi phiếu BA kèm ảnh & Dừng]
+    RUNTIME_INVESTIGATION --> WAITING_FOR_REQUIREMENT_CLARIFICATION: [MANDATORY STOP 1: Deliver BA ticket with screenshots & HALT]
     
-    WAITING_FOR_REQUIREMENT_CLARIFICATION --> TESTCASE_GENERATION: Người dùng bảo "Tiếp tục" / duyệt phiếu
+    WAITING_FOR_REQUIREMENT_CLARIFICATION --> TESTCASE_GENERATION: User commands "tiếp tục" / BA clarification received
     
     TESTCASE_GENERATION --> TESTCASE_REVIEW: Step 4 (testcase-design)
-    TESTCASE_REVIEW --> WAITING_FOR_APPROVED_TESTCASES: Step 5 [MANDATORY STOP 2: duyệt file Excel]
+    TESTCASE_REVIEW --> WAITING_FOR_APPROVED_TESTCASES: Step 5 [MANDATORY STOP 2: Deliver Excel workbook & HALT]
     
-    WAITING_FOR_APPROVED_TESTCASES --> AUTOMATION_IMPLEMENTATION: Phase 6.1 (Lọc ca Ready = Yes)
+    WAITING_FOR_APPROVED_TESTCASES --> AUTOMATION_IMPLEMENTATION: Phase 6.1 (Filter Automation Ready = Yes)
     AUTOMATION_IMPLEMENTATION --> AUTOMATION_EXECUTION: Phase 6.2 & 6.3 (automation-implementation)
     AUTOMATION_EXECUTION --> COMPLETED: Phase 6.4 (test-execution-debugging)
     AUTOMATION_EXECUTION --> BLOCKED: Unresolvable Environment Blocker
@@ -46,9 +46,9 @@ stateDiagram-v2
 
 ## 4. Unrestricted Discovery & Incomplete Discovery Protocol
 * **Core Rule:** **Optimize Context Consumption, NOT Discovery Coverage.**
-* Graphify được phép duyệt toàn bộ chuỗi dependency (trực tiếp, gián tiếp, xuyên module) mà không bị giới hạn cứng về số node hay độ sâu (depth).
-* Tuyệt đối không dừng phân tích hay cắt bớt dependency chỉ vì hết ngân sách token.
-* **Xử lý khi Discovery chưa hoàn tất:** Nếu gặp lỗi parser, timeout hoặc tài nguyên bị cạn kiệt, hệ thống PHẢI chuyển sang trạng thái `DISCOVERY_INCOMPLETE` và thông báo cho người dùng. Nghiêm cấm tự ý báo hoàn thành khi phân tích còn dang dở.
+* Graphify is permitted to traverse the entire dependency chain (direct, indirect, cross-module) without arbitrary hard limits on node count or depth.
+* Analysis must never be truncated or culled purely to conserve token budgets.
+* **Incomplete Discovery Protocol:** In the event of parser crashes, execution timeouts, or exhausted physical system resources, the system MUST transition to `DISCOVERY_INCOMPLETE` and report the exact technical bottleneck to the user. Reporting completion for incomplete analyses is strictly prohibited.
 
 ## 5. Mandatory Human Approval Gates (Non-Negotiable)
 
@@ -56,12 +56,12 @@ stateDiagram-v2
 * **When:** Right after Step 3 (`playwright-investigation` verifies UI gaps and captures screenshots).
 * **State:** `WAITING_FOR_REQUIREMENT_CLARIFICATION`.
 * **Behavior:**
-  1. Xuất file báo cáo Markdown độc lập `<module-name>-gaps.md` đã tích hợp đầy đủ **bước tái hiện** và **ảnh chụp màn hình minh chứng thực tế từ Playwright MCP**.
-  2. Gửi link clickable mở trực tiếp file báo cáo và bảng tóm tắt kèm ảnh minh chứng trong chat.
-  3. **DỪNG LẠI HOÀN TOÀN.**
-  4. **ĐIỀU KIỆN TIẾP TỤC BẮT BUỘC:** AI TUYỆT ĐỐI KHÔNG ĐƯỢC PHÉP tự ý chuyển sang bước tiếp theo (`testcase-design`). AI chỉ được tiếp tục khi và chỉ khi:
-     - Người dùng gõ: **`tiếp tục`** (hoặc `proceed`, `ok tiếp tục`), HOẶC
-     - Người dùng cung cấp phản hồi / câu trả lời giải đáp từ BA/PO.
+  1. Generate standalone Markdown report `<module-name>-gaps.md` (in Vietnamese) embedding concrete end-user reproduction steps and Playwright MCP screenshot evidence.
+  2. Deliver clickable file link and executive summary table directly in chat.
+  3. **HALT EXECUTION COMPLETELY.**
+  4. **MANDATORY RESUMPTION CONDITION:** The agent is STRICTLY FORBIDDEN from automatically proceeding to `testcase-design`. The agent proceeds if and only if:
+     - User explicitly types: **`tiếp tục`** (or `proceed`, `ok tiếp tục`), OR
+     - User provides clarification feedback / BA decisions.
 
 ### Gate 2: Approved Test Cases Workbook Checkpoint
 * **When:** Right after Step 5 (`testcase-review-export`).

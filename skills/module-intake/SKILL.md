@@ -26,17 +26,17 @@ description: >-
 * Current workspace or repository is accessible.
 * Python 3 and basic shell tools available.
 
-## 4. Step-by-step Execution Instructions
+## 4. Step-by-Step Execution Instructions
 1. **Identify Module & Scope:**
    * Extract the exact target module name.
-   * If the user's request is ambiguous, note initial assumptions without blocking.
+   * If the user's request is ambiguous, record initial assumptions without blocking execution.
 2. **Scan & Convert Available Documentation (Microsoft MarkItDown):**
    * Check project directories (e.g., `docs/`, `specs/`, root files) or user-provided files for specifications.
    * **Mandatory Preprocessing with Microsoft MarkItDown:**
      * If the input file is a **PDF (`.pdf`), Excel (`.xlsx`, `.xls`), Word (`.docx`), or PPTX**:
        Execute MarkItDown to convert it into a clean Markdown (`.md`) file:
        `markitdown "<input_file>" -o "<output_file>.md"`
-       (hoặc gọi tool MCP `convert_to_markdown` từ server `markitdown`).
+       (or invoke MCP tool `convert_to_markdown` from the `markitdown` server).
      * Use the converted `.md` file as the primary text specification for Graphify ingestion and Gap Analysis.
    * Record paths and compute SHA-256 hashes of input and converted documents for traceability.
 3. **Inspect Repository Environment:**
@@ -48,11 +48,9 @@ description: >-
 
 ## 5. Expected Outputs
 * Initialized `.qa-state.json` with status `INITIALIZED`.
-* Intake summary report detailing:
-  * Module name.
-  * Discovered documentation.
-  * Available testing tools.
-  * Next action transition.
+* Intake summary report presented in chat:
+  * **Language Rule:** Chat communications and intake summary presented to the user must be in clear, polite Vietnamese.
+  * Details: Target module name, discovered documentation, available testing tools, next action transition.
 
 ## 6. Failure Handling
 * If repository root is invalid or inaccessible: halt and request the correct path.

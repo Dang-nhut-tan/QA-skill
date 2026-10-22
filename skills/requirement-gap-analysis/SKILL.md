@@ -1,29 +1,36 @@
 ---
 name: requirement-gap-analysis
 description: >-
-  Analyzes inconsistencies, missing business rules, and contradictions between code and specifications.
-  Produces a structured BA/PO clarification question report and enforces a mandatory workflow STOP
-  for human direction (Provide answers vs. Investigate via Playwright MCP).
+  Audits inconsistencies, missing business rules, and contradictions between code and specifications.
+  Collaborates with Playwright MCP to verify observable UI issues with screenshots, compiles the BA
+  clarification ticket (<module>-gaps.md in Vietnamese), and halts at Human Gate 1 until the user commands to proceed.
 ---
 
 # Skill: Requirement Gap Analysis (Step 2)
 
 ## 1. Description & Trigger Conditions
-* **Purpose:** Audit the reconstructed context against available requirements, identify ambiguities and potential defects, formulate high-impact BA/PO questions, and **halt execution for human decision**.
+* **Purpose:** Audit the reconstructed context against available requirements, identify ambiguities and potential defects, trigger live UI verification with screenshot capture via Playwright MCP, compile a visual BA/PO clarification report (`<module>-gaps.md`), and **halt execution for mandatory human confirmation**.
 * **Triggers:**
-  * Completed `graphify-context-discovery`.
-  * State is `GAP_ANALYSIS`.
+  * Completed `graphify-context-discovery` in full workflow orchestrator (`GAP_ANALYSIS`).
+  * **Standalone Invocation:** Direct user request to investigate gaps for a module (e.g., *"Điều tra bất cập phân hệ Đăng Nhập"*, *"Phân tích gap module <Module>"*).
 
 ## 2. Inputs
 * **Required:**
-  * `module-context.md` from Step 1.
+  * `module-context.md` (reused if cached, or generated on-demand).
   * Project documents or specifications (if available).
+  * Target module name.
   * `.qa-state.json`.
 
-## 3. Prerequisites
-* Source code context and dependencies have been mapped.
+## 3. Prerequisites & Standalone Execution Architecture
+* **Full Workflow Mode:** Expects `module-context.md` from Step 1 (`graphify-context-discovery`).
+* **Standalone Execution Mode (Single-Skill Trigger):**
+  * When invoked directly with a module name:
+    1. **Cache Check:** Check if `module-context.md` or existing Graphify dependency cache exists for the module.
+    2. **Cache Hit:** Immediately reuses the AST context—zero token waste, skips re-parsing, and immediately jumps to discrepancy detection.
+    3. **Cache Miss (Cold Start):** Automatically runs Step 1 (`graphify-context-discovery`) in the background to discover unrestricted AST dependencies first, then continues seamlessly.
+    4. **Focused Output:** Produces the dedicated visual report `<module-name>-gaps.md`, provides the clickable link, and stops at Gate 1. It does NOT force subsequent test case design or automation steps unless explicitly requested by the user.
 
-## 4. Step-by-step Execution Instructions
+## 4. Step-by-Step Execution Instructions
 1. **Discrepancy & Ambiguity Audit:**
    * Compare documented rules against code AST implementations.
    * Categorize findings into 5 distinct categories:
@@ -34,7 +41,7 @@ description: >-
      5. `Confirmed Defect`: Clear breach of explicit documented business rule.
 2. **Formulate BA/PO Clarification Table:**
    * Create prioritized table with columns:
-     * `Issue ID` (e.g. `GAP-001`)
+     * `Issue ID` (e.g., `GAP-001`)
      * `Related Flow`
      * `Current Evidence` (Code references & lines)
      * `Uncertainty`
@@ -42,48 +49,49 @@ description: >-
      * `Question for BA/PO`
      * `Suggested Options` (Hypotheses A, B, C)
      * `Status` (`Pending`)
-3. **Trigger Playwright MCP UI Verification & Screenshot Capture (Step 3 Integration):**
-   * **Bắt buộc kiểm chứng giao diện trước khi gửi phiếu BA:**
-     - Đối với mọi điểm bất cập có thể kiểm chứng được qua giao diện web:
-     - Kích hoạt kỹ năng `playwright-investigation` để điều hướng đến màn hình thực tế.
-     - Thực hiện các bước thao tác để kiểm tra xem vấn đề có xuất hiện trên màn hình hay không.
-     - **Chụp ảnh màn hình minh chứng (`.png`)** lưu vào thư mục `screenshots/` (ví dụ: `GAP-001-evidence.png`).
-     - Ghi chép chi tiết các bước tái hiện (Reproduction Steps: 1. Mở... 2. Nhập... 3. Quan sát...).
-     - Nếu là logic ngầm backend không có UI: ghi rõ `[Xác minh qua mã nguồn AST - Không có giao diện trực quan]`.
+3. **Trigger Playwright MCP UI Verification & Screenshot Capture (Step 3 Collaboration):**
+   * **Mandatory UI Verification Before BA Ticket Delivery:**
+     - For every gap observable on the web UI:
+     - Activate `playwright-investigation` (Step 3) to navigate to the live screen.
+     - Execute concrete interaction steps to verify if the discrepancy occurs.
+     - **Capture screenshot evidence (`.png`)** saved into `screenshots/<IssueID>-evidence.png` (e.g., `screenshots/GAP-001-evidence.png`).
+     - Record step-by-step reproduction instructions from the end-user perspective (`1. Mở... 2. Nhập... 3. Quan sát...`).
+     - For backend-only logic lacking UI: explicitly tag `[Verified via AST - No UI Rendering]`.
 4. **Generate Standalone Deliverable (`<module-name>-gaps.md`):**
-   * Tạo tệp báo cáo hoàn chỉnh dựa trên `references/requirement-gaps-template.md`:
-     - Tóm tắt tổng quan và phân loại 5 nhóm bất cập.
-     - Từng phiếu câu hỏi cho BA được **đính kèm trực tiếp ảnh chụp màn hình minh chứng từ Playwright MCP** và các bước tái hiện rõ ràng.
-     - Câu hỏi trực diện cho BA/PO và các phương án đề xuất (Phương án A, Phương án B).
+   * **Deliverable Language Rule:** The generated deliverable `<module-name>-gaps.md` MUST be produced in **Vietnamese** following `references/requirement-gaps-template.md` so that local BA, PO, and business users can understand and act on it immediately.
+   * Structure:
+     - Investigation overview and 5-category summary table.
+     - Detailed issue cards for each `GAP-xxx` with AST code evidence, UI reproduction steps, and **embedded Playwright MCP screenshots**.
+     - Direct questions for BA/PO and concrete options (Option A, Option B).
 5. **Persist State Checkpoint & Register Artifact:**
-   * Lưu các vấn đề vào `.qa-state.json` dưới `clarification_issues`.
-   * Đăng ký tệp báo cáo đã tạo:
+   * Save questions into `.qa-state.json` under `clarification_issues`.
+   * Register the generated report artifact:
      `python scripts/state_manager.py set-artifact gap_analysis <module-name>-gaps.md`
-   * Cập nhật trạng thái workflow sang điểm dừng chờ người dùng:
+   * Update workflow state:
      `python scripts/state_manager.py transition WAITING_FOR_REQUIREMENT_CLARIFICATION "Gaps verified via Playwright MCP with screenshots. Awaiting user confirmation to proceed"`
 
-## 5. Mandatory Human Checkpoint 1 (DỪNG LẠI BẮT BUỘC)
+## 5. Mandatory Human Checkpoint 1 (CRITICAL STOP)
 > [!IMPORTANT]
-> **AI PHẢI DỪNG LẠI HOÀN TOÀN TẠI ĐÂY.**
-> Trước khi dừng lại, AI phải:
-> 1. Gửi đường link tệp báo cáo phiếu BA kèm ảnh minh chứng: `[<module-name>-gaps.md](file:///path/to/<module-name>-gaps.md)`.
-> 2. Hiển thị bảng tóm tắt trực tiếp trong chat gồm: Mã GAP, Phân loại, Luồng, Ảnh minh chứng, và Câu hỏi cho BA/PO.
-> 3. **DỪNG LẠI CHỜ PHẢN HỒI:**
->    - **Khi người dùng nhắn "tiếp tục" (hoặc "proceed"):** AI mới được phép tiếp tục bước tiếp theo (`testcase-design`).
->    - **Nếu người dùng cung cấp câu trả lời giải đáp từ BA:** AI cập nhật quy tắc nghiệp vụ vào `module-context.md`, ghi nhận `Answered` và chuyển sang bước tiếp theo.
+> **THE AGENT MUST HALT EXECUTION COMPLETELY HERE.**
+> Before pausing, the agent MUST:
+> 1. Deliver the clickable markdown link to the generated report file: `[<module-name>-gaps.md](file:///path/to/<module-name>-gaps.md)`.
+> 2. Present an executive summary table directly in chat showing Issue ID, Category, Flow, Screenshot Evidence, and BA Question (in polite Vietnamese).
+> 3. **WAIT FOR EXPLICIT USER INSTRUCTION:**
+>    - **User commands "tiếp tục" (or "proceed"):** Advance to Step 4 (`testcase-design`) if running full workflow.
+>    - **User provides answers from BA/PO:** Update `module-context.md` with resolved business rules, mark issues as `Answered`.
+>    - **In Standalone Mode:** User can review the gaps ticket, forward it to BA, or request next steps when ready.
 >
-> **TUYỆT ĐỐI KHÔNG TỰ ĐỘNG CHUYỂN BƯỚC NẾU NGƯỜI DÙNG CHƯA BẢO "TIẾP TỤC" HOẶC CHƯA DUYỆT.**
+> **STRICT PROHIBITION: DO NOT PROCEED TO STEP 4 WITHOUT USER COMMAND "TIẾP TỤC" OR BA ANSWERS.**
 
 ## 6. Expected Outputs
-* Dedicated Markdown file: `<module-name>-gaps.md` (or `requirement-gaps.md`) exported into workspace root following `references/requirement-gaps-template.md`.
-* State file updated to `WAITING_FOR_REQUIREMENT_CLARIFICATION` with `artifacts.gap_analysis` pointing to the generated file.
+* Dedicated Markdown report: `<module-name>-gaps.md` (in Vietnamese) exported into workspace root with embedded screenshot links.
+* State file updated to `WAITING_FOR_REQUIREMENT_CLARIFICATION` with `artifacts.gap_analysis` registered.
 * Executive table and clickable file link presented directly to the user in chat.
 
 ## 7. Failure Handling
-* If zero gaps are found: double-check edge cases (boundary values, throttling, role permissions). If truly clean, document the verification criteria in `<module-name>-gaps.md` and request confirmation before proceeding.
+* If zero gaps are found: double-check edge cases (boundary values, throttling, role permissions). If genuinely clean, document verification criteria in `<module-name>-gaps.md` and request confirmation to proceed.
 
 ## 8. Completion Criteria
-* Standalone `<module-name>-gaps.md` report is created and registered in state.
+* Standalone `<module-name>-gaps.md` report is created with visual screenshots and reproduction steps.
 * State is persisted as `WAITING_FOR_REQUIREMENT_CLARIFICATION`.
-* Report link, executive summary table, and choices are displayed in chat.
-* Execution is paused waiting for user input.
+* Workflow is paused waiting for user input.

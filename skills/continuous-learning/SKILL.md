@@ -38,20 +38,20 @@ description: >-
 3. **Present Proposal to User for Explicit Approval:**
    * Display a clean, actionable prompt to the user:
      ```text
-     💡 AI PHÁT HIỆN BÀI HỌC KINH NGHIỆM DỰ ÁN CẦN NẠP VÀO SKILL:
+     [AI PHÁT HIỆN BÀI HỌC KINH NGHIỆM DỰ ÁN CẦN NẠP VÀO SKILL]
      - Mã đề xuất: LRN-001
      - Vấn đề gặp phải: Nút Đăng nhập bị click trùng do lag mạng làm khoá tài khoản
      - Nguyên nhân: Dự án có hook useSubmitOnce xử lý bất đồng bộ
      - Giải pháp: Sử dụng locator disable check hoặc wait response trước khi click lần hai
      - Skill tiếp nhận: automation-implementation
 
-     👉 Bạn có đồng ý duyệt để AI tự động nạp kinh nghiệm này vào Skill không? (Đồng ý / Từ chối / Chỉnh sửa)
+     Bạn có đồng ý duyệt để AI tự động nạp kinh nghiệm này vào Skill không? (Đồng ý / Từ chối / Chỉnh sửa)
      ```
 4. **Execute Injection Upon Approval:**
    * When user confirms *"Đồng ý"* or confirms proposal:
      Run: `python scripts/learn_manager.py approve <PROPOSAL_ID>`
    * The script automatically appends the verified rule into `skills/<target_skill>/SKILL.md` under the section `## Project-Specific Learnings & Best Practices`.
-   * Future invocations of that skill will immediately inherit and respect the new lesson!
+   * Future invocations of that skill will immediately inherit and respect the new lesson.
 5. **Rejection or Discard:**
    * If user rejects: discard without modifying any skill files.
 
