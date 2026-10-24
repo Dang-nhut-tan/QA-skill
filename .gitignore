@@ -52,7 +52,6 @@ requirement-gaps.md
 *.webp
 screenshots/
 traces/
-!docs/*.png
 
 # Project-specific dynamic learnings captured during execution
 references/project-learnings.json

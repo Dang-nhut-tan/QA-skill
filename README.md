@@ -264,13 +264,54 @@ python scripts/token_benchmark.py "<đường_dẫn_repo>" "<tên_phân_hệ>"
 * **Cắt giảm Ảnh minh chứng UI:** Giảm từ 9,600 tokens xuống 54 tokens (**Giảm 99.4%** nhờ lưu ảnh ra file `.png` thay vì nạp Base64 thô vào context).
 * **Tổng hiệu suất tiết kiệm ròng:** Tiết kiệm trung bình **75.4% – 76.0%** tổng lượng token trong một phiên làm việc 10 lượt trao đổi. Toàn bộ dữ liệu được tự động ghi lại tại `telemetry/token-benchmark-<timestamp>.json`.
 
-<div align="center">
+#### Bảng Số Liệu Đối Chứng Đo Lường Trực Tiếp (Raw Telemetry Benchmark Data)
 
-![Bằng chứng Đo lường Cắt giảm Token Thực nghiệm (Token Benchmark Proof)](docs/token-benchmark-proof.png)
+| Hạng Mục Kiểm Thử & Đo Lường | Trước Tối Ưu (Baseline) | Sau Tối Ưu (Optimized) | Lượng Token Cắt Giảm | Tỷ Lệ Tiết Kiệm (%) |
+| :--- | :---: | :---: | :---: | :---: |
+| **System Prompt & Plugin Schemas** | 84,233 tokens / lượt | 20,995 tokens / lượt | 63,238 tokens / lượt | **75.1%** |
+| **Khám phá mã nguồn (CodeGraph JIT)** | 78,151 tokens (52 files) | 14,067 tokens | 64,084 tokens | **82.0%** |
+| **Ảnh minh chứng UI (Visual Proof)** | 9,600 tokens (3 Base64) | 54 tokens (File link) | 9,546 tokens | **99.4%** |
+| **Tổng phiên làm việc hoàn chỉnh (10 Turns)** | **930,081 tokens** | **224,071 tokens** | **706,010 tokens** | **75.9% RÒNG** |
 
-*Biểu đồ đối chứng và nhật ký viễn trắc đo lường định lượng thực tế từ `scripts/token_benchmark.py` (chuẩn `tiktoken cl100k_base`)*
+#### Nhật Ký Chạy Đo Lường Trực Tiếp Từ Terminal (Raw Terminal Output)
 
-</div>
+```text
+======================================================================
+   AI QA AGENT SYSTEM - DETERMINISTIC TOKEN & EFFICIENCY BENCHMARK
+======================================================================
+Tokenizer: tiktoken (cl100k_base)
+
+--- [1] SYSTEM PROMPT & PLUGIN PRUNING AUDIT ---
+Total Installed Plugins: 11
+  * Baseline System Tokens (All Active):   84,233 tokens / turn
+  * Tokens Removed via Pruning:            63,238 tokens / turn
+  * Optimized System Tokens (Active Only): 20,995 tokens / turn
+  >> SYSTEM PROMPT EFFICIENCY GAIN:        75.1% REDUCTION
+
+--- [2] CODEBASE CONTEXT LOADING BENCHMARK ---
+Scope Analyzed:                            52 files (5,022 lines)
+  * Baseline (Full Source File Reading):   78,151 tokens
+  * Optimized (CodeGraph SQLite JIT):      14,067 tokens
+  * Tokens Saved:                          64,084 tokens
+  >> CONTEXT DISCOVERY EFFICIENCY GAIN:    82.0% REDUCTION
+
+--- [3] VISUAL SCREENSHOT EVIDENCE BENCHMARK ---
+Scenario: 3 Verified UI Gaps with Screenshot Proof
+  * Baseline (Raw Base64 in Context):       9,600 tokens
+  * Optimized (Disk File Reference):           54 tokens
+  * Tokens Saved:                           9,546 tokens
+  >> VISUAL EVIDENCE EFFICIENCY GAIN:      99.4% REDUCTION
+
+======================================================================
+   END-TO-END WORKFLOW SAVINGS SUMMARY (10-TURN QA SESSION)
+======================================================================
+  * Total Baseline Token Consumption:      930,081 tokens
+  * Total Optimized Token Consumption:     224,071 tokens
+  * TOTAL TOKENS SAVED:                    706,010 tokens
+  * NET TOKEN EFFICIENCY RATE:            75.9% SAVED
+  * Estimated Cost Savings per Session:   $0.8825 USD
+======================================================================
+```
 
 ---
 
