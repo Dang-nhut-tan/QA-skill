@@ -191,6 +191,7 @@ Số lượng test case co giãn linh hoạt dựa trên độ phức tạp và 
 
 ### BƯỚC 0 — Tiếp Nhận & Chuẩn Hóa Tài Liệu (`module-intake`)
 * **Nhiệm vụ:** Tiếp nhận tài liệu spec từ bạn. Nếu tài liệu là file PDF, Excel hoặc Word, hệ thống tự động dùng **Microsoft MarkItDown** chuyển thành file `.md` sạch sẽ để giữ nguyên bảng biểu và tiết kiệm bộ nhớ.
+* **Chủ động thu thập thông tin Staging & Admin:** Nếu chưa có sẵn trong cấu hình dự án, AI chủ động hỏi bạn URL môi trường Staging, email người dùng test, và tài khoản/mật khẩu trang Quản trị (Admin) để chuẩn bị sẵn sàng cho bước kiểm chứng giao diện Playwright MCP.
 
 ### BƯỚC 1 — Khám Phá Cấu Trúc Mã Nguồn (`codegraph-context-discovery`)
 * **Nhiệm vụ:** Dùng **CodeGraph** (SQLite Knowledge Graph) quét cây cú pháp tĩnh (AST) để vẽ bản đồ liên kết không giới hạn độ sâu giữa giao diện, dịch vụ xử lý, logic phân quyền và cơ sở dữ liệu.

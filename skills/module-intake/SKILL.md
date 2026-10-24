@@ -2,14 +2,15 @@
 name: module-intake
 description: >-
   Receives the module testing request, detects available documentation and source code,
-  identifies repository capabilities, and initializes the persistent QA workflow state.
+  identifies repository capabilities, collects staging and admin environment credentials beforehand,
+  and initializes the persistent QA workflow state.
   Use when the user starts a new testing request or specifies a target module to test.
 ---
 
 # Skill: Module Intake (Step 0)
 
 ## 1. Description & Trigger Conditions
-* **Purpose:** Intake the user's testing request, assess repository context, inspect existing documentation, and initialize workflow tracking in `.qa-state.json`.
+* **Purpose:** Intake the user's testing request, assess repository context, inspect existing documentation, proactively collect staging and admin environment credentials if missing, and initialize workflow tracking in `.qa-state.json`.
 * **Triggers:**
   * User requests testing for a feature or module (e.g., *"Test the Login module"*, *"Analyze and test Checkout"*, *"Tạo test case cho phân hệ Điểm danh"*).
   * Direct invocation by `workflow-orchestrator`.
@@ -19,7 +20,7 @@ description: >-
   * Target module name or description.
 * **Optional:**
   * Requirement documents (`.md`, `.pdf`, `.docx`, Swagger/OpenAPI specs).
-  * User stories, acceptance criteria, or screenshots.
+  * Staging URL, test user email, and Admin page credentials (username & password).
   * Explicit test focus (e.g., negative tests, security edge cases).
 
 ## 3. Prerequisites
@@ -42,23 +43,36 @@ description: >-
 3. **Inspect Repository Environment:**
    * Determine project structure (root directory, language, package manager).
    * Check tool availability: `codegraph`, `python`, `node`, `playwright`.
-4. **Initialize Workflow State:**
+4. **Proactive Staging & Admin Credentials Collection:**
+   * Inspect existing project configuration (`.env`, `fake/demoAccounts.ts`, `05-admin` configs) for:
+     1. Staging Web URL (e.g., staging domain, local dev port).
+     2. Staging test user email / phone / password.
+     3. Admin Portal URL, Admin Username, and Admin Password.
+   * **If Credentials Are Missing / Unknown:**
+     - Proactively prompt the user in polite Vietnamese during the intake summary:
+       ```text
+       Để phục vụ việc kiểm chứng giao diện thực tế (Playwright MCP) và kiểm tra luồng phân quyền trang quản trị:
+       Xin vui lòng cung cấp (nếu có):
+       1. Đường dẫn Staging (URL web kiểm thử).
+       2. Email / Tài khoản người dùng test.
+       3. Đường dẫn trang Quản trị (Admin) cùng Username & Mật khẩu.
+       (Nếu đang chạy môi trường demo/mock cục bộ, bạn có thể chỉ định: "dùng mock data").
+       ```
+     - Persist provided credentials securely in `.qa-state.json` under `environment.credentials` for subsequent Playwright UI verification in Step 3.
+5. **Initialize Workflow State:**
    * Invoke `python scripts/state_manager.py init "<ModuleName>"` to create or reset `.qa-state.json`.
-   * Record discovered document paths and repository metadata.
+   * Record discovered document paths, repository metadata, and environment details.
 
 ## 5. Expected Outputs
 * Initialized `.qa-state.json` with status `INITIALIZED`.
 * Intake summary report presented in chat:
   * **Language Rule:** Chat communications and intake summary presented to the user must be in clear, polite Vietnamese.
-  * Details: Target module name, discovered documentation, available testing tools, next action transition.
+  * Details: Target module name, discovered documentation, available testing tools, environment/credentials status, next action transition.
 
 ## 6. Failure Handling
 * If repository root is invalid or inaccessible: halt and request the correct path.
 * If documentation is missing: do NOT halt. Proceed using source code as the primary discovery source, but record that requirements are unverified.
+* If user credentials are not provided: fall back to local mock accounts (e.g. `fake/demoAccounts.ts`) and note that external staging was unverified.
 
 ## 7. Human Approval Requirements
 * None at Step 0. Automatically proceed to `codegraph-context-discovery`.
-
-## 8. Completion Criteria
-* State file `.qa-state.json` created with state `INITIALIZED`.
-* Ready to transition to `codegraph-context-discovery`.
