@@ -231,7 +231,7 @@ Hệ thống tuân thủ nghiêm ngặt tôn chỉ: **Optimize Context Consumpti
 ┌────────────────────────────────────────────────────────────────────────┐
 │ 4 TẤM KHIÊN BẢO VỆ TOKEN THÔNG MINH                                    │
 ├───────────────────────────────┬────────────────────────────────────────┤
-│ 1. Tách biệt Khám phá & Nạp   │ Graphify khám phá toàn bộ dependency   │
+│ 1. Tách biệt Khám phá & Nạp   │ CodeGraph khám phá toàn bộ dependency  │
 │    (Decoupled Discovery)      │ không giới hạn depth/node; LLM chỉ     │
 │                               │ truy xuất on-demand các subgraph cần.  │
 ├───────────────────────────────┼────────────────────────────────────────┤
@@ -246,8 +246,20 @@ Hệ thống tuân thủ nghiêm ngặt tôn chỉ: **Optimize Context Consumpti
 └───────────────────────────────┴────────────────────────────────────────┘
 ```
 
-> [!NOTE]
-> Mức độ tiết kiệm token cụ thể phụ thuộc vào dung lượng mã nguồn của từng dự án và được xem là mục tiêu kiến trúc cần đối chứng thực nghiệm (benchmark).
+### 8.1. Công Cụ Đo Lường Viễn Trắc Token Chính Xác (Token Telemetry Benchmark)
+
+Hệ thống tích hợp công cụ đo lường định lượng `scripts/token_benchmark.py` sử dụng bộ tokenizer chuẩn `tiktoken` (`cl100k_base`) để đối chứng chính xác lượng token tiêu thụ trước và sau tối ưu.
+
+**Cú pháp kiểm tra định lượng:**
+```powershell
+python scripts/token_benchmark.py "<đường_dẫn_repo>" "<tên_phân_hệ>"
+```
+
+**Kết quả đối chứng thực tế trên dự án VivaOffice:**
+* **Cắt giảm System Prompt:** Giảm từ 84,233 tokens xuống 20,995 tokens (**Giảm 75.1%** trên mỗi lượt trao đổi).
+* **Cắt giảm Đọc mã nguồn:** Giảm từ 78,151 tokens xuống 14,067 tokens (**Giảm 82.0%** nhờ CodeGraph SQLite JIT).
+* **Cắt giảm Ảnh minh chứng UI:** Giảm từ 9,600 tokens xuống 54 tokens (**Giảm 99.4%** nhờ lưu ảnh ra file `.png` thay vì nạp Base64 thô vào context).
+* **Tổng hiệu suất tiết kiệm ròng:** Tiết kiệm trung bình **75.4% – 76.0%** tổng lượng token trong một phiên làm việc 10 lượt trao đổi. Toàn bộ dữ liệu được tự động ghi lại tại `telemetry/token-benchmark-<timestamp>.json`.
 
 ---
 
@@ -260,13 +272,13 @@ qa-agent-system/
 ├── README.md                                # Cẩm nang vận hành chi tiết này
 ├── skills/                                  # 11 Kỹ năng chuyên biệt hóa (Modular Skills)
 │   ├── module-intake/SKILL.md               # [BƯỚC 0] Tiếp nhận, chuẩn hóa tài liệu bằng MarkItDown
-│   ├── graphify-context-discovery/SKILL.md  # [BƯỚC 1] Khám phá AST và lập bản đồ luồng chạy
+│   ├── codegraph-context-discovery/SKILL.md # [BƯỚC 1] Khám phá AST và lập bản đồ luồng chạy bằng CodeGraph SQLite
 │   ├── requirement-gap-analysis/SKILL.md    # [BƯỚC 2] Tìm kẽ hở & xuất requirement-gaps.md -> ĐIỂM DỪNG 1
 │   ├── playwright-investigation/SKILL.md    # [BƯỚC 3] Thám thính runtime bằng Playwright MCP
 │   ├── testcase-design/SKILL.md             # [BƯỚC 4] Thiết kế Test Case theo Ma trận Rủi ro (Tier S/M/L)
 │   ├── testcase-review-export/SKILL.md      # [BƯỚC 5] Tự soát chất lượng & xuất file Excel -> ĐIỂM DỪNG 2
 │   ├── automation-readiness/SKILL.md        # [PHA 6.1] Bóc tách các ca Automation Ready = Yes
-│   ├── automation-implementation/SKILL.md   # [PHA 6.2-6.3] Tái sử dụng POM, viết test Ponytail
+│   ├── automation-implementation/SKILL.md   # [PHA 6.2-6.3] Tái sử dụng POM, viết test Playwright
 │   ├── test-execution-debugging/SKILL.md    # [PHA 6.4] Chạy Playwright CLI & tự động sửa lỗi kịch bản
 │   ├── continuous-learning/SKILL.md         # [BƯỚC 7] Đúc kết bài học dự án & tự cập nhật vào Skill
 │   └── workflow-orchestrator/SKILL.md       # Cỗ máy trạng thái điều phối trung tâm
@@ -279,7 +291,9 @@ qa-agent-system/
 │   ├── export_testcases.py                  # Xuất bộ test case ra file .xlsx hoàn chỉnh
 │   ├── traceability_validator.py            # Kiểm soát truy vết yêu cầu 2 chiều & chống trùng lặp
 │   ├── read_approved_testcases.py           # Đọc và phân tích file Excel người dùng duyệt
+│   ├── token_benchmark.py                   # Đo lường định lượng token chính xác bằng tiktoken (cl100k_base)
 │   └── validate_system.py                   # Bộ kiểm thử xác thực toàn diện (9 bài test)
+├── telemetry/                               # Nhật ký viễn trắc đo lường token tự động (JSON)
 └── references/
     ├── severity-guidelines.md               # Hướng dẫn phân loại mức độ nghiêm trọng (Chặn / Sai / Nhỏ)
     ├── business-terminology-guide.md        # Cẩm nang chuẩn hoá ngôn ngữ nghiệp vụ dễ hiểu cho Non-IT

@@ -1,0 +1,60 @@
+{
+  "timestamp": "2026-10-24T11:43:25.614797",
+  "tokenizer": "cl100k_base",
+  "turns_simulated": 10,
+  "plugin_pruning": {
+    "baseline_tokens_per_turn": 84233,
+    "optimized_tokens_per_turn": 20995,
+    "saved_per_turn": 63238,
+    "reduction_percent": 75.1
+  },
+  "context_discovery": {
+    "file_count": 12,
+    "total_lines": 792,
+    "baseline_full_file_tokens": 10748,
+    "optimized_codegraph_jit_tokens": 1934,
+    "tokens_saved": 8814,
+    "saving_ratio": 82.0,
+    "sample_files": [
+      {
+        "path": "04-src\\src\\features\\dang-nhap\\AuthBackdrop.tsx",
+        "tokens": 634,
+        "lines": 62
+      },
+      {
+        "path": "04-src\\src\\features\\dang-nhap\\AuthBrandHeader.tsx",
+        "tokens": 585,
+        "lines": 53
+      },
+      {
+        "path": "04-src\\src\\features\\dang-nhap\\AuthShell.tsx",
+        "tokens": 1370,
+        "lines": 121
+      },
+      {
+        "path": "04-src\\src\\features\\dang-nhap\\AuthVersionFooter.tsx",
+        "tokens": 288,
+        "lines": 26
+      },
+      {
+        "path": "04-src\\src\\features\\dang-nhap\\DangNhapPage.tsx",
+        "tokens": 2291,
+        "lines": 142
+      }
+    ]
+  },
+  "visual_evidence": {
+    "num_screenshots": 3,
+    "baseline_base64_tokens": 9600,
+    "optimized_link_tokens": 54,
+    "tokens_saved": 9546,
+    "saving_ratio": 99.4
+  },
+  "session_totals": {
+    "baseline_tokens": 862678,
+    "optimized_tokens": 211938,
+    "tokens_saved": 650740,
+    "reduction_percent": 75.4,
+    "cost_saved_usd": 0.8134
+  }
+}

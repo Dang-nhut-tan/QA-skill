@@ -1,0 +1,60 @@
+{
+  "timestamp": "2026-10-24T11:43:31.576349",
+  "tokenizer": "cl100k_base",
+  "turns_simulated": 10,
+  "plugin_pruning": {
+    "baseline_tokens_per_turn": 84233,
+    "optimized_tokens_per_turn": 20995,
+    "saved_per_turn": 63238,
+    "reduction_percent": 75.1
+  },
+  "context_discovery": {
+    "file_count": 57,
+    "total_lines": 4570,
+    "baseline_full_file_tokens": 85131,
+    "optimized_codegraph_jit_tokens": 15323,
+    "tokens_saved": 69808,
+    "saving_ratio": 82.0,
+    "sample_files": [
+      {
+        "path": "04-src\\src\\features\\cham-cong\\buildPunchInput.ts",
+        "tokens": 1016,
+        "lines": 43
+      },
+      {
+        "path": "04-src\\src\\features\\cham-cong\\CaBoQuenNotice.tsx",
+        "tokens": 1817,
+        "lines": 101
+      },
+      {
+        "path": "04-src\\src\\features\\cham-cong\\ChamCongCardSwitch.tsx",
+        "tokens": 2684,
+        "lines": 150
+      },
+      {
+        "path": "04-src\\src\\features\\cham-cong\\ChamCongErrorFrame.tsx",
+        "tokens": 514,
+        "lines": 40
+      },
+      {
+        "path": "04-src\\src\\features\\cham-cong\\ChamCongLoadingCard.tsx",
+        "tokens": 161,
+        "lines": 12
+      }
+    ]
+  },
+  "visual_evidence": {
+    "num_screenshots": 3,
+    "baseline_base64_tokens": 9600,
+    "optimized_link_tokens": 54,
+    "tokens_saved": 9546,
+    "saving_ratio": 99.4
+  },
+  "session_totals": {
+    "baseline_tokens": 937061,
+    "optimized_tokens": 225327,
+    "tokens_saved": 711734,
+    "reduction_percent": 76.0,
+    "cost_saved_usd": 0.8897
+  }
+}
