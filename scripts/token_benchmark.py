@@ -191,9 +191,9 @@ def run_benchmark(repo_path: str = None, module_name: str = None):
     # 2. Codebase Discovery Benchmark
     print("--- [2] CODEBASE CONTEXT LOADING BENCHMARK ---")
     if not repo_path:
-        repo_path = "C:/intern/vivaoffice"
+        repo_path = str(Path.cwd())
     if not module_name:
-        module_name = "don-tu"
+        module_name = "auth"
 
     module_data = profile_module_context(repo_path, module_name)
     if module_data:
@@ -266,6 +266,6 @@ def run_benchmark(repo_path: str = None, module_name: str = None):
     return telemetry_payload
 
 if __name__ == "__main__":
-    repo = sys.argv[1] if len(sys.argv) > 1 else "C:/intern/vivaoffice"
-    mod = sys.argv[2] if len(sys.argv) > 2 else "don-tu"
+    repo = sys.argv[1] if len(sys.argv) > 1 else str(Path.cwd())
+    mod = sys.argv[2] if len(sys.argv) > 2 else "auth"
     run_benchmark(repo, mod)

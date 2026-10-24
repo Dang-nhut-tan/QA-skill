@@ -44,7 +44,7 @@ description: >-
    * Determine project structure (root directory, language, package manager).
    * Check tool availability: `codegraph`, `python`, `node`, `playwright`.
 4. **Proactive Staging & Admin Credentials Collection:**
-   * Inspect existing project configuration (`.env`, `fake/demoAccounts.ts`, `05-admin` configs) for:
+   * Inspect existing project configuration (`.env`, `.env.local`, test fixtures, mock data) for:
      1. Staging Web URL (e.g., staging domain, local dev port).
      2. Staging test user email / phone / password.
      3. Admin Portal URL, Admin Username, and Admin Password.
@@ -72,7 +72,7 @@ description: >-
 ## 6. Failure Handling
 * If repository root is invalid or inaccessible: halt and request the correct path.
 * If documentation is missing: do NOT halt. Proceed using source code as the primary discovery source, but record that requirements are unverified.
-* If user credentials are not provided: fall back to local mock accounts (e.g. `fake/demoAccounts.ts`) and note that external staging was unverified.
+* If user credentials are not provided: fall back to local mock data/test accounts (or unauthenticated flows) and note that external staging was unverified.
 
 ## 7. Human Approval Requirements
 * None at Step 0. Automatically proceed to `codegraph-context-discovery`.

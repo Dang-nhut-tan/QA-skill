@@ -43,8 +43,8 @@
   - *Cài đặt thực tế:* `LOGIN_THROTTLE.MAX_ATTEMPTS = 5` (Chưa có logic tự giải phóng phiên).
   - *Tài liệu đặc tả:* Tài liệu không ghi rõ thời gian khóa bao lâu hoặc do admin mở.
 * **Các bước tái hiện trên giao diện (UI Reproduction Steps):**
-  1. Mở trang `/dang-nhap?web=thu`.
-  2. Chọn Tab 'Mã nhân viên', nhập mã `VG000101` và mật khẩu sai liên tục 5 lần.
+  1. Mở trang đăng nhập (`/login`).
+  2. Nhập tài khoản `test_user01` và mật khẩu sai liên tục 5 lần.
   3. Bấm nút 'Đăng nhập' ở lần thứ 5 và quan sát phản hồi.
 * **Chuỗi ảnh chụp minh chứng tái hiện từ Playwright MCP:**
   - *Ảnh 1 — Trạng thái nhập liệu trước khi bấm:*  

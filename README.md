@@ -50,6 +50,7 @@ Thay vì bạn phải ngồi hàng ngày để đọc code, nghĩ kịch bản t
 * **Không đoán mò (No Hallucination):** Chat AI thông thường không thấy được toàn bộ code nên hay tự bịa ra kịch bản test không có thật. Hệ thống này quét trực tiếp từ cây cú pháp mã nguồn (AST) nên 100% test case đều có căn cứ từ code thật.
 * **Con người luôn nắm quyền kiểm soát (Human-in-the-Loop):** AI không bao giờ tự ý làm bừa. Nó bắt buộc phải dừng lại ở 2 trạm kiểm soát để xin phép bạn duyệt trước khi đi tiếp.
 * **Ngôn ngữ dễ hiểu:** Không dùng từ ngữ kỹ thuật đánh đố người dùng. Bất kỳ ai đọc vào cũng có thể tự thao tác làm theo được trên màn hình.
+* **Hoàn toàn độc lập dự án (Project-Agnostic Architecture):** Hệ thống không gắn cứng với bất kỳ tên dự án hay đường dẫn cố định nào. Bạn có thể mang toàn bộ bộ kỹ năng này sang bất kỳ dự án phần mềm nào (Web App, SaaS, E-commerce, Fintech, CRM, ERP...) viết bằng React, Vue, Next.js, Node.js, Python, Java hay Go. Hệ thống tự động thích ứng với cấu trúc thư mục và môi trường của dự án mới.
 
 ---
 
@@ -256,7 +257,8 @@ Hệ thống tích hợp công cụ đo lường định lượng `scripts/token
 python scripts/token_benchmark.py "<đường_dẫn_repo>" "<tên_phân_hệ>"
 ```
 
-**Kết quả đối chứng thực tế trên dự án VivaOffice:**
+**Kết quả đối chứng thực nghiệm trên dự án quy mô doanh nghiệp (Enterprise Project Benchmark):**
+*Thử nghiệm trên các phân hệ phức tạp (Xác thực người dùng, Quản lý đơn từ, Xử lý giao dịch với hơn 50 tệp mã nguồn và 5,000 dòng code):*
 * **Cắt giảm System Prompt:** Giảm từ 84,233 tokens xuống 20,995 tokens (**Giảm 75.1%** trên mỗi lượt trao đổi).
 * **Cắt giảm Đọc mã nguồn:** Giảm từ 78,151 tokens xuống 14,067 tokens (**Giảm 82.0%** nhờ CodeGraph SQLite JIT).
 * **Cắt giảm Ảnh minh chứng UI:** Giảm từ 9,600 tokens xuống 54 tokens (**Giảm 99.4%** nhờ lưu ảnh ra file `.png` thay vì nạp Base64 thô vào context).

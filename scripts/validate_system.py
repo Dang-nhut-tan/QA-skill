@@ -96,20 +96,21 @@ def check_codegraph_tool():
     return "CodeGraph CLI not found in PATH"
 
 def check_playwright_cli():
-    local_cli = Path("C:/intern/vivaoffice/04-src/node_modules/@playwright/test/cli.js")
-    if local_cli.exists():
-        try:
-            res = subprocess.run(["node", str(local_cli), "--version"], capture_output=True, text=True, shell=True, timeout=5)
-            if res.returncode == 0 and res.stdout.strip():
-                return f"Operational (local): {res.stdout.strip()}"
-        except Exception:
-            pass
     try:
         res = subprocess.run(["npx", "--yes", "playwright", "--version"], capture_output=True, text=True, shell=True, timeout=5)
         if res.returncode == 0 and res.stdout.strip():
             return f"Operational: {res.stdout.strip()}"
     except Exception:
         pass
+    for cur in [Path.cwd(), *Path.cwd().parents]:
+        for cand in [cur / "node_modules" / "@playwright" / "test" / "cli.js", cur / "04-src" / "node_modules" / "@playwright" / "test" / "cli.js"]:
+            if cand.exists():
+                try:
+                    res = subprocess.run(["node", str(cand), "--version"], capture_output=True, text=True, shell=True, timeout=5)
+                    if res.returncode == 0 and res.stdout.strip():
+                        return f"Operational (local): {res.stdout.strip()}"
+                except Exception:
+                    pass
     return "Playwright CLI not available globally" 
 
 def check_markitdown_tool():
