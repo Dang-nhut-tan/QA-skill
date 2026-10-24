@@ -264,6 +264,14 @@ python scripts/token_benchmark.py "<đường_dẫn_repo>" "<tên_phân_hệ>"
 * **Cắt giảm Ảnh minh chứng UI:** Giảm từ 9,600 tokens xuống 54 tokens (**Giảm 99.4%** nhờ lưu ảnh ra file `.png` thay vì nạp Base64 thô vào context).
 * **Tổng hiệu suất tiết kiệm ròng:** Tiết kiệm trung bình **75.4% – 76.0%** tổng lượng token trong một phiên làm việc 10 lượt trao đổi. Toàn bộ dữ liệu được tự động ghi lại tại `telemetry/token-benchmark-<timestamp>.json`.
 
+<div align="center">
+
+![Bằng chứng Đo lường Cắt giảm Token Thực nghiệm (Token Benchmark Proof)](docs/token-benchmark-proof.png)
+
+*Biểu đồ đối chứng và nhật ký viễn trắc đo lường định lượng thực tế từ `scripts/token_benchmark.py` (chuẩn `tiktoken cl100k_base`)*
+
+</div>
+
 ---
 
 ## 9. Cấu Trúc Thư Mục & 11 Kỹ Năng Độc Lập
