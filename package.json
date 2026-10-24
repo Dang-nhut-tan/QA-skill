@@ -1,7 +1,7 @@
 {
   "name": "qa-agent-system",
   "version": "1.0.0",
-  "description": "Evidence-based, Graphify-first, human-controlled QA testing workflow with Playwright CLI",
+  "description": "Evidence-based, CodeGraph-first, human-controlled QA testing workflow with Playwright CLI",
   "type": "module",
   "scripts": {
     "test": "playwright test",
@@ -18,7 +18,7 @@
     "playwright-cli",
     "automation",
     "testing",
-    "graphify",
+    "codegraph",
     "antigravity"
   ],
   "license": "MIT"

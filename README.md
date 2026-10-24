@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Engine: Graphify](https://img.shields.io/badge/Core_Engine-Graphify_AST-2563EB?style=for-the-badge&logo=git)
+![Engine: CodeGraph](https://img.shields.io/badge/Core_Engine-CodeGraph_SQLite-2563EB?style=for-the-badge&logo=sqlite&logoColor=white)
 ![Automation: Playwright](https://img.shields.io/badge/Execution-Playwright_CLI_&_MCP-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
 ![Document: MarkItDown](https://img.shields.io/badge/Ingestion-Microsoft_MarkItDown-0284C7?style=for-the-badge&logo=microsoft)
 ![Optimization: Ponytail](https://img.shields.io/badge/Coding_Style-Ponytail_YAGNI-EA580C?style=for-the-badge)
@@ -192,9 +192,9 @@ Số lượng test case co giãn linh hoạt dựa trên độ phức tạp và 
 ### BƯỚC 0 — Tiếp Nhận & Chuẩn Hóa Tài Liệu (`module-intake`)
 * **Nhiệm vụ:** Tiếp nhận tài liệu spec từ bạn. Nếu tài liệu là file PDF, Excel hoặc Word, hệ thống tự động dùng **Microsoft MarkItDown** chuyển thành file `.md` sạch sẽ để giữ nguyên bảng biểu và tiết kiệm bộ nhớ.
 
-### BƯỚC 1 — Khám Phá Cấu Trúc Mã Nguồn (`graphify-context-discovery`)
-* **Nhiệm vụ:** Dùng **Graphify** quét cây cú pháp tĩnh (AST) để vẽ bản đồ liên kết không giới hạn độ sâu giữa giao diện, dịch vụ xử lý, logic phân quyền và cơ sở dữ liệu.
-* **Nguyên tắc cốt lõi:** **Tối ưu tiêu thụ ngữ cảnh, KHÔNG thu hẹp phạm vi khám phá (Optimize Context Consumption, NOT Discovery Coverage).** Graphify được tự do khám phá 100% dependency liên quan, bao gồm cả phụ thuộc gián tiếp và xuyên module. LLM chỉ nạp theo nhu cầu (Signature-first) để tiết kiệm token mà không bao giờ bỏ sót góc khuất nghiệp vụ.
+### BƯỚC 1 — Khám Phá Cấu Trúc Mã Nguồn (`codegraph-context-discovery`)
+* **Nhiệm vụ:** Dùng **CodeGraph** (SQLite Knowledge Graph) quét cây cú pháp tĩnh (AST) để vẽ bản đồ liên kết không giới hạn độ sâu giữa giao diện, dịch vụ xử lý, logic phân quyền và cơ sở dữ liệu.
+* **Nguyên tắc cốt lõi:** **Tối ưu tiêu thụ ngữ cảnh, KHÔNG thu hẹp phạm vi khám phá (Optimize Context Consumption, NOT Discovery Coverage).** CodeGraph được tự do khám phá 100% dependency liên quan, bao gồm cả phụ thuộc gián tiếp và xuyên module. LLM chỉ nạp theo nhu cầu (Signature-first JIT) để tiết kiệm hơn 80% token đọc code mà không bao giờ bỏ sót góc khuất nghiệp vụ.
 
 ### BƯỚC 2 — Phát Hiện Kẽ Hở Nghiệp Vụ (`requirement-gap-analysis`)
 * **Nhiệm vụ:** Đối soát giữa tài liệu đặc tả và mã nguồn thực tế. Phân loại 5 nhóm bất cập (mơ hồ yêu cầu, nghi ngờ lỗi code, thiếu spec, giới hạn môi trường, lỗi xác định).
@@ -330,10 +330,13 @@ Nếu bạn mới bước chân vào ngành kiểm thử, bảng tra cứu này 
 # 1. Cài đặt thư viện xử lý Excel và tài liệu:
 pip install openpyxl markitdown "markitdown[all]"
 
-# 2. Cài đặt Graphify (công cụ phân tích cấu trúc mã nguồn):
-uv tool install graphifyy
-# Hoặc cài qua pip:
-pip install graphifyy
+# 2. Cài đặt CodeGraph (công cụ phân tích cấu trúc mã nguồn qua SQLite Knowledge Graph):
+npm install -g codegraph
+# Kiểm tra phiên bản hoạt động:
+codegraph --version
+
+# Cài đặt thư viện đo lường token chính xác:
+pip install tiktoken
 
 # 3. Cài đặt Playwright (công cụ tự động hoá trình duyệt):
 npm install -g playwright
