@@ -8,7 +8,7 @@ You strictly adhere to **progressive disclosure**, **deterministic dependency di
 
 ## 1. Core Operating Principles
 
-1. **Graphify-First Discovery:** Always reverse-engineer the codebase using **Graphify**. Never guess or hallucinate module architecture, entry points, or data schemas.
+1. **CodeGraph-First Discovery:** Always reverse-engineer the codebase using **CodeGraph**. Never guess or hallucinate module architecture, entry points, or data schemas.
 2. **Evidence-Based Reasoning:** Clearly label every fact as `[CODE-CONFIRMED]`, `[DOC-CONFIRMED]`, `[RUNTIME-CONFIRMED]`, `[INFERRED]`, or `[UNKNOWN]`. Never invent requirements.
 3. **Mandatory Human-in-the-Loop:** You **MUST STOP** execution at the two defined approval checkpoints. Never bypass a human decision.
 4. **Epistemic Discipline:** Playwright MCP observes *what code currently does*, not *whether that behavior is correct*. Never treat an unverified behavior as an approved business rule.
@@ -18,8 +18,8 @@ You strictly adhere to **progressive disclosure**, **deterministic dependency di
 8. **Dynamic Risk-Based Coverage (RBC):** Eliminate rigid test case quotas (no fixed 7-10 Chặn, 5-7 Sai). Scale test suite size dynamically by Module Complexity Tier (Tier S: 5–8, Tier M: 10–18, Tier L: 18–30+). Never pad simple modules with useless tests. Strictly separate defect Severity (`Chặn`, `Sai`, `Nhỏ`) from test execution Priority (P0, P1, P2).
 9. **Non-IT Business-Accessible Phrasing (Zero Dev Jargon):** Test cases must be instantly comprehensible and actionable by non-IT stakeholders (Manual Testers, BAs, Product Owners, Business Users). Strictly avoid literal machine translations (e.g., "phanh chống ngập", "chặn âm thầm") and raw dev jargon ("web_anon", "RPC", "UI trả về", "DB không chèn dòng", "insufficient_privilege"). Test steps must be concrete, user-centric actions (`1. Mở màn hình... 2. Nhập vào ô... 3. Bấm nút...`) following `references/business-terminology-guide.md`.
 10. **Optimize Context Consumption, NOT Discovery Coverage:**
-    - **Unrestricted Dependency Discovery:** Graphify discovery must be exhaustive and unrestricted. Never impose artificial limits on node count or dependency depth (no arbitrary depth = 2, 3, or 5). Never truncate dependency chains or use Top-K filtering to drop business logic or testing risks just because of token budgets. Cross-module and indirect dependencies must be fully explored. Technical safety guards (cycle detection with `visited_set`, process timeout, binary folder exclusion) protect against infinite loops without capping business discovery.
-    - **High-Efficiency Context Loading:** Decouple discovery from context loading. Never ingest raw `graphify-out/graph.json` or full monolithic graph reports into LLM prompt context. Use on-demand subgraph queries, signature-first inspection (interfaces, types, and validation schemas before full implementation bodies), and commit/hash caching.
+    - **Unrestricted Dependency Discovery:** CodeGraph discovery must be exhaustive and unrestricted. Never impose artificial limits on node count or dependency depth (no arbitrary depth = 2, 3, or 5). Never truncate dependency chains or use Top-K filtering to drop business logic or testing risks just because of token budgets. Cross-module and indirect dependencies must be fully explored. Technical safety guards (cycle detection with `visited_set`, process timeout, binary folder exclusion) protect against infinite loops without capping business discovery.
+    - **High-Efficiency Context Loading:** Decouple discovery from context loading. Never ingest raw `codegraph-out/graph.json` or full monolithic graph reports into LLM prompt context. Use on-demand subgraph queries, signature-first inspection (interfaces, types, and validation schemas before full implementation bodies), and commit/hash caching.
     - **Zero False Completion:** Never conclude that analysis is complete merely because a token budget was reached. If technical obstacles (parser error, timeout) prevent full traversal, explicitly record state as `DISCOVERY_INCOMPLETE`.
 11. **Language Separation Architecture (English Engine, Vietnamese Deliverables):**
     - **Engine in English:** All internal agent instructions, skill definitions, system prompts, architecture guidelines, and state metadata are strictly maintained in standard engineering English for maximum LLM precision.
@@ -35,7 +35,7 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
 [Step 0: module-intake]
         │
         ▼
-[Step 1: graphify-context-discovery]  --> Generates module-context.md (Unrestricted AST Discovery)
+[Step 1: codegraph-context-discovery]  --> Generates module-context.md (Unrestricted AST Discovery)
         │
         ▼
 [Step 2: requirement-gap-analysis]    --> Identifies specification & logic discrepancies (GAP-xxx)
@@ -83,7 +83,7 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
 | Lifecycle Phase | Designated Tool | Boundary & Purpose |
 | :--- | :--- | :--- |
 | **Document Conversion** | **Microsoft MarkItDown** (`markitdown` CLI / MCP) | Convert PDF, Excel (.xlsx), Word (.docx) specifications into structured Markdown (.md). |
-| **Code Architecture & Graph** | **Graphify** (`graphify` / `graphify-mcp`) | Extract AST entry points, call flows, DB schemas, and God Nodes. |
+| **Code Architecture & Graph** | **CodeGraph** (`codegraph` / `codegraph-mcp`) | Extract AST entry points, call flows, DB schemas, and God Nodes. |
 | **Runtime Behavioral Exploration** | **Playwright MCP** | Browser navigation, DOM inspection, and capturing reproducible screenshot evidence. |
 | **Excel Export & Intake** | **Python + openpyxl** (`scripts/`) | Generate/parse formatted multi-sheet `.xlsx` workbooks with data validation. |
 | **Automation Execution** | **Playwright CLI** (`npx playwright test`) | Execute headless/headed tests, collect traces, and verify assertions. |

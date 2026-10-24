@@ -24,7 +24,7 @@ sys.path.insert(0, str(SYSTEM_ROOT / "scripts"))
 
 EXPECTED_SKILLS = [
     "module-intake",
-    "graphify-context-discovery",
+    "codegraph-context-discovery",
     "requirement-gap-analysis",
     "playwright-investigation",
     "testcase-design",
@@ -88,17 +88,28 @@ def validate_excel_template():
     assert "Status" in headers, "Status missing"
     return f"Excel template verified with sheets: {wb.sheetnames} and 13 columns including Status"
 
-def check_graphify_tool():
-    res = subprocess.run(["graphify", "--version"], capture_output=True, text=True, shell=True)
+def check_codegraph_tool():
+    res = subprocess.run(["codegraph", "--version"], capture_output=True, text=True, shell=True)
     if res.returncode == 0:
         return f"Operational: {res.stdout.strip()}"
-    return "Graphify CLI not found in PATH"
+    return "CodeGraph CLI not found in PATH"
 
 def check_playwright_cli():
-    res = subprocess.run(["npx", "playwright", "--version"], capture_output=True, text=True, shell=True)
-    if res.returncode == 0:
-        return f"Operational: {res.stdout.strip()}"
-    return "Playwright CLI not available globally (checked via npx)"
+    local_cli = Path("C:/intern/vivaoffice/04-src/node_modules/@playwright/test/cli.js")
+    if local_cli.exists():
+        try:
+            res = subprocess.run(["node", str(local_cli), "--version"], capture_output=True, text=True, shell=True, timeout=5)
+            if res.returncode == 0 and res.stdout.strip():
+                return f"Operational (local): {res.stdout.strip()}"
+        except Exception:
+            pass
+    try:
+        res = subprocess.run(["npx", "--yes", "playwright", "--version"], capture_output=True, text=True, shell=True, timeout=5)
+        if res.returncode == 0 and res.stdout.strip():
+            return f"Operational: {res.stdout.strip()}"
+    except Exception:
+        pass
+    return "Playwright CLI not available globally" 
 
 def check_markitdown_tool():
     res = subprocess.run(["markitdown", "--version"], capture_output=True, text=True, shell=True)
@@ -302,7 +313,7 @@ def main():
     results.append(check("1. Directory & File Structure", validate_file_structure, compact))
     results.append(check("2. Skill Metadata & Frontmatter", validate_skill_metadata, compact))
     results.append(check("3. Excel Template Schema", validate_excel_template, compact))
-    results.append(check("4. Graphify CLI Verification", check_graphify_tool, compact))
+    results.append(check("4. CodeGraph CLI Verification", check_codegraph_tool, compact))
     results.append(check("5. Playwright CLI Verification", check_playwright_cli, compact))
     results.append(check("6. MarkItDown CLI Verification", check_markitdown_tool, compact))
     results.append(check("7. MCP Server Configurations", check_mcp_config, compact))

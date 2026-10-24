@@ -2,18 +2,5 @@
   "name": "qa-agent-system",
   "displayName": "QA Agent Testing System",
   "version": "1.0.0",
-  "description": "Evidence-based, Graphify-first, human-controlled QA testing workflow for Google Antigravity and compatible agents.",
-  "skills": "./skills",
-  "author": {
-    "name": "Antigravity QA Architect"
-  },
-  "keywords": [
-    "qa",
-    "testing",
-    "graphify",
-    "playwright",
-    "testcases",
-    "automation",
-    "sdet"
-  ]
+  "description": "Evidence-based, CodeGraph-first, human-controlled QA testing workflow for Google Antigravity and compatible agents."
 }

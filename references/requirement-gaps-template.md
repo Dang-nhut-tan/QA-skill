@@ -3,7 +3,7 @@
 
 > **Thời điểm lập:** [YYYY-MM-DD HH:MM:SS]  
 > **Trạng thái:** `WAITING_FOR_REQUIREMENT_CLARIFICATION`  
-> **Công cụ xác minh:** Graphify AST (Mã nguồn) & Playwright MCP (Kiểm chứng UI thực tế)  
+> **Công cụ xác minh:** CodeGraph AST (Mã nguồn) & Playwright MCP (Kiểm chứng UI thực tế)  
 > **Tài liệu đối soát:** [Tên tài liệu đặc tả hoặc 'Không có tài liệu, đối soát trực tiếp từ code']
 
 ---

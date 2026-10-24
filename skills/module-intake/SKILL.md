@@ -37,11 +37,11 @@ description: >-
        Execute MarkItDown to convert it into a clean Markdown (`.md`) file:
        `markitdown "<input_file>" -o "<output_file>.md"`
        (or invoke MCP tool `convert_to_markdown` from the `markitdown` server).
-     * Use the converted `.md` file as the primary text specification for Graphify ingestion and Gap Analysis.
+     * Use the converted `.md` file as the primary text specification for CodeGraph ingestion and Gap Analysis.
    * Record paths and compute SHA-256 hashes of input and converted documents for traceability.
 3. **Inspect Repository Environment:**
    * Determine project structure (root directory, language, package manager).
-   * Check tool availability: `graphify`, `python`, `node`, `playwright`.
+   * Check tool availability: `codegraph`, `python`, `node`, `playwright`.
 4. **Initialize Workflow State:**
    * Invoke `python scripts/state_manager.py init "<ModuleName>"` to create or reset `.qa-state.json`.
    * Record discovered document paths and repository metadata.
@@ -57,8 +57,8 @@ description: >-
 * If documentation is missing: do NOT halt. Proceed using source code as the primary discovery source, but record that requirements are unverified.
 
 ## 7. Human Approval Requirements
-* None at Step 0. Automatically proceed to `graphify-context-discovery`.
+* None at Step 0. Automatically proceed to `codegraph-context-discovery`.
 
 ## 8. Completion Criteria
 * State file `.qa-state.json` created with state `INITIALIZED`.
-* Ready to transition to `graphify-context-discovery`.
+* Ready to transition to `codegraph-context-discovery`.

@@ -11,7 +11,7 @@ description: >-
 ## 1. Description & Trigger Conditions
 * **Purpose:** Audit the reconstructed context against available requirements, identify ambiguities and potential defects, trigger live UI verification with screenshot capture via Playwright MCP, compile a visual BA/PO clarification report (`<module>-gaps.md`), and **halt execution for mandatory human confirmation**.
 * **Triggers:**
-  * Completed `graphify-context-discovery` in full workflow orchestrator (`GAP_ANALYSIS`).
+  * Completed `codegraph-context-discovery` in full workflow orchestrator (`GAP_ANALYSIS`).
   * **Standalone Invocation:** Direct user request to investigate gaps for a module (e.g., *"Điều tra bất cập phân hệ Đăng Nhập"*, *"Phân tích gap module <Module>"*).
 
 ## 2. Inputs
@@ -22,12 +22,12 @@ description: >-
   * `.qa-state.json`.
 
 ## 3. Prerequisites & Standalone Execution Architecture
-* **Full Workflow Mode:** Expects `module-context.md` from Step 1 (`graphify-context-discovery`).
+* **Full Workflow Mode:** Expects `module-context.md` from Step 1 (`codegraph-context-discovery`).
 * **Standalone Execution Mode (Single-Skill Trigger):**
   * When invoked directly with a module name:
-    1. **Cache Check:** Check if `module-context.md` or existing Graphify dependency cache exists for the module.
+    1. **Cache Check:** Check if `module-context.md` or existing CodeGraph dependency cache exists for the module.
     2. **Cache Hit:** Immediately reuses the AST context—zero token waste, skips re-parsing, and immediately jumps to discrepancy detection.
-    3. **Cache Miss (Cold Start):** Automatically runs Step 1 (`graphify-context-discovery`) in the background to discover unrestricted AST dependencies first, then continues seamlessly.
+    3. **Cache Miss (Cold Start):** Automatically runs Step 1 (`codegraph-context-discovery`) in the background to discover unrestricted AST dependencies first, then continues seamlessly.
     4. **Focused Output:** Produces the dedicated visual report `<module-name>-gaps.md`, provides the clickable link, and stops at Gate 1. It does NOT force subsequent test case design or automation steps unless explicitly requested by the user.
 
 ## 4. Step-by-Step Execution Instructions

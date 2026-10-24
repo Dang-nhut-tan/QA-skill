@@ -24,8 +24,8 @@ description: >-
 ```mermaid
 stateDiagram-v2
     [*] --> INITIALIZED: Step 0 (module-intake)
-    INITIALIZED --> CONTEXT_DISCOVERY: Step 1 (graphify-context-discovery)
-    CONTEXT_DISCOVERY --> GAP_ANALYSIS: Unrestricted Graphify Success
+    INITIALIZED --> CONTEXT_DISCOVERY: Step 1 (codegraph-context-discovery)
+    CONTEXT_DISCOVERY --> GAP_ANALYSIS: Unrestricted CodeGraph Success
     CONTEXT_DISCOVERY --> DISCOVERY_INCOMPLETE: Technical Blocker / Parser Failure / Timeout
     DISCOVERY_INCOMPLETE --> CONTEXT_DISCOVERY: Retry / Resolve Technical Blocker
     
@@ -46,7 +46,7 @@ stateDiagram-v2
 
 ## 4. Unrestricted Discovery & Incomplete Discovery Protocol
 * **Core Rule:** **Optimize Context Consumption, NOT Discovery Coverage.**
-* Graphify is permitted to traverse the entire dependency chain (direct, indirect, cross-module) without arbitrary hard limits on node count or depth.
+* CodeGraph is permitted to traverse the entire dependency chain (direct, indirect, cross-module) without arbitrary hard limits on node count or depth.
 * Analysis must never be truncated or culled purely to conserve token budgets.
 * **Incomplete Discovery Protocol:** In the event of parser crashes, execution timeouts, or exhausted physical system resources, the system MUST transition to `DISCOVERY_INCOMPLETE` and report the exact technical bottleneck to the user. Reporting completion for incomplete analyses is strictly prohibited.
 

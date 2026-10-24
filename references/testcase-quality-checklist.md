@@ -48,7 +48,7 @@ Tất cả các ca kiểm thử do Agent thiết kế phải vượt qua bảng 
 
 ## 9. Kiểm Soát Truy Vết Yêu Cầu 2 Chiều & Chống Trùng Lặp (Traceability & Deduplication)
 - [ ] **Bao phủ Yêu cầu Trọng yếu (Forward Coverage):** 100% các quy tắc nghiệp vụ, validation rules, và flow trọng yếu trong `module-context.md` đều có ít nhất một test case tương ứng. Số lượng yêu cầu mồ côi (Orphan Requirements) = 0.
-- [ ] **Căn cứ Thực tế Không Ảo tưởng (Backward Grounding):** 100% test case đều có giá trị cột `Requirement Reference` chỉ rõ mã đặc tả spec (ví dụ: `SPEC-AU-01`) hoặc symbol/hàm/endpoint cụ thể từ mã nguồn do Graphify phát hiện (ví dụ: `useSubmitOnce`, `POST /api/login`). Nghiêm cấm hoàn toàn test case mồ côi (Orphan Test Cases) không có cơ sở thực tế.
+- [ ] **Căn cứ Thực tế Không Ảo tưởng (Backward Grounding):** 100% test case đều có giá trị cột `Requirement Reference` chỉ rõ mã đặc tả spec (ví dụ: `SPEC-AU-01`) hoặc symbol/hàm/endpoint cụ thể từ mã nguồn do CodeGraph phát hiện (ví dụ: `useSubmitOnce`, `POST /api/login`). Nghiêm cấm hoàn toàn test case mồ côi (Orphan Test Cases) không có cơ sở thực tế.
 - [ ] **Chống Trùng lặp Mục tiêu (Deduplication):** Không có 2 test case nào trùng lặp về mục tiêu kiểm thử, thao tác giống nhau trên cùng tập tiền điều kiện và kỳ vọng cùng kết quả. Mỗi ca kiểm thử phải đại diện cho một rủi ro hoặc một kịch bản biên riêng biệt.
 
 ## 10. Tiếp Cận Cho Người Non-IT Không Giảm Thiểu Định Mức (Non-IT Friendly Without Reducing Depth)

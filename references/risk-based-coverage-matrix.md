@@ -55,7 +55,7 @@ $$\text{Điểm Rủi Ro (Risk Score)} = \text{Mức Độ Tác Động (Impact:
 
 ## 4. QUY TRÌNH QUYẾT ĐỊNH ĐỘ PHỦ TỰ ĐỘNG CỦA AGENT
 
-1. **Bước 1 (Nhận diện Tier):** Dựa vào kết quả bóc tách AST của Graphify (số lượng files, số endpoints, cấu trúc DB) để xác định phân hệ thuộc Tier S, Tier M hay Tier L.
+1. **Bước 1 (Nhận diện Tier):** Dựa vào kết quả bóc tách AST của CodeGraph (số lượng files, số endpoints, cấu trúc DB) để xác định phân hệ thuộc Tier S, Tier M hay Tier L.
 2. **Bước 2 (Lập danh mục rủi ro):** Liệt kê các mối đe doạ thực tế (Security, Data Integrity, Concurrency, Throttling, Happy Path).
 3. **Bước 3 (Thiết kế test case tương ứng với rủi ro thực):**
    * Nếu phân hệ Tier S chỉ có 6 luồng thực sự cần kiểm thử $\rightarrow$ Tạo đúng 6 test cases sắc bén, **nghiêm cấm bịa thêm case rác chỉ để đạt số lượng**.
