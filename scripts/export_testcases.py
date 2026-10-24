@@ -17,6 +17,7 @@ if hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
+import unicodedata
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.worksheet.datavalidation import DataValidation
@@ -73,21 +74,21 @@ ALIGN_DATA_LEFT = Alignment(horizontal="left", vertical="top", wrap_text=True)
 ALIGN_HEADER = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
 def style_severity_cell(cell):
-    val = str(cell.value or "").strip().lower()
-    if "chặn" in val:
+    val = unicodedata.normalize('NFC', str(cell.value or "")).strip().lower()
+    if any(k in val for k in ["chặn", "chan", "blocker", "critical"]):
         cell.fill = FILL_CHAN
         cell.font = FONT_CHAN
-    elif "sai" in val:
+    elif any(k in val for k in ["sai", "major", "error"]):
         cell.fill = FILL_SAI
         cell.font = FONT_SAI
-    elif "nhỏ" in val:
+    elif any(k in val for k in ["nhỏ", "nho", "minor", "trivial", "low"]):
         cell.fill = FILL_NHO
         cell.font = FONT_NHO
     cell.alignment = ALIGN_DATA_CENTER
 
 def style_ready_cell(cell):
-    val = str(cell.value or "").strip().lower()
-    if val == "yes":
+    val = unicodedata.normalize('NFC', str(cell.value or "")).strip().lower()
+    if val in {"yes", "y", "true", "1", "có", "co"}:
         cell.fill = FILL_READY_YES
         cell.font = FONT_READY_YES
     else:

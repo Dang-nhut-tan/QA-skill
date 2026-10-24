@@ -16,12 +16,28 @@ if hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
+import unicodedata
 import openpyxl
 
 REQUIRED_COLUMNS = [
     "Test Case ID", "Module", "Test Case Name", "Preconditions",
     "Test Data", "Test Steps", "Expected Result", "Severity", "Automation Ready"
 ]
+
+
+def parse_automation_ready_val(val: Any, row_idx: int) -> bool:
+    if val is None:
+        return False
+    raw = unicodedata.normalize('NFC', str(val)).strip().lower()
+    if not raw:
+        return False
+    truthy = {"yes", "y", "true", "1", "có", "co"}
+    falsy = {"no", "n", "false", "0", "không", "khong"}
+    if raw in truthy:
+        return True
+    if raw in falsy:
+        return False
+    raise ValueError(f"Invalid 'Automation Ready' value '{val}' at row {row_idx}. Expected Yes/No, Có/Không, True/False, 1/0.")
 
 def parse_approved_workbook(excel_path: Path) -> Dict[str, Any]:
     if not excel_path.exists():
@@ -63,8 +79,13 @@ def parse_approved_workbook(excel_path: Path) -> Dict[str, Any]:
 
         tc_id_str = str(tc_id).strip()
         auto_ready_val = ws.cell(row=row_idx, column=col_map["Automation Ready"]).value
-        auto_ready_str = str(auto_ready_val).strip() if auto_ready_val else "No"
-        is_ready = auto_ready_str.lower() == "yes"
+        try:
+            is_ready = parse_automation_ready_val(auto_ready_val, row_idx)
+        except ValueError as err:
+            return {
+                "success": False,
+                "error": str(err)
+            }
 
         tc_item = {
             "row_number": row_idx,

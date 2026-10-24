@@ -43,6 +43,24 @@ HUMAN_CHECKPOINT_STATES = {
 
 STATE_FILE_NAME = ".qa-state.json"
 
+def _dedup_list(items: List[Any]) -> List[Any]:
+    """
+    Deduplicates a list while preserving original input order.
+    Uses canonical JSON serialization with sort_keys=True as comparison key,
+    safely handling primitives, lists, and unhashable dictionaries.
+    """
+    seen = set()
+    result = []
+    for item in items:
+        try:
+            key = json.dumps(item, sort_keys=True, ensure_ascii=False)
+        except Exception:
+            key = str(item)
+        if key not in seen:
+            seen.add(key)
+            result.append(item)
+    return result
+
 class WorkflowStateManager:
     def __init__(self, workspace_root: Optional[str] = None):
         self.workspace_root = Path(workspace_root or os.getcwd()).resolve()
@@ -143,7 +161,7 @@ class WorkflowStateManager:
                 if k == "artifacts" and isinstance(v, dict):
                     state.setdefault("artifacts", {}).update(v)
                 elif k in state and isinstance(state[k], list) and isinstance(v, list):
-                    state[k] = list(set(state[k] + v))
+                    state[k] = _dedup_list(state[k] + v)
                 else:
                     state[k] = v
 

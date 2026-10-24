@@ -28,6 +28,47 @@ def normalize_text(text: str) -> str:
     t = text.lower().strip()
     return re.sub(r'\s+', ' ', t)
 
+
+def split_requirement_references(ref_raw: str) -> List[str]:
+    """
+    Context-aware splitting of requirement references.
+    Splits by ',', ';', '|', or ' / ' (slash with whitespace).
+    Preserves file paths (e.g., 'src/features/auth.ts#L45') while safely
+    splitting paired requirement IDs (e.g., 'REQ-01/REQ-02').
+    """
+    if not ref_raw:
+        return []
+    
+    # 1. First split by clear delimiters: comma, semicolon, pipe, or slash surrounded by spaces
+    primary_parts = re.split(r'[,;|]|\s+/\s+', ref_raw)
+    
+    final_tokens = []
+    # Pattern indicating a code file path
+    path_pattern = re.compile(r'(\.[a-zA-Z0-9]{1,5}(#L\d+)?$|#L\d+|^\.{1,2}[/\\]|[/\\][a-zA-Z0-9_-]+[/\\])')
+    req_id_pattern = re.compile(r'^[A-Za-z0-9_\-\.]+$')
+
+    for part in primary_parts:
+        part = part.strip()
+        if not part:
+            continue
+        
+        # Check if part has internal slash without spaces (e.g. 'REQ-01/REQ-02' vs 'src/auth.ts')
+        if '/' in part:
+            # If it looks like a file path, preserve it intact
+            if path_pattern.search(part) or part.count('/') > 2:
+                final_tokens.append(part)
+            else:
+                sub_parts = [s.strip() for s in part.split('/') if s.strip()]
+                # If all sub_parts look like requirement IDs, split them
+                if all(req_id_pattern.match(s) for s in sub_parts):
+                    final_tokens.extend(sub_parts)
+                else:
+                    final_tokens.append(part)
+        else:
+            final_tokens.append(part)
+            
+    return final_tokens
+
 def validate_traceability(data: Dict[str, Any]) -> Dict[str, Any]:
     """
     Validates bidirectional requirement traceability and detects duplicate test cases.
@@ -72,7 +113,7 @@ def validate_traceability(data: Dict[str, Any]) -> Dict[str, Any]:
             continue
             
         # Extract individual requirement tokens (split by /, ;, ,, |)
-        tokens = [t.strip() for t in re.split(r'[/;,|]', ref_raw) if t.strip()]
+        tokens = split_requirement_references(ref_raw)
         tc_references_map[tc_id] = set(tokens)
 
     # -------------------------------------------------------------
