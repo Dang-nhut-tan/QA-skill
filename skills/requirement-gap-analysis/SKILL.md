@@ -54,8 +54,8 @@ description: >-
      - For every gap observable on the web UI:
      - Activate `playwright-investigation` (Step 3) to navigate to the live screen.
      - Execute concrete interaction steps to verify if the discrepancy occurs.
-     - **Capture screenshot evidence (`.png`)** saved into `screenshots/<IssueID>-evidence.png` (e.g., `screenshots/GAP-001-evidence.png`).
-     - Record step-by-step reproduction instructions from the end-user perspective (`1. Mở... 2. Nhập... 3. Quan sát...`).
+     - **Capture visual progression screenshots (.png)** saved into screenshots/<IssueID>-01-input.png and screenshots/<IssueID>-02-result.png for easy reproduction (stored in project root screenshots/).
+     - Record step-by-step reproduction instructions from the end-user perspective (1. Mở... 2. Nhập... 3. Bấm... và quan sát...).
      - For backend-only logic lacking UI: explicitly tag `[Verified via AST - No UI Rendering]`.
 4. **Generate Standalone Deliverable (`<module-name>-gaps.md`):**
    * **Deliverable Language Rule:** The generated deliverable `<module-name>-gaps.md` MUST be produced in **Vietnamese** following `references/requirement-gaps-template.md` so that local BA, PO, and business users can understand and act on it immediately.

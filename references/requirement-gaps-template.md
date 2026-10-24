@@ -12,7 +12,7 @@
 
 * **Tổng số vấn đề phát hiện:** `[N]` kẽ hở / điểm bất cập nghiệp vụ.
 * **Tình trạng xác minh thực tế qua Playwright MCP:**
-  - `[X]` vấn đề đã xác minh và chụp ảnh giao diện thực tế.
+  - `[X]` vấn đề đã xác minh kèm chuỗi ảnh minh chứng trực quan (Trước $\rightarrow$ Sau thao tác).
   - `[Y]` vấn đề thuộc tầng logic backend ngầm (đối soát qua mã nguồn AST).
 * **Mức độ rủi ro:**
   - `[R1]` vấn đề rủi ro cao (ảnh hưởng đến luồng chính, bảo mật, hoặc toàn vẹn dữ liệu).
@@ -25,8 +25,8 @@
 
 | Mã Vấn Đề (Issue ID) | Phân Loại Kẽ Hở | Luồng Nghiệp Vụ Liên Quan | Bằng Chứng Mã Nguồn (AST) | Xác Minh Giao Diện (Playwright MCP) | Mức Độ Rủi Ro |
 | :---: | :--- | :--- | :--- | :---: | :---: |
-| **GAP-001** | Mơ hồ yêu cầu *(Requirement Ambiguity)* | [Luồng ảnh hưởng] | File: `path/to/file.ts#L45-L60`<br>Symbol: `functionName` | Đã chụp ảnh minh chứng | Cao |
-| **GAP-002** | Nghi ngờ lỗi code *(Potential Defect)* | [Luồng ảnh hưởng] | File: `path/to/service.ts#L102`<br>Symbol: `validator` | Đã chụp ảnh lỗi màn hình | Cao |
+| **GAP-001** | Mơ hồ yêu cầu *(Requirement Ambiguity)* | [Luồng ảnh hưởng] | File: `path/to/file.ts#L45-L60`<br>Symbol: `functionName` | Đã chụp 2 ảnh tái hiện (Input -> Result) | Cao |
+| **GAP-002** | Nghi ngờ lỗi code *(Potential Defect)* | [Luồng ảnh hưởng] | File: `path/to/service.ts#L102`<br>Symbol: `validator` | Đã chụp 2 ảnh tái hiện (Input -> Result) | Cao |
 | **GAP-003** | Thiếu tài liệu *(Missing Documentation)* | [Luồng ảnh hưởng] | File: `path/to/hook.ts`<br>Symbol: `useSubmitOnce` | Logic ngầm client-side | Thấp |
 
 ---
@@ -45,10 +45,14 @@
 * **Các bước tái hiện trên giao diện (UI Reproduction Steps):**
   1. Mở trang `/dang-nhap?web=thu`.
   2. Chọn Tab 'Mã nhân viên', nhập mã `VG000101` và mật khẩu sai liên tục 5 lần.
-  3. Bấm nút 'Đăng nhập' ở lần thứ 5.
-* **Ảnh chụp minh chứng thực tế từ Playwright MCP:**
-  > ![Ảnh chụp minh chứng GAP-001](./screenshots/GAP-001-evidence.png)
-  > *(Đường dẫn: [GAP-001-evidence.png](./screenshots/GAP-001-evidence.png))*
+  3. Bấm nút 'Đăng nhập' ở lần thứ 5 và quan sát phản hồi.
+* **Chuỗi ảnh chụp minh chứng tái hiện từ Playwright MCP:**
+  - *Ảnh 1 — Trạng thái nhập liệu trước khi bấm:*  
+    ![GAP-001 Trạng thái nhập liệu](./screenshots/GAP-001-01-input.png)  
+    *(Tệp: `./screenshots/GAP-001-01-input.png`)*
+  - *Ảnh 2 — Khoảnh khắc xảy ra bất cập / Lỗi hiển thị:*  
+    ![GAP-001 Kết quả thực tế](./screenshots/GAP-001-02-result.png)  
+    *(Tệp: `./screenshots/GAP-001-02-result.png`)*
 * **Hành vi quan sát được trên màn hình (Observed UI Behavior):**
   - Màn hình hiển thị thông báo lỗi: `Tài khoản tạm thời bị khóa do nhập sai nhiều lần.`
   - Nút đăng nhập bị vô hiệu hóa nhưng không có đồng hồ đếm ngược hay hướng dẫn mở lại.
