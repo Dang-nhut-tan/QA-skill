@@ -32,6 +32,7 @@ from scripts.export_testcases import (
 )
 from scripts.traceability_validator import split_requirement_references
 from scripts.learn_manager import resolve_skills_root
+from scripts.verify_and_embed_images import verify_and_fix_report_images
 
 class MockCell:
     def __init__(self, value=None):
@@ -209,6 +210,39 @@ class TestQASkillsRegression(unittest.TestCase):
             with self.assertRaises(RuntimeError) as ctx:
                 resolve_skills_root(explicit_root=str(tmp_root))
             self.assertIn("does not have a valid skills layout", str(ctx.exception))
+
+    # =========================================================================
+    # Test 6: verify_and_embed_images for visual proof reliability
+    # =========================================================================
+    def test_verify_report_images_detects_missing_file(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_root = Path(tmp_dir)
+            report = tmp_root / "test-gaps.md"
+            report.write_text("![Missing](./screenshots/non_existent.png)\n", encoding="utf-8")
+            res = verify_and_fix_report_images(report, tmp_root)
+            self.assertFalse(res["success"])
+            self.assertEqual(len(res["missing_images"]), 1)
+            self.assertEqual(res["missing_images"][0]["line"], 1)
+
+    def test_verify_report_images_passes_and_injects_fallback_for_existing_file(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_root = Path(tmp_dir)
+            screenshots_dir = tmp_root / "screenshots"
+            screenshots_dir.mkdir(parents=True)
+            img = screenshots_dir / "valid.png"
+            img.write_bytes(b"\x89PNG\r\n\x1a\nfakeimage")
+            
+            report = tmp_root / "test-gaps.md"
+            report.write_text("![Valid](./screenshots/valid.png)\n", encoding="utf-8")
+            
+            res = verify_and_fix_report_images(report, tmp_root, auto_fix_links=True)
+            self.assertTrue(res["success"])
+            self.assertEqual(len(res["found_images"]), 1)
+            self.assertTrue(res["report_modified"])
+            
+            updated_content = report.read_text(encoding="utf-8")
+            self.assertIn("file:///", updated_content)
+            self.assertIn("Mở ảnh gốc", updated_content)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

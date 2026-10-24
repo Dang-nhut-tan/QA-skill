@@ -55,8 +55,12 @@ description: >-
 > [!WARNING]
 > Playwright MCP observes **WHAT THE APPLICATION CURRENTLY DOES**, not whether that behavior is **CORRECT BUSINESS LOGIC**. All observed behaviors remain subject to BA/PO review and confirmation.
 
-### 4.4. Embed Visual Proof into BA Ticket (`<module-name>-gaps.md`)
+### 4.4. Embed Visual Proof & Enforce Image Existence (`<module-name>-gaps.md`)
 * Embed screenshot paths and reproduction steps directly into each `GAP-xxx` card within `<module-name>-gaps.md`.
+* **Mandatory Physical Verification & Dual-Mode Links:**
+  Run the image validator to guarantee 100% of referenced screenshots physically exist on disk and inject clickable absolute fallback links:
+  `python scripts/verify_and_embed_images.py <module-name>-gaps.md`
+  If any screenshot is missing, the validator exits with an error and halts execution. You MUST capture the physical screenshot via Playwright before proceeding.
 * Export the completed report and register the state artifact:
   `python scripts/state_manager.py set-artifact gap_analysis <module-name>-gaps.md`
 

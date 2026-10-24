@@ -49,9 +49,11 @@
 * **Chuỗi ảnh chụp minh chứng tái hiện từ Playwright MCP:**
   - *Ảnh 1 — Trạng thái nhập liệu trước khi bấm:*  
     ![GAP-001 Trạng thái nhập liệu](./screenshots/GAP-001-01-input.png)  
+    *([Mở ảnh gốc: screenshots/GAP-001-01-input.png](file:///path/to/project/screenshots/GAP-001-01-input.png))*  
     *(Tệp: `./screenshots/GAP-001-01-input.png`)*
   - *Ảnh 2 — Khoảnh khắc xảy ra bất cập / Lỗi hiển thị:*  
     ![GAP-001 Kết quả thực tế](./screenshots/GAP-001-02-result.png)  
+    *([Mở ảnh gốc: screenshots/GAP-001-02-result.png](file:///path/to/project/screenshots/GAP-001-02-result.png))*  
     *(Tệp: `./screenshots/GAP-001-02-result.png`)*
 * **Hành vi quan sát được trên màn hình (Observed UI Behavior):**
   - Màn hình hiển thị thông báo lỗi: `Tài khoản tạm thời bị khóa do nhập sai nhiều lần.`
