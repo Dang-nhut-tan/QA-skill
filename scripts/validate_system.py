@@ -60,6 +60,7 @@ def validate_file_structure():
     assert (SYSTEM_ROOT / "references" / "risk-based-coverage-matrix.md").exists(), "risk-based-coverage-matrix.md missing"
     assert (SYSTEM_ROOT / "references" / "testcase-quality-checklist.md").exists(), "checklist missing"
     assert (SYSTEM_ROOT / "references" / "workflow-state-schema.json").exists(), "state schema missing"
+    assert (SYSTEM_ROOT / "scripts" / "token_benchmark.py").exists(), "token_benchmark.py missing"
     return "All structural directories and global files exist."
 
 def validate_skill_metadata():

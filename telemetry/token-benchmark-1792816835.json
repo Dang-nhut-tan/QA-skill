@@ -1,0 +1,60 @@
+{
+  "timestamp": "2026-10-24T11:40:35.852975",
+  "tokenizer": "cl100k_base",
+  "turns_simulated": 10,
+  "plugin_pruning": {
+    "baseline_tokens_per_turn": 84233,
+    "optimized_tokens_per_turn": 20995,
+    "saved_per_turn": 63238,
+    "reduction_percent": 75.1
+  },
+  "context_discovery": {
+    "file_count": 52,
+    "total_lines": 5022,
+    "baseline_full_file_tokens": 78151,
+    "optimized_codegraph_jit_tokens": 14067,
+    "tokens_saved": 64084,
+    "saving_ratio": 82.0,
+    "sample_files": [
+      {
+        "path": "04-src\\src\\features\\don-tu\\AdvanceMyRequestItem.tsx",
+        "tokens": 717,
+        "lines": 42
+      },
+      {
+        "path": "04-src\\src\\features\\don-tu\\AttendanceConfirmSheet.tsx",
+        "tokens": 2427,
+        "lines": 141
+      },
+      {
+        "path": "04-src\\src\\features\\don-tu\\ChonGioBanhXe.tsx",
+        "tokens": 738,
+        "lines": 39
+      },
+      {
+        "path": "04-src\\src\\features\\don-tu\\CreateRequestSheet.tsx",
+        "tokens": 1475,
+        "lines": 93
+      },
+      {
+        "path": "04-src\\src\\features\\don-tu\\DiaDiemCongTacFields.tsx",
+        "tokens": 1292,
+        "lines": 94
+      }
+    ]
+  },
+  "visual_evidence": {
+    "num_screenshots": 3,
+    "baseline_base64_tokens": 9600,
+    "optimized_link_tokens": 54,
+    "tokens_saved": 9546,
+    "saving_ratio": 99.4
+  },
+  "session_totals": {
+    "baseline_tokens": 930081,
+    "optimized_tokens": 224071,
+    "tokens_saved": 706010,
+    "reduction_percent": 75.9,
+    "cost_saved_usd": 0.8825
+  }
+}
