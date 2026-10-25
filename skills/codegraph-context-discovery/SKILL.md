@@ -43,9 +43,28 @@ description: >-
   * Enforce process timeout guards to safely terminate hanging commands on corrupted syntax or file locks.
 * **Persistence:** Save the exhaustive knowledge graph locally to disk (`codegraph-out/`) for reuse across the entire QA lifecycle.
 
-### 4.2. High-Efficiency LLM Context Loading (On-Demand Progressive Disclosure)
-* **Never Dump Full Graph:** Strictly PROHIBIT ingesting raw `codegraph-out/graph.json` or massive hundred-thousand-token monolithic graph reports into prompt context.
-* **On-Demand Subgraph Queries:** Retrieve only the specific subgraphs or call chains required for the current reasoning step via targeted CodeGraph CLI queries.
+### 4.2. High-Efficiency Progressive Context Loading (5-Level Protocol)
+* **Never Dump Full Graph or Monolithic Files:** Strictly PROHIBIT ingesting raw graph JSON or complete source files into prompt context.
+* **5-Level Progressive Retrieval Protocol:**
+  - **Level 1 (Symbol / Name Only):** Function, class, or object name with file path and line numbers. (~10-20 tokens).
+  - **Level 2 (Signature & Types):** Parameters, return types, TypeScript interface, or object shape. (~50-100 tokens). *Sufficient for 80% of requirement validation and test case design.*
+  - **Level 3 (Dependencies & Callers):** Upstream callers and downstream callees from CodeGraph edges. (~100-250 tokens).
+  - **Level 4 (Implementation Snippet):** Targeted block extract (start_line to end_line) of the specific function or method. (~200-500 tokens). Fetched ONLY when inspecting complex branching, edge-case math, or regex.
+  - **Level 5 (Full Source File):** Complete file loaded ONLY as an explicit exception when cross-cutting file context cannot be resolved at Level 4.
+* **Intelligent Method Discovery & Multi-Declaration Pattern Engine:**
+  - Leverage `python scripts/codegraph_discovery.py <action_name> --repo <repo_path>` to query candidates.
+  - Recognizes 4 key JavaScript/TypeScript declaration patterns:
+    1. ES6 Class Methods (`class Page { async login() {} }`).
+    2. Named Function Declarations (`export function submitInquiry() {}`).
+    3. Arrow Functions assigned to variables (`export const validateToken = () => {}`).
+    4. Object Literals & Nested Methods (`export const basket = { add() {}, remove() {} }`).
+  - Classifies candidates into 4 distinct reusability tiers:
+    * `DIRECT_REUSE`: Signature and semantics match target action perfectly; reuse as-is.
+    * `CONDITIONAL_REUSE`: Name matches but parameters, async behavior, or signatures differ slightly; adapt via wrapper.
+    * `NOT_REUSABLE`: Symbol is internal, deprecated, or contradictory; do not reuse.
+    * `NOT_FOUND`: No matching candidate found in CodeGraph or fallback directories; generate new method.
+* **Deterministic Fallback Search:**
+  - If a symbol or method is not indexed in CodeGraph (e.g., unindexed dynamic exports or new Page Objects), automatically scan designated Page Object and utility directories (`tests/pages/`, `e2e/pages/`, `page-objects/`, `04-src/tests/pages/`).
 * **Signature-First Protocol:**
   * Query TypeScript interfaces, function contracts, export signatures, and Zod/Yup validation schemas first.
   * Read full implementation bodies ONLY on-demand when inspecting complex branching, custom regex, or exception handling.
@@ -73,9 +92,12 @@ description: >-
    * Map cross-module dependencies (e.g., Authentication invoking User Management, Notifications, Rate Limiters, Audit Logs).
    * Use `codegraph path "<EntryNode>" "<TargetNode>"` to trace call chains end-to-end without depth bounds.
 
-5. **Signature-First Extraction & Targeted Ingestion:**
+5. **Signature-First Extraction, Method Discovery & Reuse Evaluation:**
    * Ingest data contracts, types, and schema validations for all involved symbols.
-   * Selectively inspect implementation bodies for high-risk zones (concurrency, account lockout, session token creation, error handling).
+   * Query candidate methods using:
+     `python scripts/codegraph_discovery.py "<action_name>" --repo "<repo_path>" -o "codegraph-out/<action>-discovery.json"`
+   * Classify candidate reusability (`DIRECT_REUSE`, `CONDITIONAL_REUSE`, `NOT_REUSABLE`, `NOT_FOUND`).
+   * Selectively inspect implementation bodies (Level 4) ONLY for high-risk zones (concurrency, account lockout, session token creation, error handling).
 
 6. **Context Classification:**
    * Explicitly tag every piece of evidence:

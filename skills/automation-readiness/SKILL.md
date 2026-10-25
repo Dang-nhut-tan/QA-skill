@@ -37,12 +37,20 @@ description: >-
    * Extract ONLY rows where `Automation Ready` column equals `Yes` (case-insensitive).
    * Strictly do NOT convert `No` or empty values to `Yes`.
    * Strictly do NOT alter or overwrite user-approved `Expected Result` text.
-3. **Report Intake Breakdown:**
+3. **Assess Framework Reusability for Ready Test Cases:**
+   * For each test case marked `Automation Ready = Yes`, identify primary UI actions and domain methods.
+   * Cross-reference methods against discovered framework assets via:
+     `python scripts/codegraph_discovery.py "<action_name>" --repo "<repo_path>"`
+   * Group test cases into:
+     - **Direct Reuse:** Existing POM methods/helpers exist and can be called immediately.
+     - **Conditional Reuse:** Existing POM methods exist but require parameter extension or wrapper adjustments.
+     - **New Implementation Needed:** No matching methods exist (`NOT_FOUND`), requiring new automation methods.
+4. **Report Intake Breakdown:**
    * Display summary:
      * Total test cases in workbook.
-     * Count of `Automation Ready = Yes` selected for implementation.
+     * Count of `Automation Ready = Yes` selected for implementation (broken down by Direct Reuse vs New Implementation).
      * Count of skipped cases (`No` or missing) with their listed blockers.
-4. **Transition Workflow State:**
+5. **Transition Workflow State:**
    * Record approved Excel path in `.qa-state.json` under `artifacts.approved_excel`.
    * Record ready test case IDs in `testcase_ids`.
    * Update workflow state:

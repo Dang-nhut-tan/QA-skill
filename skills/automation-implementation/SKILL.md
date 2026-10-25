@@ -29,8 +29,13 @@ description: >-
 1. **Analyze Framework Conventions:**
    * Scan project root for config files: `playwright.config.*`, `cypress.config.*`, `pytest.ini`, etc.
    * Determine test runner, language (TypeScript, JavaScript, Python), and directory conventions (`tests/specs/`, `e2e/`, etc.).
-2. **Discover Reusable Assets:**
-   * Search for existing Page Object Models (POM), custom fixtures, and API helpers.
+2. **Discover Reusable Assets & Prioritize Existing Methods:**
+   * Query CodeGraph and fallback Page Object directories for reusable methods:
+     `python scripts/codegraph_discovery.py "<action_name>" --repo "<repo_path>"`
+   * **Mandatory Reuse Policy (Prevent Duplicate Code):**
+     - **DIRECT_REUSE:** Must call the existing method directly (e.g. `await loginPage.clickLogin()`). Do NOT write duplicate locators or inline actions.
+     - **CONDITIONAL_REUSE:** Adapt call parameters or wrap the method (e.g. passing optional options). Do NOT re-implement from scratch.
+     - **NOT_FOUND / NOT_REUSABLE:** Only implement a new POM method or step when confirmed missing from both CodeGraph and Page Object directories.
    * *Rule:* Never introduce a new testing framework if the project already has one, unless the user explicitly approves.
    * *Rule:* Do not force complex POM structures if the repository follows a simpler functional test pattern. Respect the surrounding style.
 

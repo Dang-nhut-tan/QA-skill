@@ -40,9 +40,20 @@ description: >-
        (or invoke MCP tool `convert_to_markdown` from the `markitdown` server).
      * Use the converted `.md` file as the primary text specification for CodeGraph ingestion and Gap Analysis.
    * Record paths and compute SHA-256 hashes of input and converted documents for traceability.
-3. **Inspect Repository Environment:**
+3. **Inspect Repository Environment & CodeGraph Preflight:**
    * Determine project structure (root directory, language, package manager).
    * Check tool availability: `codegraph`, `python`, `node`, `playwright`.
+   * **Mandatory CodeGraph Preflight Check (Auto-Recovery & Health Check):**
+     * Execute preflight validation script:
+       `python scripts/codegraph_preflight.py "<repo_path>"`
+     * Script performs 5-point verification:
+       1. CodeGraph CLI availability (`codegraph --version`).
+       2. Target repository validity (detects markers `package.json`, `.git`, `pyproject.toml` and write permissions).
+       3. Knowledge graph initialization (detects `.codegraph/codegraph.db`; auto-runs `codegraph init` if missing in valid repos).
+       4. Database schema & SQLite integrity check (PRAGMA quick_check, validates `nodes`, `edges`, `files` tables).
+       5. Index freshness check (compares git commit hash / file mtime; runs `codegraph sync` if stale).
+     * If preflight reports `READY`: proceed to Step 4 and persist preflight metadata in `.qa-state.json`.
+     * If preflight reports `BLOCKED` (e.g. invalid repo path, missing node/codegraph environment): log actionable remediation and alert the user.
 4. **Proactive Staging & Admin Credentials Collection:**
    * Inspect existing project configuration (`.env`, `.env.local`, test fixtures, mock data) for:
      1. Staging Web URL (e.g., staging domain, local dev port).
