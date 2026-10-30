@@ -8,14 +8,17 @@ executive-ready Excel file (.xlsx) with pastel pill badges, zebra striping, and 
 import sys
 import json
 import math
+import logging
 from pathlib import Path
 from typing import Dict, Any, List
+
+logger = logging.getLogger(__name__)
 
 if hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    except (AttributeError, OSError) as exc:
+        logger.debug("Unable to reconfigure stdout encoding: %s", exc)
 
 import unicodedata
 import openpyxl
@@ -145,8 +148,8 @@ def auto_fit_rows_and_view(
             ws.views.sheetView[0].zoomScale = zoom_scale
         elif hasattr(ws, "sheet_view"):
             ws.sheet_view.zoomScale = zoom_scale
-    except Exception:
-        pass
+    except (AttributeError, IndexError, TypeError, ValueError) as exc:
+        logger.warning("Unable to set worksheet zoom; continuing with workbook default: %s", exc)
 
     try:
         ws.page_setup.orientation = ws.ORIENTATION_LANDSCAPE
@@ -154,8 +157,8 @@ def auto_fit_rows_and_view(
         ws.page_setup.fitToWidth = 1
         ws.page_setup.fitToHeight = 0
         ws.sheet_properties.pageSetUpPr.fitToPage = True
-    except Exception:
-        pass
+    except (AttributeError, TypeError, ValueError) as exc:
+        logger.warning("Unable to configure print layout; continuing with workbook default: %s", exc)
 
     for r in range(min_row, ws.max_row + 1):
         max_lines = 1
@@ -401,8 +404,8 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
             ws_sum.views.sheetView[0].zoomScale = 90
         elif hasattr(ws_sum, "sheet_view"):
             ws_sum.sheet_view.zoomScale = 90
-    except Exception:
-        pass
+    except (AttributeError, IndexError, TypeError, ValueError) as exc:
+        logger.warning("Unable to set summary worksheet zoom: %s", exc)
 
     for row_idx in range(2, len(summary_rows) + 2):
         cell_lbl = ws_sum.cell(row=row_idx, column=1)

@@ -9,14 +9,17 @@ physically exist on disk, are non-empty, and are formatted with a multi-viewer f
 import sys
 import os
 import re
+import logging
 from pathlib import Path
 from typing import Dict, Any, List, Tuple
+
+logger = logging.getLogger(__name__)
 
 if hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    except (AttributeError, OSError) as exc:
+        logger.debug("Unable to reconfigure stdout encoding: %s", exc)
 
 IMAGE_REGEX = re.compile(r'!\[([^\]]*)\]\(([^)]+)\)')
 

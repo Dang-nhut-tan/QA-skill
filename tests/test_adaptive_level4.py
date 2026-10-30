@@ -129,6 +129,12 @@ class TestBfsCallTreeWalkerAndCycleSafety:
         assert "node_d" in traversal
         # Verify no duplicate entries
         assert len(traversal) == len(set(traversal))
+        assert engine.last_traversal_report["discovery_status"] == "COMPLETE"
+
+        truncated = engine.walk_call_tree_detailed("node_a", max_depth=1, max_nodes=100)
+        assert truncated["discovery_status"] == "TRUNCATED"
+        assert "MAX_DEPTH_REACHED" in truncated["reason"]
+        assert truncated["unvisited_nodes"]
         engine.close()
 
 

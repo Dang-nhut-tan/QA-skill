@@ -12,14 +12,17 @@ Enforces three non-negotiable verification gates:
 import sys
 import json
 import re
+import logging
 from pathlib import Path
 from typing import Dict, Any, List, Set, Tuple
+
+logger = logging.getLogger(__name__)
 
 if hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    except (AttributeError, OSError) as exc:
+        logger.debug("Unable to reconfigure stdout encoding: %s", exc)
 
 def normalize_text(text: str) -> str:
     """Normalize text for semantic comparison (lowercase, trimmed, collapsed whitespace)."""

@@ -16,8 +16,35 @@ on:
         default: 'http://localhost:3000'
 
 jobs:
-  test:
+  python-integrity:
+    name: Python Integrity and Architecture
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+        cache: 'pip'
+
+    - name: Install Python Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements-dev.txt
+
+    - name: Run Python Regression Suite
+      run: pytest -v tests/
+
+    - name: Validate System Architecture
+      run: python scripts/validate_system.py
+
+  playwright-e2e:
     name: Headless Playwright Regression
+    needs: python-integrity
     timeout-minutes: 60
     runs-on: ubuntu-latest
 
@@ -28,11 +55,11 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: 18
+        node-version: 20
         cache: 'npm'
 
     - name: Install Node Dependencies
-      run: npm ci || npm install
+      run: npm ci
 
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps chromium

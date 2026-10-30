@@ -10,13 +10,16 @@ import os
 import json
 import shutil
 import subprocess
+import logging
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 if hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    except (AttributeError, OSError) as exc:
+        logger.debug("Unable to reconfigure stdout encoding: %s", exc)
 
 SYSTEM_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(SYSTEM_ROOT))
@@ -46,7 +49,7 @@ def check(name, fn, compact=False):
         else:
             print(f"  [PASS] {name}: {res}")
         return True, res
-    except Exception as e:
+    except (AssertionError, OSError, ValueError, ImportError) as e:
         print(f"  [FAIL] {name}: {str(e)}")
         return False, str(e)
 
@@ -90,31 +93,40 @@ def validate_excel_template():
     return f"Excel template verified with sheets: {wb.sheetnames} and 13 columns including Status"
 
 def check_codegraph_tool():
-    res = subprocess.run(["codegraph", "--version"], capture_output=True, text=True, shell=True)
+    executable = shutil.which("codegraph")
+    if not executable:
+        return "CodeGraph CLI not found in PATH"
+    command = [executable, "--version"]
+    if os.name == "nt" and Path(executable).suffix.lower() in {".cmd", ".bat"}:
+        command = [os.environ.get("COMSPEC", "cmd.exe"), "/d", "/s", "/c", executable, "--version"]
+    res = subprocess.run(command, capture_output=True, text=True, shell=False)
     if res.returncode == 0:
         return f"Operational: {res.stdout.strip()}"
     return "CodeGraph CLI not found in PATH"
 
 def check_playwright_cli():
     try:
-        res = subprocess.run(["npx", "--yes", "playwright", "--version"], capture_output=True, text=True, shell=True, timeout=5)
+        res = subprocess.run(["npx", "--yes", "playwright", "--version"], capture_output=True, text=True, shell=False, timeout=5)
         if res.returncode == 0 and res.stdout.strip():
             return f"Operational: {res.stdout.strip()}"
-    except Exception:
-        pass
+    except (OSError, subprocess.SubprocessError) as exc:
+        logger.warning("Unable to invoke Playwright through npx: %s", exc)
     for cur in [Path.cwd(), *Path.cwd().parents]:
         for cand in [cur / "node_modules" / "@playwright" / "test" / "cli.js", cur / "04-src" / "node_modules" / "@playwright" / "test" / "cli.js"]:
             if cand.exists():
                 try:
-                    res = subprocess.run(["node", str(cand), "--version"], capture_output=True, text=True, shell=True, timeout=5)
+                    res = subprocess.run(["node", str(cand), "--version"], capture_output=True, text=True, shell=False, timeout=5)
                     if res.returncode == 0 and res.stdout.strip():
                         return f"Operational (local): {res.stdout.strip()}"
-                except Exception:
-                    pass
+                except (OSError, subprocess.SubprocessError) as exc:
+                    logger.warning("Unable to invoke Playwright fallback %s: %s", cand, exc)
     return "Playwright CLI not available globally" 
 
 def check_markitdown_tool():
-    res = subprocess.run(["markitdown", "--version"], capture_output=True, text=True, shell=True)
+    executable = shutil.which("markitdown")
+    if not executable:
+        return "MarkItDown CLI not found in PATH"
+    res = subprocess.run([executable, "--version"], capture_output=True, text=True, shell=False)
     if res.returncode == 0:
         return f"Operational: {res.stdout.strip()}"
     return "MarkItDown CLI not found in PATH"

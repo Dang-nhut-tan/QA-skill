@@ -18,14 +18,17 @@ import shutil
 import sqlite3
 import subprocess
 import json
+import logging
 from pathlib import Path
 from typing import Dict, Any, Optional, Tuple, List
+
+logger = logging.getLogger(__name__)
 
 if hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    except (AttributeError, OSError) as exc:
+        logger.debug("Unable to reconfigure stdout encoding: %s", exc)
 
 CORE_TABLES = {"nodes", "edges", "files", "schema_versions"}
 PROJECT_MARKERS = {
@@ -64,6 +67,13 @@ class CodeGraphPreflight:
 
         return None
 
+    @staticmethod
+    def _cli_command(cli_bin: str, *args: str) -> List[str]:
+        """Build a shell-free, cross-platform command for native or .cmd CLIs."""
+        if os.name == "nt" and Path(cli_bin).suffix.lower() in {".cmd", ".bat"}:
+            return [os.environ.get("COMSPEC", "cmd.exe"), "/d", "/s", "/c", cli_bin, *args]
+        return [cli_bin, *args]
+
     def check_cli(self) -> bool:
         has_cli, _ = self.check_cli_available()
         return has_cli
@@ -77,11 +87,11 @@ class CodeGraphPreflight:
 
         try:
             res = subprocess.run(
-                [cli_bin, "--version"],
+                self._cli_command(cli_bin, "--version"),
                 capture_output=True,
                 text=True,
                 timeout=10,
-                shell=True
+                shell=False
             )
             if res.returncode == 0:
                 self.results["cli_available"] = True
@@ -92,7 +102,7 @@ class CodeGraphPreflight:
                 msg = f"CodeGraph CLI returned error: {res.stderr.strip()}"
                 self.results["diagnostics"].append(msg)
                 return False, msg
-        except Exception as e:
+        except (OSError, subprocess.SubprocessError) as e:
             msg = f"Failed to execute CodeGraph CLI: {str(e)}"
             self.results["diagnostics"].append(msg)
             return False, msg
@@ -150,11 +160,11 @@ class CodeGraphPreflight:
         try:
             self.results["diagnostics"].append(f"Initializing CodeGraph in {self.repo_path} via 'codegraph init'...")
             res = subprocess.run(
-                [self.cli_bin, "init", str(self.repo_path)],
+                self._cli_command(self.cli_bin, "init", str(self.repo_path)),
                 capture_output=True,
                 text=True,
                 timeout=60,
-                shell=True
+                shell=False
             )
             if res.returncode == 0 and self.db_path.exists() and self.db_path.stat().st_size > 0:
                 self.results["db_initialized"] = True
@@ -163,7 +173,7 @@ class CodeGraphPreflight:
                 err_msg = res.stderr.strip() or res.stdout.strip()
                 self.results["diagnostics"].append(f"CodeGraph init failed: {err_msg}")
                 return False
-        except Exception as e:
+        except (OSError, subprocess.SubprocessError) as e:
             self.results["diagnostics"].append(f"Exception during CodeGraph auto-init: {str(e)}")
             return False
 
@@ -204,7 +214,7 @@ class CodeGraphPreflight:
 
             self.results["db_healthy"] = True
             return True, "Database is healthy", details
-        except Exception as e:
+        except (sqlite3.Error, OSError) as e:
             msg = f"Database health check error: {str(e)}"
             self.results["diagnostics"].append(msg)
             return False, msg, details
@@ -212,8 +222,8 @@ class CodeGraphPreflight:
             if conn:
                 try:
                     conn.close()
-                except Exception:
-                    pass
+                except sqlite3.Error as exc:
+                    logger.warning("Failed to close CodeGraph database cleanly: %s", exc)
 
     def check_and_sync_freshness(self, auto_sync: bool = True) -> bool:
         if not self.results["db_healthy"]:
@@ -225,8 +235,8 @@ class CodeGraphPreflight:
             res = None
             try:
                 res = cur.execute("SELECT max(modified_at) FROM files").fetchone()
-            except Exception:
-                pass
+            except sqlite3.Error as exc:
+                logger.warning("CodeGraph files table does not expose modified_at: %s", exc)
             last_indexed_epoch = res[0] if res and res[0] else 0
             conn.close()
 
@@ -243,8 +253,8 @@ class CodeGraphPreflight:
                             m = int((Path(root) / f).stat().st_mtime * 1000)
                             if m > newest_src_mtime:
                                 newest_src_mtime = m
-                        except Exception:
-                            pass
+                        except OSError as exc:
+                            logger.warning("Unable to inspect source timestamp for %s: %s", Path(root) / f, exc)
 
             is_outdated = (newest_src_mtime > (last_indexed_epoch + 15000)) if newest_src_mtime > 0 and last_indexed_epoch > 0 else False
 
@@ -259,11 +269,11 @@ class CodeGraphPreflight:
 
             if self.cli_bin:
                 sync_res = subprocess.run(
-                    [self.cli_bin, "sync", str(self.repo_path)],
+                    self._cli_command(self.cli_bin, "sync", str(self.repo_path)),
                     capture_output=True,
                     text=True,
                     timeout=30,
-                    shell=True
+                    shell=False
                 )
                 if sync_res.returncode == 0:
                     self.results["index_freshness"] = True
@@ -277,7 +287,7 @@ class CodeGraphPreflight:
                 self.results["index_freshness"] = False
                 return False
 
-        except Exception as e:
+        except (sqlite3.Error, OSError, subprocess.SubprocessError) as e:
             self.results["diagnostics"].append(f"Freshness check warning: {str(e)}")
             self.results["index_freshness"] = False
             return False

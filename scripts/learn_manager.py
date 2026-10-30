@@ -11,15 +11,18 @@ import sys
 import os
 import json
 import re
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
+logger = logging.getLogger(__name__)
+
 if hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    except (AttributeError, OSError) as exc:
+        logger.debug("Unable to reconfigure stdout encoding: %s", exc)
 
 SYSTEM_ROOT = Path(__file__).resolve().parent.parent
 
@@ -97,7 +100,8 @@ def load_learnings(learnings_file: Optional[Path] = None) -> Dict[str, Any]:
     try:
         with open(l_file, "r", encoding="utf-8") as f:
             return json.load(f)
-    except Exception:
+    except (OSError, json.JSONDecodeError, TypeError) as exc:
+        logger.warning("Unable to load learning store %s; using an empty store: %s", l_file, exc)
         return {"proposals": [], "applied": []}
 
 def save_learnings(data: Dict[str, Any], learnings_file: Optional[Path] = None) -> None:
@@ -212,7 +216,8 @@ def query_learnings(module_name: Optional[str] = None, target_skill: Optional[st
     try:
         skills_root = resolve_skills_root(project_root)
         learnings_file = get_learnings_file(skills_root)
-    except Exception:
+    except (OSError, ValueError) as exc:
+        logger.warning("Unable to resolve project learning store; using bundled fallback: %s", exc)
         learnings_file = get_learnings_file()
 
     data = load_learnings(learnings_file)
@@ -244,7 +249,8 @@ def list_learnings(as_json: bool = False, project_root: Optional[str] = None) ->
     try:
         skills_root = resolve_skills_root(project_root)
         learnings_file = get_learnings_file(skills_root)
-    except Exception:
+    except (OSError, ValueError) as exc:
+        logger.warning("Unable to resolve project learning store; using bundled fallback: %s", exc)
         learnings_file = get_learnings_file()
 
     data = load_learnings(learnings_file)

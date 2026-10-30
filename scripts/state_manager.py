@@ -12,15 +12,18 @@ import os
 import json
 import hashlib
 import shutil
+import logging
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 
+logger = logging.getLogger(__name__)
+
 if hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    except (AttributeError, OSError) as exc:
+        logger.debug("Unable to reconfigure stdout encoding: %s", exc)
 
 VALID_STATES = [
     "INITIALIZED",
@@ -125,7 +128,7 @@ def _dedup_list(items: List[Any]) -> List[Any]:
     for item in items:
         try:
             key = json.dumps(item, sort_keys=True, ensure_ascii=False)
-        except Exception:
+        except (TypeError, ValueError):
             key = str(item)
         if key not in seen:
             seen.add(key)
@@ -169,8 +172,8 @@ class WorkflowStateManager:
                 try:
                     with open(bak_file, "r", encoding="utf-8") as bf:
                         return json.load(bf)
-                except Exception:
-                    pass
+                except (OSError, json.JSONDecodeError) as backup_exc:
+                    logger.error("State and backup are both unreadable (%s): %s", bak_file, backup_exc)
             return {"current_state": "BLOCKED", "error": f"Corrupted state file: {str(ex)}"}
 
     def save(self, data: Dict[str, Any]) -> None:
@@ -183,8 +186,8 @@ class WorkflowStateManager:
         if self.state_file.exists():
             try:
                 shutil.copy2(self.state_file, bak_file)
-            except Exception:
-                pass
+            except OSError as exc:
+                logger.warning("Unable to create state backup %s: %s", bak_file, exc)
         os.replace(tmp_file, self.state_file)
 
     def init_state(self, module_name: str, repo_info: Dict[str, Any], docs: Optional[List[str]] = None) -> Dict[str, Any]:
@@ -426,7 +429,7 @@ if __name__ == "__main__":
             if args[i] == "--metadata" and i + 1 < len(args):
                 try:
                     meta = json.loads(args[i+1])
-                except Exception as ex:
+                except json.JSONDecodeError as ex:
                     print(f"[ERROR] Failed to parse --metadata JSON: {ex}")
                     sys.exit(1)
                 i += 2
@@ -445,7 +448,7 @@ if __name__ == "__main__":
         raw_val = clean_args[2]
         try:
             val = json.loads(raw_val)
-        except Exception:
+        except json.JSONDecodeError:
             val = raw_val
         s = mgr.set_field(field_path, val)
         print(f"[OK] Field '{field_path}' updated successfully.")

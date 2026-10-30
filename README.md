@@ -6,7 +6,7 @@
 ![Automation: Playwright](https://img.shields.io/badge/Execution-Playwright_CLI_&_MCP-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
 ![Document: MarkItDown](https://img.shields.io/badge/Ingestion-Microsoft_MarkItDown-0284C7?style=for-the-badge&logo=microsoft)
 ![Optimization: Ground Truth](https://img.shields.io/badge/Telemetry-Ground_Truth_API-EA580C?style=for-the-badge)
-![Status: 66/66 Tests PASS](https://img.shields.io/badge/Test_Suite-66%2F66_PASS_(100%25)-16A34A?style=for-the-badge)
+![Status: 78/78 Tests PASS](https://img.shields.io/badge/Test_Suite-78%2F78_PASS_(100%25)-16A34A?style=for-the-badge)
 ![Architecture: 9/9 Validated](https://img.shields.io/badge/Architecture-9%2F9_VALIDATED-0D9488?style=for-the-badge)
 
 **Hệ thống Trợ lý Kiểm thử Phần mềm Thông minh Đẳng cấp Doanh nghiệp (Enterprise QA Agent System)**  
@@ -35,10 +35,10 @@
 
 Hệ thống cung cấp một quy trình kiểm thử tự động khép kín, giải quyết triệt để vấn đề AI bịa đặt (hallucination) trong kiểm thử phần mềm thông qua các trụ cột kỹ thuật:
 
-1. **Khám phá mã nguồn thực tế (CodeGraph JIT AST)**: Quét cây cú pháp trừu tượng không giới hạn chiều sâu, trích xuất class, interface, method signatures, loại bỏ 82%–93% nội dung thừa trước khi nạp vào LLM.
+1. **Khám phá mã nguồn thực tế (CodeGraph JIT AST)**: Duyệt BFS an toàn chu trình với ngưỡng độ sâu/số node cấu hình được, báo cáo minh bạch khi bị cắt ngắn; trích xuất class, interface và method signatures để giảm lượng nội dung cần nạp vào LLM.
 2. **Phát hiện kẽ hở nghiệp vụ & Thám thính UI (Playwright MCP)**: Đối soát đặc tả kỹ thuật với mã nguồn, tự động điều khiển trình duyệt thật chụp ảnh thực chứng giao diện (`screenshots/`) để chứng minh lỗi.
 3. **Xuất Test Case chuẩn doanh nghiệp**: Sinh file Excel (`.xlsx`) 13 cột với màu sắc phân cấp Pastel Pill Badges, bộ lọc tự động và Data Validation dropdown list.
-4. **Kiểm soát Truy vết RTM 100% & Khử trùng lặp $O(N)$**: Cơ chế Regex Boundary Matching `(?<!\w)REQ(?!\w)` bảo đảm 0% test case ảo, thuật toán băm Single-Pass Hash Map phát hiện trùng lặp trong <5ms.
+4. **Kiểm soát Truy vết Hai chiều & Khử trùng lặp $O(N)$**: Cơ chế kiểm soát Bidirectional Traceability đo độ bao phủ trên tập yêu cầu đã nạp; Regex Boundary Matching và Single-Pass Hash Map giúp phát hiện tham chiếu thiếu hoặc testcase trùng lặp.
 5. **Cỗ máy trạng thái FSM Tự phục hồi (Atomic & Self-Healing)**: Ghi file nguyên tử (`.tmp` + `.bak` + `os.replace`), chống sập hỏng JSON và tích hợp cơ chế bảo mật nghiêm ngặt (tự động phát hiện và chặn rò rỉ Plaintext Secret).
 
 ---
@@ -54,7 +54,7 @@ python scripts/validate_system.py
 ### Bước 2: Chạy bộ kiểm thử tự động toàn diện
 ```powershell
 $env:PYTHONIOENCODING="utf-8"; pytest -s tests/
-# Kết quả mong đợi: 66 passed in ~2.6s (100% PASS)
+# Kết quả nghiệm thu V6: 78 passed + 54 subtests (100% PASS)
 ```
 
 ### Bước 3: Ra lệnh cho AI Agent
@@ -142,7 +142,7 @@ Mọi kịch bản đều dùng ngôn ngữ tự nhiên, không dùng tiếng l�
 | [`codegraph-context-discovery`](skills/codegraph-context-discovery/SKILL.md) | Quét cây AST mã nguồn qua CodeGraph SQLite; nạp theo cơ chế 5-Level Progressive Context. |
 | [`requirement-gap-analysis`](skills/requirement-gap-analysis/SKILL.md) | Đối soát spec với code, lập phiếu làm rõ nghiệp vụ `requirement-gaps.md`. |
 | [`playwright-investigation`](skills/playwright-investigation/SKILL.md) | Mở trình duyệt thật qua Playwright MCP, chụp ảnh thực chứng (`screenshots/`) $\rightarrow$ **Dừng tại Cổng 1**. |
-| [`testcase-design`](skills/testcase-design/SKILL.md) | Thiết kế test case 13 cột chuẩn RTM 2 chiều (100% bao phủ, 0% test ảo). |
+| [`testcase-design`](skills/testcase-design/SKILL.md) | Thiết kế test case 13 cột và kiểm soát truy vết hai chiều trên tập yêu cầu đã nạp. |
 | [`testcase-review-export`](skills/testcase-review-export/SKILL.md) | Soát lỗi nội bộ, xuất Excel font Segoe UI, badge màu pastel $\rightarrow$ **Dừng tại Cổng 2**. |
 | [`automation-readiness`](skills/automation-readiness/SKILL.md) | Đọc file Excel người dùng duyệt, lọc chính xác các dòng `Automation Ready = Yes`, chặn Duplicate ID. |
 | [`automation-implementation`](skills/automation-implementation/SKILL.md) | Viết mã Playwright theo mô hình POM, Zero Sleeps, định danh collision-resistant. |
@@ -260,7 +260,7 @@ qa-agent-system/
 
 ### Cài đặt công cụ phụ trợ (Chỉ cần chạy 1 lần):
 ```powershell
-pip install openpyxl markitdown "markitdown[all]" tiktoken pytest
+pip install -r requirements-dev.txt
 npm install -g codegraph playwright
 npx playwright install
 ```

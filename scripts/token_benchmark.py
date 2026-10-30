@@ -14,23 +14,34 @@ import os
 import json
 import time
 import re
+import logging
 from pathlib import Path
 from datetime import datetime
+
+logger = logging.getLogger(__name__)
 
 # Setup encoding
 if hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    except (AttributeError, OSError) as exc:
+        logger.debug("Unable to reconfigure stdout encoding: %s", exc)
 
 # Initialize tokenizer
 try:
     import tiktoken
-    ENC = tiktoken.get_encoding("cl100k_base")
+    from requests.exceptions import RequestException
+    try:
+        ENC = tiktoken.get_encoding("cl100k_base")
+    except (OSError, RuntimeError, RequestException) as exc:
+        logger.warning("Tokenizer data is unavailable; using deterministic character estimate: %s", exc)
+        ENC = None
+
     def count_tokens(text: str) -> int:
         if not text:
             return 0
+        if ENC is None:
+            return max(1, len(text) // 4)
         return len(ENC.encode(text, disallowed_special=()))
 except ImportError:
     def count_tokens(text: str) -> int:
@@ -155,8 +166,8 @@ def audit_plugin_tokens():
                 cnt = count_tokens(f.read_text(encoding="utf-8", errors="ignore"))
                 total_tokens += cnt
                 file_count += 1
-            except Exception:
-                pass
+            except (OSError, UnicodeError) as exc:
+                logger.warning("Unable to read benchmark source %s: %s", p, exc)
 
         # Scan MCP or tool schemas (*.json)
         for f in p_dir.glob("**/*.json"):
@@ -166,8 +177,8 @@ def audit_plugin_tokens():
                 cnt = count_tokens(f.read_text(encoding="utf-8", errors="ignore"))
                 total_tokens += cnt
                 file_count += 1
-            except Exception:
-                pass
+            except (OSError, UnicodeError) as exc:
+                logger.warning("Unable to inspect benchmark source %s: %s", p, exc)
 
         plugin_metrics[p_name] = {
             "tokens": total_tokens,
@@ -224,8 +235,8 @@ def profile_module_context(repo_path: str, module_pattern: str):
                 "lines": len(content.splitlines()),
                 "empirical_ratio": round((s_cnt / t_cnt * 100), 1) if t_cnt > 0 else 0.0
             })
-        except Exception:
-            pass
+        except (OSError, ValueError, TypeError) as exc:
+            logger.warning("Unable to read telemetry record from %s: %s", telemetry_file, exc)
 
     full_tokens = count_tokens(full_text)
     jit_tokens = count_tokens(signature_text)
@@ -423,8 +434,8 @@ def show_production_telemetry():
             if line.strip():
                 try:
                     entries.append(json.loads(line))
-                except Exception:
-                    pass
+                except (OSError, json.JSONDecodeError, TypeError, ValueError) as exc:
+                    logger.warning("Skipping malformed telemetry line: %s", exc)
     
     if not entries:
         print("[NOTE] production-telemetry.jsonl is empty.")

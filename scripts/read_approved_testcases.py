@@ -7,14 +7,18 @@ and selects strictly rows where `Automation Ready = Yes`.
 
 import sys
 import json
+import logging
+import zipfile
 from pathlib import Path
 from typing import Dict, Any, List
+
+logger = logging.getLogger(__name__)
 
 if hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    except (AttributeError, OSError) as exc:
+        logger.debug("Unable to reconfigure stdout encoding: %s", exc)
 
 import unicodedata
 import openpyxl
@@ -45,7 +49,8 @@ def parse_approved_workbook(excel_path: Path) -> Dict[str, Any]:
 
     try:
         wb = openpyxl.load_workbook(excel_path, data_only=True)
-    except Exception as e:
+    except (OSError, zipfile.BadZipFile, openpyxl.utils.exceptions.InvalidFileException) as e:
+        logger.error("Failed to open approved-testcase workbook %s: %s", excel_path, e)
         return {"success": False, "error": f"Failed to open workbook: {str(e)}"}
 
     if "Test Cases" not in wb.sheetnames:

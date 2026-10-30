@@ -17,14 +17,18 @@ import os
 import re
 import json
 import sqlite3
+import logging
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict, Any, List, Optional, Tuple
+
+logger = logging.getLogger(__name__)
 
 if hasattr(sys.stdout, "reconfigure"):
     try:
         sys.stdout.reconfigure(encoding="utf-8")
-    except Exception:
-        pass
+    except (AttributeError, OSError) as exc:
+        logger.debug("Unable to reconfigure stdout encoding: %s", exc)
 
 SYSTEM_ROOT = Path(__file__).resolve().parent.parent
 
@@ -103,10 +107,41 @@ def evaluate_spec_completeness(spec_text: str) -> bool:
 
 PAGE_OBJECT_DIRS = ["tests/pages", "e2e/pages", "page-objects", "src/pages", "playwright/pages", "cypress/pages", "04-src/tests/pages", "admin/tests/pages"]
 
+
+class BaseLanguageASTAdapter(ABC):
+    """Contract for language-specific source discovery fallbacks.
+
+    CodeGraph remains the primary index. Adapters provide deterministic fallback
+    discovery when an index is unavailable or incomplete.
+    """
+
+    language: str
+    extensions: Tuple[str, ...]
+
+    @abstractmethod
+    def discover(self, repo_path: Path, action: str, scope_hint: Optional[str] = None) -> List[Dict[str, Any]]:
+        """Return normalized candidate dictionaries for one business action."""
+        raise NotImplementedError
+
+
+class JavaScriptTypeScriptASTAdapter(BaseLanguageASTAdapter):
+    """Marker adapter for the existing JavaScript/TypeScript fallback scanner."""
+
+    language = "javascript-typescript"
+    extensions = (".js", ".jsx", ".mjs", ".ts", ".tsx")
+
+    def discover(self, repo_path: Path, action: str, scope_hint: Optional[str] = None) -> List[Dict[str, Any]]:
+        raise NotImplementedError("The legacy scanner is hosted by MethodDiscoveryEngine until V7 extraction")
+
 class MethodDiscoveryEngine:
     def __init__(self, repo_path: Path):
         self.repo_path = Path(repo_path).resolve()
         self.db_path = self.repo_path / ".codegraph" / "codegraph.db"
+        self.last_traversal_report: Dict[str, Any] = {
+            "discovery_status": "NOT_RUN",
+            "visited_nodes": 0,
+            "unvisited_nodes": [],
+        }
         self._conn = None
         self.synonyms = self._load_synonyms()
 
@@ -126,8 +161,8 @@ class MethodDiscoveryEngine:
                     actions = data.get("actions", data)
                     if isinstance(actions, dict):
                         base_synonyms = dict(actions)
-            except Exception:
-                pass
+            except (OSError, json.JSONDecodeError, TypeError) as exc:
+                logger.warning("Unable to load bundled domain synonyms from %s: %s", synonyms_file, exc)
 
         if not base_synonyms:
             base_synonyms = {
@@ -164,8 +199,8 @@ class MethodDiscoveryEngine:
                         custom_actions = data.get("actions", data)
                         if isinstance(custom_actions, dict):
                             base_synonyms.update(custom_actions)
-                except Exception:
-                    pass
+                except (OSError, json.JSONDecodeError, TypeError) as exc:
+                    logger.warning("Unable to load repository synonym overrides from %s: %s", custom_file, exc)
 
         return base_synonyms
     def _get_db(self) -> Optional[sqlite3.Connection]:
@@ -246,8 +281,8 @@ class MethodDiscoveryEngine:
                         "is_exported": bool(r["is_exported"]),
                         "source": "codegraph_index"
                     })
-            except Exception:
-                pass
+            except sqlite3.Error as exc:
+                logger.warning("CodeGraph candidate query failed; fallback scanning will be used: %s", exc)
 
         if not candidates and fallback:
             candidates = self.fallback_search(action_name, scope_hint)
@@ -324,8 +359,8 @@ class MethodDiscoveryEngine:
                                         "is_exported": "export" in sig_compact,
                                         "source": "fallback_ast_scan"
                                     })
-                        except Exception:
-                            pass
+                        except (OSError, UnicodeError) as exc:
+                            logger.warning("Unable to inspect fallback source %s: %s", f_path, exc)
 
         return candidates
     def get_progressive_context(self, candidate: Dict[str, Any], level: int = 2, target_level: Optional[int] = None) -> Dict[str, Any]:
@@ -367,8 +402,8 @@ class MethodDiscoveryEngine:
                             relationships["callees"].append(f"{e['kind']} -> {e['target']}")
                         else:
                             relationships["callers"].append(f"{e['source']} -> {e['kind']}")
-                except Exception:
-                    pass
+                except sqlite3.Error as exc:
+                    logger.warning("Unable to load relationships for node %s: %s", candidate.get("id"), exc)
             result["relationships"] = relationships
 
         if level >= 4:
@@ -380,7 +415,7 @@ class MethodDiscoveryEngine:
                     e_idx = min(len(all_lines), candidate["end_line"])
                     snippet = "\n".join(all_lines[s_idx:e_idx])
                     result["implementation"] = snippet
-                except Exception as ex:
+                except (OSError, UnicodeError, KeyError, TypeError) as ex:
                     result["implementation_error"] = str(ex)
 
         if level >= 5:
@@ -388,7 +423,7 @@ class MethodDiscoveryEngine:
             if full_p.exists():
                 try:
                     result["full_source"] = full_p.read_text(encoding="utf-8")
-                except Exception as ex:
+                except (OSError, UnicodeError) as ex:
                     result["full_source_error"] = str(ex)
 
         return result
@@ -535,22 +570,48 @@ class MethodDiscoveryEngine:
             "ranked_candidates_count": len(ranked_candidates)
         }
 
-    def walk_call_tree(self, start_node_id: str, max_depth: int = 3) -> List[str]:
+    def walk_call_tree_detailed(
+        self,
+        start_node_id: str,
+        max_depth: int = 3,
+        max_nodes: int = 500,
+    ) -> Dict[str, Any]:
         """
         Performs bounded downstream BFS call-tree traversal starting from start_node_id.
         Cycle-safe using visited set. Traverses downstream calls: source = curr_id.
         """
+        if max_depth < 0 or max_nodes < 1:
+            raise ValueError("max_depth must be >= 0 and max_nodes must be >= 1")
+
         conn = self._get_db()
         if not conn:
-            return []
+            report = {
+                "discovery_status": "DISCOVERY_INCOMPLETE",
+                "reason": "CODEGRAPH_DATABASE_UNAVAILABLE",
+                "nodes": [],
+                "visited_nodes": 0,
+                "unvisited_nodes": [start_node_id],
+            }
+            self.last_traversal_report = report
+            return report
         cur = conn.cursor()
         visited = set()
         traversal_order = []
         queue = [(start_node_id, 0)]
+        truncated_reasons = set()
+        unvisited_nodes: List[str] = []
         while queue:
             curr_id, depth = queue.pop(0)
-            if curr_id in visited or depth > max_depth:
+            if curr_id in visited:
                 continue
+            if depth > max_depth:
+                truncated_reasons.add("MAX_DEPTH_REACHED")
+                unvisited_nodes.append(curr_id)
+                continue
+            if len(visited) >= max_nodes:
+                truncated_reasons.add("MAX_NODES_REACHED")
+                unvisited_nodes.extend([curr_id] + [node_id for node_id, _ in queue])
+                break
             visited.add(curr_id)
             if depth > 0:
                 traversal_order.append(curr_id)
@@ -563,15 +624,34 @@ class MethodDiscoveryEngine:
                     target_id = r["target"]
                     if target_id not in visited:
                         queue.append((target_id, depth + 1))
-            except Exception:
+            except sqlite3.Error as exc:
+                logger.error("Call-tree query failed for node %s: %s", curr_id, exc)
+                truncated_reasons.add("SQLITE_QUERY_FAILED")
+                unvisited_nodes.extend([node_id for node_id, _ in queue])
                 break
-        return traversal_order
+        report = {
+            "discovery_status": "TRUNCATED" if truncated_reasons else "COMPLETE",
+            "reason": sorted(truncated_reasons),
+            "nodes": traversal_order,
+            "visited_nodes": len(visited),
+            "unvisited_nodes": list(dict.fromkeys(unvisited_nodes)),
+            "max_depth": max_depth,
+            "max_nodes": max_nodes,
+        }
+        self.last_traversal_report = report
+        return report
+
+    def walk_call_tree(self, start_node_id: str, max_depth: int = 3, max_nodes: int = 500) -> List[str]:
+        """Compatibility wrapper returning nodes while retaining detailed status."""
+        return self.walk_call_tree_detailed(start_node_id, max_depth=max_depth, max_nodes=max_nodes)["nodes"]
 
     def discover_adaptive_core_snippets(
         self, 
         spec_text: str, 
         entry_actions: Optional[List[str]] = None, 
-        max_snippets: int = 5
+        max_snippets: int = 5,
+        max_depth: int = 3,
+        max_nodes: int = 500,
     ) -> List[Dict[str, Any]]:
         """
         Adaptive Level 4 JIT Engine:
@@ -602,14 +682,20 @@ class MethodDiscoveryEngine:
                     "SELECT id FROM nodes WHERE is_exported = 1 AND kind IN ('function', 'method', 'class', 'variable', 'constant', 'enum') LIMIT 30"
                 ).fetchall()
                 candidate_ids = [r["id"] for r in rows]
-            except Exception:
-                pass
+            except sqlite3.Error as exc:
+                logger.error("Unable to select adaptive discovery entry nodes: %s", exc)
+                self.last_traversal_report = {
+                    "discovery_status": "DISCOVERY_INCOMPLETE",
+                    "reason": ["ENTRY_NODE_QUERY_FAILED"],
+                    "visited_nodes": 0,
+                    "unvisited_nodes": [],
+                }
                 
         # Step 2: Traverse call tree downstream (BFS)
         target_node_ids = []
         seen_targets = set()
         for cid in candidate_ids:
-            downstream = self.walk_call_tree(cid, max_depth=3)
+            downstream = self.walk_call_tree(cid, max_depth=max_depth, max_nodes=max_nodes)
             for d in downstream:
                 if d not in seen_targets:
                     seen_targets.add(d)
@@ -659,7 +745,8 @@ class MethodDiscoveryEngine:
                         "body": body,
                         "reason": reason
                     })
-            except Exception:
+            except (sqlite3.Error, OSError, UnicodeError, KeyError, TypeError) as exc:
+                logger.warning("Unable to inspect adaptive candidate %s: %s", nid, exc)
                 continue
                 
         return adaptive_snippets

@@ -2,7 +2,7 @@
 name: codegraph-context-discovery
 description: >-
   Reverse-engineers the codebase context for a module using CodeGraph Knowledge Graph.
-  Extracts entry points, unrestricted dependency call trees, data models, validation logic,
+  Extracts entry points, cycle-safe dependency call trees, data models, validation logic,
   upstream prerequisites, and downstream side-effects into module-context.md.
   Mandatory primary tool: CodeGraph.
 ---
@@ -10,9 +10,9 @@ description: >-
 # Skill: CodeGraph Context Discovery (Step 1)
 
 ## 1. Description & Trigger Conditions
-* **Purpose:** Discover and map the complete, unrestricted structural and dependency context of the target module using **CodeGraph**. Build a deterministic dependency-aware knowledge graph without relying on hallucinated assumptions or artificial depth cutoffs.
+* **Purpose:** Discover and map structural and dependency context using **CodeGraph**, with deterministic, configurable, cycle-safe traversal and explicit completeness reporting.
 * **Core Philosophy:** **Optimize Context Consumption, NOT Discovery Coverage.**
-  * Graph Discovery is exhaustive and unrestricted.
+  * Graph discovery is bounded by configurable safety ceilings and never hides truncation.
   * LLM Context Loading is selective, on-demand, and progressive.
 * **Triggers:**
   * Completed `module-intake`.
@@ -31,12 +31,13 @@ description: >-
 
 ## 4. Architectural Principles: Discovery vs. Context Loading
 
-### 4.1. Unrestricted Dependency Discovery (No Artificial Caps)
+### 4.1. Controlled Dependency Discovery
 * **NO Node Limits:** Strictly PROHIBIT artificial caps on the number of nodes CodeGraph is permitted to explore.
-* **NO Depth Limits:** Strictly PROHIBIT artificial dependency depth cutoffs (e.g., depth = 2, 3, or 5). Traverse the complete chain of direct, indirect, and cross-module dependencies relevant to the module under test.
+* **Configurable limits:** Traverse direct, indirect, and cross-module dependencies with configurable `max_depth` and `max_nodes` values appropriate to repository size.
 * **NO Budget-Based Truncation:** Strictly PROHIBIT cutting short or pruning the dependency graph merely because a token budget was reached.
 * **NO Arbitrary Stopping:** Strictly PROHIBIT halting exploration upon finding an arbitrary threshold of functions, classes, or modules.
-* **NO Top-K Pruning:** Strictly PROHIBIT Top-K filtering that discards business-logic or testing-risk dependencies.
+* **No silent pruning:** Candidate or node ceilings are safety controls. When reached, preserve pending node identifiers and report `DISCOVERY_STATUS: TRUNCATED`.
+* **Incomplete discovery:** Parser, SQLite, timeout, or index failures must produce `DISCOVERY_INCOMPLETE`; do not claim completion.
 * **Technical Safety Guards Only:** Maintain robust safeguards against real technical obstacles:
   * Maintain `visited_set` tracking and cycle detection to prevent infinite loops in cyclic dependencies.
   * Exclude binary, vendor, and build artifact folders (`node_modules/`, `dist/`, `.git/`, test fixtures).
@@ -116,7 +117,7 @@ description: >-
 ## 6. Expected Outputs
 * `module-context.md` containing:
   * Module Overview & Entry Points.
-  * Comprehensive Dependency Call Tree (Upstream / Downstream & Cross-Module, unrestricted depth).
+  * Dependency Call Tree (Upstream / Downstream & Cross-Module) plus traversal status, configured ceilings, and any unvisited nodes.
   * Business Flow Reconstruction & State Transitions.
   * Data Models, Validations & Database Schemas.
   * Security, Concurrency, Error Handling & Throttling Mechanisms.

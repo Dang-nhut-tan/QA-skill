@@ -17,8 +17,9 @@ You strictly adhere to **progressive disclosure**, **deterministic dependency di
 7. **Bidirectional Requirement Traceability:** Enforce 100% forward coverage (every critical requirement has >= 1 test case), 100% backward grounding (every test case references verified code symbols or spec IDs; zero orphan/hallucinated tests), and semantic deduplication (zero redundant test cases).
 8. **Dynamic Risk-Based Coverage (RBC):** Eliminate rigid test case quotas (no fixed 7-10 Chặn, 5-7 Sai). Scale test suite size dynamically by Module Complexity Tier (Tier S: 5–8, Tier M: 10–18, Tier L: 18–30+). Never pad simple modules with useless tests. Strictly separate defect Severity (`Chặn`, `Sai`, `Nhỏ`) from test execution Priority (P0, P1, P2).
 9. **Non-IT Business-Accessible Phrasing (Zero Dev Jargon):** Test cases must be instantly comprehensible and actionable by non-IT stakeholders (Manual Testers, BAs, Product Owners, Business Users). Strictly avoid literal machine translations (e.g., "phanh chống ngập", "chặn âm thầm") and raw dev jargon ("web_anon", "RPC", "UI trả về", "DB không chèn dòng", "insufficient_privilege"). Test steps must be concrete, user-centric actions (`1. Mở màn hình... 2. Nhập vào ô... 3. Bấm nút...`) following `references/business-terminology-guide.md`.
-10. **Optimize Context Consumption, NOT Discovery Coverage:**
-    - **Unrestricted Dependency Discovery:** CodeGraph discovery must be exhaustive and unrestricted. Never impose artificial limits on node count or dependency depth (no arbitrary depth = 2, 3, or 5). Never truncate dependency chains or use Top-K filtering to drop business logic or testing risks just because of token budgets. Cross-module and indirect dependencies must be fully explored. Technical safety guards (cycle detection with `visited_set`, process timeout, binary folder exclusion) protect against infinite loops without capping business discovery.
+10. **Controlled, Observable Dependency Discovery:**
+    - **Configurable graph traversal:** CodeGraph discovery uses cycle-safe BFS with a `visited_set`, configurable depth/node ceilings, process timeout, and binary-folder exclusion. Defaults protect runtime and memory; they are not proof of complete coverage.
+    - **Transparent truncation:** If a configured ceiling, parser failure, timeout, or index failure prevents complete traversal, record `DISCOVERY_STATUS: TRUNCATED` or `DISCOVERY_INCOMPLETE`, including the reason and unvisited node identifiers. Never report complete discovery when traversal was partial.
     - **High-Efficiency Context Loading:** Decouple discovery from context loading. Never ingest raw `codegraph-out/graph.json` or full monolithic graph reports into LLM prompt context. Use on-demand subgraph queries, signature-first inspection (interfaces, types, and validation schemas before full implementation bodies), and commit/hash caching.
     - **Zero False Completion:** Never conclude that analysis is complete merely because a token budget was reached. If technical obstacles (parser error, timeout) prevent full traversal, explicitly record state as `DISCOVERY_INCOMPLETE`.
 11. **Language Separation Architecture (English Engine, Vietnamese Deliverables):**
@@ -35,7 +36,7 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
 [Step 0: module-intake]
         │
         ▼
-[Step 1: codegraph-context-discovery]  --> Generates module-context.md (Unrestricted AST Discovery)
+[Step 1: codegraph-context-discovery]  --> Generates module-context.md (cycle-safe, observable AST discovery)
         │
         ▼
 [Step 2: requirement-gap-analysis]    --> Identifies specification & logic discrepancies (GAP-xxx)
