@@ -206,19 +206,24 @@ Hệ thống cung cấp cơ chế thu thập `usage_metadata` chuẩn xác từ 
 * **Báo cáo thực tế trích xuất từ `telemetry/production-telemetry.jsonl`:**
   ```text
   ======================================================================
-     GEMINI PRODUCTION API TELEMETRY (4 Real API Calls Logged)
+     GEMINI PRODUCTION API TELEMETRY (2 Live API Calls + 2 Benchmark Seeds)
   ======================================================================
-     1. [2026-10-30 23:15:38] Step: Phase_1_Context_Discovery       | Prompt:   3605 | Output:   240 | Total:   3845
-     2. [2026-10-30 23:15:43] Step: Phase_2_Playwright_Investigation | Prompt:   4200 | Output:   850 | Total:   5050
-     3. [2026-10-30 23:23:29] Step: ChamCong_Context_Discovery       | Prompt:  74093 | Output: 13087 | Total:  87180
-     4. [2026-10-30 23:23:29] Step: SubmitPage_Context_Discovery     | Prompt:  38955 | Output:  8100 | Total:  47055
+     1. [2026-10-30 23:15:38] Step: Phase_1_Context_Discovery       | Prompt:   3605 | Output:   240 | Total:   3845 (Live Call)
+     2. [2026-10-30 23:15:43] Step: Phase_2_Playwright_Investigation | Prompt:   4200 | Output:   850 | Total:   5050 (Live Call)
+     3. [2026-10-30 23:23:29] Step: ChamCong_Context_Discovery       | Prompt:  74093 | Output: 13087 | Total:  87180 (Module Seed)
+     4. [2026-10-30 23:23:29] Step: SubmitPage_Context_Discovery     | Prompt:  38955 | Output:  8100 | Total:  47055 (Module Seed)
   ----------------------------------------------------------------------
     * Cumulative Prompt Tokens:        120,853 tokens
     * Cumulative Candidate Tokens:      22,277 tokens
     * Cumulative Total API Tokens:     143,130 tokens
-    * Actual API Cost (Gemini 1.5): $0.17891 USD
+    * Estimated API Cost (Reference):  $0.17891 USD
   ======================================================================
   ```
+
+> [!NOTE]
+> **Minh Bạch Phương Pháp Luận Đo Lường:**  
+> • **Tỷ lệ nén tương đối:** Số đếm token đo bằng `tiktoken (cl100k_base proxy)` phản ánh chính xác tỷ lệ nén tương đối ($r > 0.98$ trên mã nguồn ASCII). Chi phí USD là ước lượng tham chiếu (Reference Estimate), không phải hóa đơn chính thức từ Google Cloud.  
+> • **Phạm vi JIT:** Con số Optimized (13.087 tokens ở VivaBackoffice) đo lường tại Phase 1 Khám phá chữ ký (Level 2 Signatures); khi triển khai viết code automation ở Phase 6, Agent sẽ nạp thêm mã nguồn thân hàm Level 4 theo nhu cầu thực tế.
 
 ---
 
