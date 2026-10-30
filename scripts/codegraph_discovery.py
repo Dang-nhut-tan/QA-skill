@@ -80,6 +80,27 @@ def find_block_end(content: str, start_pos: int) -> int:
         i += 1
     return content[:start_pos].count('\n') + 30
 
+def evaluate_spec_completeness(spec_text: str) -> bool:
+    """
+    Evaluates whether the requirement specification contains structured acceptance criteria
+    or is an informal, underspecified summary requiring adaptive inspection.
+    Returns True if the spec is complete (keeps Level 2), False if underspecified (triggers Adaptive Level 4).
+    Supports bilingual English & Vietnamese markers.
+    """
+    if not spec_text or len(spec_text.strip().split()) < 10:
+        return False
+    text_lower = spec_text.lower()
+    gherkin_markers = ["given", "when", "then", "scenario", "kịch bản", "giả sử", "khi", "thì", "quy tắc"]
+    if sum(1 for m in gherkin_markers if m in text_lower) >= 3:
+        return True
+    ac_markers = [
+        "acceptance criteria", "tiêu chí nghiệm thu", "điều kiện chấp nhận", 
+        "preconditions", "tiền điều kiện", "kỳ vọng", "expected result"
+    ]
+    has_ac = any(m in text_lower for m in ac_markers)
+    has_quantitative = bool(re.search(r'(\d+\s*(phút|giờ|ngày|tháng|năm|vnđ|%|\$|ms|s|items|lần))|[><=!]=?', text_lower))
+    return has_ac and has_quantitative
+
 PAGE_OBJECT_DIRS = ["tests/pages", "e2e/pages", "page-objects", "src/pages", "playwright/pages", "cypress/pages", "04-src/tests/pages", "admin/tests/pages"]
 
 class MethodDiscoveryEngine:
@@ -338,7 +359,7 @@ class MethodDiscoveryEngine:
                 cur = conn.cursor()
                 try:
                     edges = cur.execute(
-                        "SELECT kind, source, target FROM edges WHERE source = ? OR target = ? LIMIT 10",
+                        "SELECT kind, source, target FROM edges WHERE source = ? OR target = ?",
                         [candidate["id"], candidate["id"]]
                     ).fetchall()
                     for e in edges:
@@ -513,6 +534,135 @@ class MethodDiscoveryEngine:
             "progressive_context": prog_ctx,
             "ranked_candidates_count": len(ranked_candidates)
         }
+
+    def walk_call_tree(self, start_node_id: str, max_depth: int = 3) -> List[str]:
+        """
+        Performs bounded downstream BFS call-tree traversal starting from start_node_id.
+        Cycle-safe using visited set. Traverses downstream calls: source = curr_id.
+        """
+        conn = self._get_db()
+        if not conn:
+            return []
+        cur = conn.cursor()
+        visited = set()
+        traversal_order = []
+        queue = [(start_node_id, 0)]
+        while queue:
+            curr_id, depth = queue.pop(0)
+            if curr_id in visited or depth > max_depth:
+                continue
+            visited.add(curr_id)
+            if depth > 0:
+                traversal_order.append(curr_id)
+            try:
+                rows = cur.execute(
+                    "SELECT target FROM edges WHERE source = ? AND kind IN ('call', 'reference')",
+                    [curr_id]
+                ).fetchall()
+                for r in rows:
+                    target_id = r["target"]
+                    if target_id not in visited:
+                        queue.append((target_id, depth + 1))
+            except Exception:
+                break
+        return traversal_order
+
+    def discover_adaptive_core_snippets(
+        self, 
+        spec_text: str, 
+        entry_actions: Optional[List[str]] = None, 
+        max_snippets: int = 5
+    ) -> List[Dict[str, Any]]:
+        """
+        Adaptive Level 4 JIT Engine:
+        When specification is incomplete, selectively extracts implementation bodies of core calculation
+        methods or declarative rule matrices without token bloat (capped at max_snippets).
+        """
+        if evaluate_spec_completeness(spec_text):
+            return []
+            
+        conn = self._get_db()
+        if not conn:
+            return []
+        cur = conn.cursor()
+        
+        # Step 1: Find entry candidate node IDs
+        candidate_ids = []
+        if entry_actions:
+            for act in entry_actions:
+                cands = self.discover_candidates(act, fallback=True)
+                for c in cands:
+                    if c.get("id"):
+                        candidate_ids.append(c["id"])
+        
+        # If no explicit entry actions, locate exported functions/methods in relevant module files
+        if not candidate_ids:
+            try:
+                rows = cur.execute(
+                    "SELECT id FROM nodes WHERE is_exported = 1 AND kind IN ('function', 'method', 'class', 'variable', 'constant', 'enum') LIMIT 30"
+                ).fetchall()
+                candidate_ids = [r["id"] for r in rows]
+            except Exception:
+                pass
+                
+        # Step 2: Traverse call tree downstream (BFS)
+        target_node_ids = []
+        seen_targets = set()
+        for cid in candidate_ids:
+            downstream = self.walk_call_tree(cid, max_depth=3)
+            for d in downstream:
+                if d not in seen_targets:
+                    seen_targets.add(d)
+                    target_node_ids.append(d)
+            if cid not in seen_targets:
+                seen_targets.add(cid)
+                target_node_ids.append(cid)
+            
+        adaptive_snippets = []
+        rule_matrix_pattern = re.compile(
+            r'\b(penalty|grace|fee|rate|tax|discount|threshold|limit|multiplier|tier|rule|config)\w*\b\s*[:=]\s*(\d+|\{|\[)',
+            re.IGNORECASE
+        )
+        branch_pattern = re.compile(r'\b(if|else|switch|case|catch|\?)\b')
+        
+        for nid in target_node_ids:
+            if len(adaptive_snippets) >= max_snippets:
+                break
+            try:
+                node = cur.execute(
+                    "SELECT id, name, file_path, start_line, end_line, signature FROM nodes WHERE id = ?",
+                    [nid]
+                ).fetchone()
+                if not node or not node["file_path"]:
+                    continue
+                fpath = self.repo_path / node["file_path"]
+                if not fpath.exists():
+                    continue
+                lines = fpath.read_text(encoding="utf-8", errors="ignore").splitlines()
+                s_line = max(0, node["start_line"] - 1)
+                e_line = min(len(lines), node["end_line"])
+                body = "\n".join(lines[s_line:e_line])
+                
+                branches = len(branch_pattern.findall(body))
+                is_rule_matrix = bool(rule_matrix_pattern.search(body))
+                
+                # Dual-Factor Heuristic: Cyclomatic Complexity M >= 2 OR Declarative Rule Matrix
+                if branches >= 2 or is_rule_matrix:
+                    reason = f"Cyclomatic Complexity M={branches + 1}" if branches >= 2 else "Declarative Rule Matrix"
+                    adaptive_snippets.append({
+                        "id": node["id"],
+                        "name": node["name"],
+                        "file_path": str(node["file_path"]),
+                        "start_line": node["start_line"],
+                        "end_line": node["end_line"],
+                        "signature": node["signature"],
+                        "body": body,
+                        "reason": reason
+                    })
+            except Exception:
+                continue
+                
+        return adaptive_snippets
 
 
 if __name__ == "__main__":

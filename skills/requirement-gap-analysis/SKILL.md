@@ -39,6 +39,14 @@ description: >-
      3. `Missing Documentation`: Feature exists in code but has zero written specification.
      4. `Environment / Test Data Limitation`: Feature requires external SMS/email gateway or hardware.
      5. `Confirmed Defect`: Clear breach of explicit documented business rule.
+
+1.5. **Adaptive Level 4 JIT Inspection for Underspecified Requirements:**
+   * Evaluate the available specification text using `evaluate_spec_completeness(spec_text)`.
+   * **If the specification is incomplete / underspecified (lacking BDD Gherkin or quantitative Acceptance Criteria):**
+     - Run `discover_adaptive_core_snippets(spec_text, entry_actions)` via `scripts/codegraph_discovery.py` to selectively inspect the implementation bodies of core calculation methods or declarative rule matrices (Cyclomatic $M \ge 2$ or business rule dictionaries).
+     - **Ephemeral Scoped Context Rule:** These code snippets are strictly temporary working context for Step 2 to detect hidden business logic and construct high-precision clarification questions. **DO NOT write raw implementation bodies into `module-context.md`**.
+     - **Neutral Discrepancy Protocol:** At Human Gate 1, formulate questions neutrally with multiple options (Option A: standard industry practice, Option B: current code implementation, Option C: alternative policy, Option D: custom). Never anchor or lead the BA into codifying developer bugs.
+
 2. **Formulate BA/PO Clarification Table:**
    * Create prioritized table with columns:
      * `Issue ID` (e.g., `GAP-001`)

@@ -99,6 +99,21 @@ def sanitize_metadata(data: Any) -> Any:
 
 STATE_FILE_NAME = ".qa-state.json"
 
+def _resolve_state_file(workspace_root: Path, module_name: Optional[str] = None) -> Path:
+    if module_name:
+        slug = re.sub(r'[^a-zA-Z0-9_-]', '_', module_name.strip().lower())
+        return workspace_root / f".qa-state-{slug}.json"
+    
+    # Smart auto-detection: if default .qa-state.json does not exist,
+    # but there is exactly 1 .qa-state-*.json file, auto-select it.
+    default_file = workspace_root / STATE_FILE_NAME
+    if not default_file.exists():
+        custom_files = [p for p in workspace_root.glob(".qa-state-*.json") if not p.name.endswith(".bak") and not p.name.endswith(".tmp")]
+        if len(custom_files) == 1:
+            return custom_files[0]
+            
+    return default_file
+
 def _dedup_list(items: List[Any]) -> List[Any]:
     """
     Deduplicates a list while preserving original input order.
@@ -118,9 +133,10 @@ def _dedup_list(items: List[Any]) -> List[Any]:
     return result
 
 class WorkflowStateManager:
-    def __init__(self, workspace_root: Optional[str] = None):
+    def __init__(self, workspace_root: Optional[str] = None, module_name: Optional[str] = None):
         self.workspace_root = Path(workspace_root or os.getcwd()).resolve()
-        self.state_file = self.workspace_root / STATE_FILE_NAME
+        self.module_name = module_name
+        self.state_file = _resolve_state_file(self.workspace_root, module_name)
 
     def _now(self) -> str:
         return datetime.now(timezone.utc).isoformat()
@@ -172,6 +188,9 @@ class WorkflowStateManager:
         os.replace(tmp_file, self.state_file)
 
     def init_state(self, module_name: str, repo_info: Dict[str, Any], docs: Optional[List[str]] = None) -> Dict[str, Any]:
+        if self.module_name is not None:
+            self.module_name = module_name
+            self.state_file = _resolve_state_file(self.workspace_root, module_name)
         doc_hashes = {}
         if docs:
             for d in docs:
@@ -339,24 +358,36 @@ class WorkflowStateManager:
         }
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python state_manager.py [init|status|transition|validate] [args...]")
+    raw_args = sys.argv[1:]
+    module_arg = None
+    clean_args = []
+    idx = 0
+    while idx < len(raw_args):
+        if raw_args[idx] in ("--module", "-m") and idx + 1 < len(raw_args):
+            module_arg = raw_args[idx + 1]
+            idx += 2
+        else:
+            clean_args.append(raw_args[idx])
+            idx += 1
+
+    if not clean_args:
+        print("Usage: python state_manager.py [init|status|transition|validate] [args...] [--module <mod>]")
         sys.exit(1)
 
-    cmd = sys.argv[1].lower()
-    mgr = WorkflowStateManager()
+    cmd = clean_args[0].lower()
+    mgr = WorkflowStateManager(module_name=module_arg)
 
     if cmd == "init":
-        mod_name = sys.argv[2] if len(sys.argv) > 2 else "UnknownModule"
+        mod_name = clean_args[1] if len(clean_args) > 1 else (module_arg or "UnknownModule")
         s = mgr.init_state(mod_name, {"cwd": str(Path.cwd())})
         print(f"[OK] Initialized workflow state for '{mod_name}'. Current state: {s['current_state']}")
 
     elif cmd == "status":
         if not mgr.exists():
-            print(f"[ERROR] No {STATE_FILE_NAME} found in current directory.")
+            print(f"[ERROR] No {mgr.state_file.name} found in current directory.")
             sys.exit(1)
         s = mgr.load()
-        if "--compact" in sys.argv or "-c" in sys.argv:
+        if "--compact" in clean_args or "-c" in clean_args:
             pa = s.get('pending_approval')
             pa_str = pa.get('checkpoint') if isinstance(pa, dict) else "None"
             print(f"Module: {s.get('module_name')} | State: {s.get('current_state')} | Pending: {pa_str}")
@@ -371,10 +402,10 @@ if __name__ == "__main__":
             print(f"Artifacts: {', '.join(arts) if arts else 'None'}")
 
     elif cmd == "get":
-        if len(sys.argv) < 3:
-            print("Usage: python state_manager.py get <field_path>")
+        if len(clean_args) < 2:
+            print("Usage: python state_manager.py get <field_path> [--module <mod>]")
             sys.exit(1)
-        val = mgr.get_field(sys.argv[2])
+        val = mgr.get_field(clean_args[1])
         if val is None:
             print("null")
         elif isinstance(val, (dict, list)):
@@ -383,13 +414,13 @@ if __name__ == "__main__":
             print(val)
 
     elif cmd == "transition":
-        if len(sys.argv) < 3:
-            print(f"Usage: python state_manager.py transition <TARGET_STATE> [note] [--metadata '<json>']")
+        if len(clean_args) < 2:
+            print(f"Usage: python state_manager.py transition <TARGET_STATE> [note] [--metadata '<json>'] [--module <mod>]")
             sys.exit(1)
-        tgt = sys.argv[2]
+        tgt = clean_args[1]
         note_parts = []
         meta = None
-        args = sys.argv[3:]
+        args = clean_args[2:]
         i = 0
         while i < len(args):
             if args[i] == "--metadata" and i + 1 < len(args):
@@ -407,11 +438,11 @@ if __name__ == "__main__":
         print(f"[OK] State transitioned to {s['current_state']}")
 
     elif cmd == "set-field":
-        if len(sys.argv) < 4:
-            print("Usage: python state_manager.py set-field <field_path> <value>")
+        if len(clean_args) < 3:
+            print("Usage: python state_manager.py set-field <field_path> <value> [--module <mod>]")
             sys.exit(1)
-        field_path = sys.argv[2]
-        raw_val = sys.argv[3]
+        field_path = clean_args[1]
+        raw_val = clean_args[2]
         try:
             val = json.loads(raw_val)
         except Exception:
@@ -420,17 +451,17 @@ if __name__ == "__main__":
         print(f"[OK] Field '{field_path}' updated successfully.")
 
     elif cmd == "set-artifact":
-        if len(sys.argv) < 4:
-            print("Usage: python state_manager.py set-artifact <artifact_key> <file_path>")
+        if len(clean_args) < 3:
+            print("Usage: python state_manager.py set-artifact <artifact_key> <file_path> [--module <mod>]")
             sys.exit(1)
-        art_key = sys.argv[2]
-        art_path = sys.argv[3]
+        art_key = clean_args[1]
+        art_path = clean_args[2]
         s = mgr.set_artifact(art_key, art_path)
         print(f"[OK] Artifact '{art_key}' set to: {art_path}")
 
     elif cmd == "validate":
         res = mgr.validate_integrity()
-        if "--json" in sys.argv:
+        if "--json" in clean_args:
             print(json.dumps(res, indent=2))
         else:
             if res.get("valid"):

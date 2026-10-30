@@ -1,0 +1,62 @@
+{
+  "$schema": "https://docs.getxray.app/schemas/test-case-importer-mapping.json",
+  "version": "1.0",
+  "description": "Standard Jira Xray Excel/CSV Field Mapping Configuration for QA Agent System Test Cases",
+  "projectKey": "QA",
+  "testIssueType": "Test",
+  "testType": "Manual",
+  "fieldMappings": [
+    {
+      "column": "Test Case ID",
+      "jiraField": "externalId",
+      "required": true
+    },
+    {
+      "column": "Test Case Name",
+      "jiraField": "summary",
+      "required": true
+    },
+    {
+      "column": "Module",
+      "jiraField": "components",
+      "delimiter": ","
+    },
+    {
+      "column": "Preconditions",
+      "jiraField": "xray:preconditions",
+      "fallbackJiraField": "description"
+    },
+    {
+      "column": "Severity",
+      "jiraField": "priority",
+      "valueMap": {
+        "Chặn": "Blocker",
+        "Blocker": "Blocker",
+        "Nghiêm trọng": "Critical",
+        "Critical": "Critical",
+        "Cao": "High",
+        "High": "High",
+        "Trung bình": "Medium",
+        "Medium": "Medium",
+        "Thấp": "Low",
+        "Low": "Low"
+      }
+    },
+    {
+      "column": "Automation Ready",
+      "jiraField": "labels",
+      "valueMap": {
+        "Yes": "automation-ready",
+        "No": "manual-only"
+      }
+    }
+  ],
+  "stepMappings": {
+    "stepType": "Manual",
+    "columns": {
+      "action": "Test Steps",
+      "data": "Test Data",
+      "result": "Expected Result"
+    }
+  }
+}

@@ -80,7 +80,7 @@ class CodeGraphPreflight:
                 [cli_bin, "--version"],
                 capture_output=True,
                 text=True,
-                timeout=5,
+                timeout=10,
                 shell=True
             )
             if res.returncode == 0:
