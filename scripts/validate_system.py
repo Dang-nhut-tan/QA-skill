@@ -106,9 +106,14 @@ def check_codegraph_tool():
 
 def check_playwright_cli():
     try:
-        res = subprocess.run(["npx", "--yes", "playwright", "--version"], capture_output=True, text=True, shell=False, timeout=5)
-        if res.returncode == 0 and res.stdout.strip():
-            return f"Operational: {res.stdout.strip()}"
+        executable = shutil.which("npx")
+        if executable:
+            command = [executable, "--yes", "playwright", "--version"]
+            if os.name == "nt" and Path(executable).suffix.lower() in {".cmd", ".bat"}:
+                command = [os.environ.get("COMSPEC", "cmd.exe"), "/d", "/s", "/c", executable, "--yes", "playwright", "--version"]
+            res = subprocess.run(command, capture_output=True, text=True, shell=False, timeout=5)
+            if res.returncode == 0 and res.stdout.strip():
+                return f"Operational: {res.stdout.strip()}"
     except (OSError, subprocess.SubprocessError) as exc:
         logger.warning("Unable to invoke Playwright through npx: %s", exc)
     for cur in [Path.cwd(), *Path.cwd().parents]:
