@@ -125,13 +125,90 @@ class BaseLanguageASTAdapter(ABC):
 
 
 class JavaScriptTypeScriptASTAdapter(BaseLanguageASTAdapter):
-    """Marker adapter for the existing JavaScript/TypeScript fallback scanner."""
+    """Active adapter for JavaScript/TypeScript fallback scanning."""
 
     language = "javascript-typescript"
     extensions = (".js", ".jsx", ".mjs", ".ts", ".tsx")
 
+    def __init__(self, synonyms: Optional[Dict[str, List[str]]] = None):
+        self.synonyms = synonyms or {}
+
+    def get_search_terms(self, action_name: str) -> List[str]:
+        action_clean = action_name.strip().lower()
+        terms = {action_clean, action_clean.replace("_", ""), action_clean.replace("-", "")}
+        for cat, syns in self.synonyms.items():
+            cat_lower = cat.lower()
+            syns_lower = [s.lower() for s in syns]
+            if action_clean == cat_lower or action_clean in syns_lower or cat_lower in action_clean:
+                terms.add(cat_lower)
+                for s in syns_lower:
+                    if len(s) >= 3:
+                        terms.add(s)
+        return list(terms)
+
     def discover(self, repo_path: Path, action: str, scope_hint: Optional[str] = None) -> List[Dict[str, Any]]:
-        raise NotImplementedError("The legacy scanner is hosted by MethodDiscoveryEngine until V7 extraction")
+        candidates = []
+        search_terms = self.get_search_terms(action)
+        action_pattern = "|".join(re.escape(t) for t in sorted(search_terms, key=len, reverse=True))
+
+        target_dirs = list(PAGE_OBJECT_DIRS)
+        if scope_hint:
+            target_dirs.insert(0, scope_hint)
+
+        p_patterns = [
+            re.compile(rf'(?:async\s+)?([a-zA-Z0-9_$]*(?:{action_pattern})[a-zA-Z0-9_$]*)\s*\((.*?)\)\s*(?::\s*[^{{]+)?\{{', re.IGNORECASE | re.DOTALL),
+            re.compile(rf'(?:export\s+)?(?:const|let|var)\s+([a-zA-Z0-9_$]*(?:{action_pattern})[a-zA-Z0-9_$]*)\s*=\s*(?:async\s*)?\((.*?)\)\s*(?::\s*[^=]+)?=>', re.IGNORECASE | re.DOTALL),
+            re.compile(rf'([a-zA-Z0-9_$]*(?:{action_pattern})[a-zA-Z0-9_$]*)\s*\((.*?)\)\s*(?::\s*([^{{]+))?\{{', re.IGNORECASE | re.DOTALL)
+        ]
+
+        seen_candidates = set()
+
+        for td in target_dirs:
+            dir_p = repo_path / td
+            if not dir_p.is_dir():
+                continue
+            for root, _, files in os.walk(dir_p):
+                for f in files:
+                    if f.endswith(self.extensions):
+                        f_path = Path(root) / f
+                        try:
+                            content = f_path.read_text(encoding="utf-8", errors="ignore")
+                            rel_p = f_path.relative_to(repo_path).as_posix()
+                            total_lines = content.count("\n") + 1
+
+                            for p_regex in p_patterns:
+                                for match in p_regex.finditer(content):
+                                    m_name = match.group(1).replace("async", "").strip()
+                                    if not m_name or not any(t in m_name.lower() for t in search_terms):
+                                        continue
+
+                                    start_pos = match.start()
+                                    start_line = content[:start_pos].count("\n") + 1
+                                    cand_key = f"{rel_p}:{m_name}:{start_line}"
+                                    if cand_key in seen_candidates:
+                                        continue
+                                    seen_candidates.add(cand_key)
+
+                                    sig_raw = match.group(0).rstrip("{").strip()
+                                    sig_compact = " ".join(line.strip() for line in sig_raw.splitlines())
+
+                                    candidates.append({
+                                        "id": f"fallback:{rel_p}:{start_line}",
+                                        "kind": "method/function",
+                                        "name": m_name,
+                                        "qualified_name": f"{rel_p}::{m_name}",
+                                        "file_path": rel_p,
+                                        "start_line": start_line,
+                                        "end_line": min(find_block_end(content, start_pos), total_lines),
+                                        "signature": sig_compact,
+                                        "docstring": "",
+                                        "is_exported": "export" in sig_compact,
+                                        "source": "fallback_ast_scan"
+                                    })
+                        except (OSError, UnicodeError) as exc:
+                            logger.warning("Unable to inspect fallback source %s: %s", f_path, exc)
+
+        return candidates
 
 class MethodDiscoveryEngine:
     def __init__(self, repo_path: Path):
@@ -144,6 +221,9 @@ class MethodDiscoveryEngine:
         }
         self._conn = None
         self.synonyms = self._load_synonyms()
+        self.adapters: List[BaseLanguageASTAdapter] = [
+            JavaScriptTypeScriptASTAdapter(synonyms=self.synonyms)
+        ]
 
     def _load_synonyms(self) -> Dict[str, List[str]]:
         """
@@ -235,7 +315,7 @@ class MethodDiscoveryEngine:
                         terms.add(s.replace("_", ""))
         return [t for t in terms if len(t) >= 2]
 
-    def discover_candidates(self, action_name: str, scope_hint: Optional[str] = None, fallback: bool = True) -> List[Dict[str, Any]]:
+    def discover_candidates(self, action_name: str, scope_hint: Optional[str] = None, fallback: bool = True, max_candidates: int = 30) -> List[Dict[str, Any]]:
         """
         Queries CodeGraph SQLite nodes for matching methods, functions, and object properties.
         Falls back to Page Object / helper file scanning if CodeGraph has no matches or DB is absent.
@@ -246,9 +326,7 @@ class MethodDiscoveryEngine:
         conn = self._get_db()
         if conn:
             cur = conn.cursor()
-            query_sql = """
-            SELECT id, kind, name, qualified_name, file_path, start_line, end_line, signature, docstring, is_exported
-            FROM nodes
+            base_where = """
             WHERE (
                 lower(name) = ?
                 OR lower(name) LIKE ?
@@ -256,16 +334,24 @@ class MethodDiscoveryEngine:
             )
             AND kind IN ('function', 'method', 'arrow_function', 'constant', 'property', 'class')
             """
+            count_sql = "SELECT count(*) FROM nodes " + base_where
+            query_sql = """
+            SELECT id, kind, name, qualified_name, file_path, start_line, end_line, signature, docstring, is_exported
+            FROM nodes
+            """ + base_where
             params = [action_clean, f"%{action_clean}%", f"%{action_clean}%"]
 
             if scope_hint:
+                count_sql += " AND lower(file_path) LIKE ?"
                 query_sql += " AND lower(file_path) LIKE ?"
                 params.append(f"%{scope_hint.strip().lower()}%")
 
-            query_sql += " ORDER BY CASE WHEN lower(name) = ? THEN 0 ELSE 1 END, start_line LIMIT 30"
+            count_params = list(params)
+            query_sql += f" ORDER BY CASE WHEN lower(name) = ? THEN 0 ELSE 1 END, start_line LIMIT {int(max_candidates)}"
             params.append(action_clean)
 
             try:
+                total_matched = cur.execute(count_sql, count_params).fetchone()[0]
                 rows = cur.execute(query_sql, params).fetchall()
                 for r in rows:
                     candidates.append({
@@ -281,6 +367,10 @@ class MethodDiscoveryEngine:
                         "is_exported": bool(r["is_exported"]),
                         "source": "codegraph_index"
                     })
+                if total_matched > max_candidates:
+                    self.last_traversal_report.setdefault("warnings", []).append(
+                        f"Candidate query for '{action_name}' matched {total_matched} items; truncated to top {max_candidates}."
+                    )
             except sqlite3.Error as exc:
                 logger.warning("CodeGraph candidate query failed; fallback scanning will be used: %s", exc)
 
@@ -291,13 +381,17 @@ class MethodDiscoveryEngine:
 
     def fallback_search(self, action_name: str, scope_hint: Optional[str] = None) -> List[Dict[str, Any]]:
         """
-        Deterministic regex fallback scanner for repositories without CodeGraph DB
-        or for dynamic objects not captured in the AST index.
-        Scans Page Object directories and helper folders.
-        Supports single-line and multi-line method signatures (e.g. formatted by Prettier),
-        and expands domain synonyms (e.g. Vietnamese 'dang_nhap' -> finds 'login').
+        Deterministic multi-language fallback scanner.
+        Delegates to registered AST adapters (e.g. JavaScriptTypeScriptASTAdapter).
         """
         candidates = []
+        for adapter in self.adapters:
+            try:
+                candidates.extend(adapter.discover(self.repo_path, action_name, scope_hint))
+            except Exception as exc:
+                logger.warning("Adapter %s failed: %s", getattr(adapter, 'language', 'unknown'), exc)
+        if candidates:
+            return candidates
         search_terms = self._get_search_terms(action_name)
         action_pattern = "|".join(re.escape(t) for t in sorted(search_terms, key=len, reverse=True))
 
@@ -678,10 +772,17 @@ class MethodDiscoveryEngine:
         # If no explicit entry actions, locate exported functions/methods in relevant module files
         if not candidate_ids:
             try:
+                total_exported = cur.execute(
+                    "SELECT count(*) FROM nodes WHERE is_exported = 1 AND kind IN ('function', 'method', 'class', 'variable', 'constant', 'enum')"
+                ).fetchone()[0]
                 rows = cur.execute(
-                    "SELECT id FROM nodes WHERE is_exported = 1 AND kind IN ('function', 'method', 'class', 'variable', 'constant', 'enum') LIMIT 30"
+                    f"SELECT id FROM nodes WHERE is_exported = 1 AND kind IN ('function', 'method', 'class', 'variable', 'constant', 'enum') LIMIT {int(max_nodes)}"
                 ).fetchall()
                 candidate_ids = [r["id"] for r in rows]
+                if total_exported > max_nodes:
+                    self.last_traversal_report.setdefault("warnings", []).append(
+                        f"Exported entry nodes matched {total_exported} items; truncated to top {max_nodes}."
+                    )
             except sqlite3.Error as exc:
                 logger.error("Unable to select adaptive discovery entry nodes: %s", exc)
                 self.last_traversal_report = {
