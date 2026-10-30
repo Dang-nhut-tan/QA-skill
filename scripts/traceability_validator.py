@@ -131,10 +131,21 @@ def validate_traceability(data: Dict[str, Any]) -> Dict[str, Any]:
         for req in declared_requirements:
             req_clean = req.strip()
             # Match if req is a token or part of any token
-            matched = any(
-                req_clean.lower() in token.lower() or token.lower() in req_clean.lower()
-                for token in all_referenced_tokens
-            )
+            # Exact token matching or word boundary regex (prevents 'REQ-1' from falsely matching 'REQ-10', 'REQ-100')
+            matched = False
+            for token in all_referenced_tokens:
+                t_clean = token.strip().lower()
+                r_clean = req_clean.lower()
+                if t_clean == r_clean:
+                    matched = True
+                    break
+                # Word-boundary check: ensures 'REQ-1' matches in 'REQ-1 / SPEC-01' but NOT in 'REQ-10'
+                if re.search(rf'(?<![A-Za-z0-9_-]){re.escape(r_clean)}(?![A-Za-z0-9_-])', t_clean):
+                    matched = True
+                    break
+                if re.search(rf'(?<![A-Za-z0-9_-]){re.escape(t_clean)}(?![A-Za-z0-9_-])', r_clean):
+                    matched = True
+                    break
             if matched:
                 covered_requirements.append(req_clean)
             else:

@@ -472,5 +472,88 @@ class TestQASkillsRegression(unittest.TestCase):
             self.assertEqual(len(res_b), 1)
             self.assertEqual(res_b[0]["id"], p2["id"])
 
+# =========================================================================
+    # Group 11: Enterprise Hardening V3 (Root Import, Exact Traceability & Atomic Recovery)
+    # =========================================================================
+    def test_export_to_excel_callable_from_root(self):
+        from scripts.export_testcases import export_to_excel
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_xlsx = Path(tmp_dir) / "test_v3_export.xlsx"
+            payload = {
+                "testcases": [
+                    {"id": "TC-01", "module": "Auth", "name": "Login", "severity": "Chặn", "automation_ready": "Yes", "requirement_ref": "REQ-1"}
+                ],
+                "gaps": [],
+                "summary": {"module_name": "Auth"}
+            }
+            export_to_excel(payload, tmp_xlsx)
+            self.assertTrue(tmp_xlsx.exists())
+            self.assertGreater(tmp_xlsx.stat().st_size, 1000)
+
+    def test_traceability_exact_matching_avoids_false_positives(self):
+        from scripts.traceability_validator import validate_traceability
+        payload = {
+            "requirements": ["REQ-1", "REQ-10", "REQ-100", "REQ-123"],
+            "testcases": [
+                {"id": "TC-01", "name": "Only for REQ-1", "requirement_ref": "REQ-1"}
+            ]
+        }
+        res = validate_traceability(payload)
+        m = res["metrics"]
+        self.assertEqual(m["covered_requirements_count"], 1, "Only REQ-1 should be covered")
+        self.assertEqual(m["orphan_requirements_count"], 3, "REQ-10, REQ-100, REQ-123 must be orphans")
+        self.assertEqual(m["coverage_percentage"], 25.0, "Coverage must be 25%, NOT 100% false positive!")
+
+    def test_state_manager_atomic_and_corrupted_recovery(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            mgr = WorkflowStateManager(tmp_dir)
+            mgr.init_state("ModuleA", {"repo": "app"})
+            self.assertTrue(mgr.exists())
+
+            mgr.transition("CONTEXT_DISCOVERY", "test transition")
+            bak_file = Path(tmp_dir) / ".qa-state.json.bak"
+            self.assertTrue(bak_file.exists(), "Backup snapshot must exist after save")
+
+            state_file = Path(tmp_dir) / ".qa-state.json"
+            state_file.write_text("CORRUPTED INVALID JSON {", encoding="utf-8")
+
+            loaded = mgr.load()
+            self.assertEqual(loaded.get("module_name"), "ModuleA", "Must self-heal from backup snapshot")
+
+    def test_fsm_closes_human_gate_2_backdoor(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            mgr = WorkflowStateManager(tmp_dir)
+            mgr.init_state("ModuleA", {"repo": "app"})
+            mgr.transition("GAP_ANALYSIS", "1")
+            mgr.transition("TESTCASE_GENERATION", "2")
+            mgr.transition("TESTCASE_REVIEW", "3")
+
+            with self.assertRaises(ValueError) as ctx:
+                mgr.transition("AUTOMATION_IMPLEMENTATION", "Attempting to bypass Gate 2")
+            self.assertIn("FSM Transition Violation", str(ctx.exception))
+
+            s_gate2 = mgr.transition("WAITING_FOR_APPROVED_TESTCASES", "Delivered Excel")
+            self.assertEqual(s_gate2["current_state"], "WAITING_FOR_APPROVED_TESTCASES")
+
+    def test_verify_images_markdown_table_preservation(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_root = Path(tmp_dir)
+            screenshots_dir = tmp_root / "screenshots"
+            screenshots_dir.mkdir(parents=True)
+            (screenshots_dir / "img1.png").write_bytes(b"\x89PNGfake1")
+            (screenshots_dir / "img2.png").write_bytes(b"\x89PNGfake2")
+
+            report = tmp_root / "test-gaps.md"
+            table_line = "| Bước | ![Img1](./screenshots/img1.png) | ![Img2](./screenshots/img2.png) |\n"
+            report.write_text(table_line, encoding="utf-8")
+
+            res = verify_and_fix_report_images(report, tmp_root, auto_fix_links=True)
+            self.assertTrue(res["success"])
+            self.assertEqual(len(res["found_images"]), 2)
+
+            content = report.read_text(encoding="utf-8").strip()
+            self.assertEqual(content.count("\n"), 0, "Table row must remain a single row with inline links!")
+            self.assertIn("<br>*([Mở ảnh gốc", content)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

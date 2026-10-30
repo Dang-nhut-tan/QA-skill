@@ -46,11 +46,16 @@ def extract_code_signatures(code: str, suffix: str) -> str:
     """
     Extracts interfaces, type declarations, class headers, and function signatures
     from source code without implementation bodies.
-    Produces an empirical CodeGraph JIT extraction.
+    Produces an empirical CodeGraph JIT extraction with support for multi-line parameter signatures.
     """
     lines = code.splitlines()
     extracted_lines = []
     in_block_comment = False
+    in_multiline_sig = False
+    in_interface_block = False
+    brace_depth = 0
+
+    CONTROL_KEYWORDS = {"if", "for", "while", "switch", "catch", "finally", "with", "return", "throw", "const", "let", "var", "new"}
 
     for line in lines:
         stripped = line.strip()
@@ -63,10 +68,27 @@ def extract_code_signatures(code: str, suffix: str) -> str:
         if stripped.startswith("//") or stripped.startswith("#") or not stripped:
             continue
 
+        # Check ongoing multi-line signature (e.g. multi-line params formatted by Prettier)
+        if in_multiline_sig:
+            extracted_lines.append(line)
+            if ")" in stripped or "{" in stripped or "=>" in stripped:
+                in_multiline_sig = False
+            continue
+
+        # Check ongoing interface / type block
+        if in_interface_block:
+            brace_depth += stripped.count("{") - stripped.count("}")
+            extracted_lines.append(line)
+            if brace_depth <= 0:
+                in_interface_block = False
+            continue
+
         # Python signatures
         if suffix == ".py":
             if stripped.startswith("class ") or stripped.startswith("def ") or stripped.startswith("@"):
                 extracted_lines.append(line)
+                if "(" in stripped and ")" not in stripped:
+                    in_multiline_sig = True
         # TS / JS signatures
         elif suffix in {".ts", ".tsx", ".js", ".jsx"}:
             if (
@@ -74,7 +96,13 @@ def extract_code_signatures(code: str, suffix: str) -> str:
                 or stripped.startswith("interface ")
                 or stripped.startswith("export type ")
                 or stripped.startswith("type ")
-                or stripped.startswith("export class ")
+            ):
+                extracted_lines.append(line)
+                if "{" in stripped and "}" not in stripped:
+                    in_interface_block = True
+                    brace_depth = stripped.count("{") - stripped.count("}")
+            elif (
+                stripped.startswith("export class ")
                 or stripped.startswith("class ")
                 or stripped.startswith("export async function ")
                 or stripped.startswith("async function ")
@@ -86,15 +114,19 @@ def extract_code_signatures(code: str, suffix: str) -> str:
                 or stripped.startswith("protected ")
             ):
                 extracted_lines.append(line)
+                if "(" in stripped and ")" not in stripped:
+                    in_multiline_sig = True
             elif stripped.startswith("import ") or stripped.startswith("export {"):
                 extracted_lines.append(line)
             else:
-                # Page Object / class methods without access modifiers (e.g. async goto() {, login(u, p): Promise<void> {)
-                # Explicitly excludes control flow statements (if, for, while, switch, catch)
-                CONTROL_KEYWORDS = {"if", "for", "while", "switch", "catch", "finally", "with", "return", "throw", "const", "let", "var", "new"}
-                m_method = re.match(r'^(?:async\s+)?([a-zA-Z0-9_$]+)\s*\([^)]*\)\s*(?::\s*[^{]+)?\{?', stripped)
+                m_method = re.match(r'^(?:async\s+)?([a-zA-Z0-9_$]+)\s*\([^)]*$', stripped)
                 if m_method and m_method.group(1) not in CONTROL_KEYWORDS:
                     extracted_lines.append(line)
+                    in_multiline_sig = True
+                else:
+                    m_method_single = re.match(r'^(?:async\s+)?([a-zA-Z0-9_$]+)\s*\([^)]*\)\s*(?::\s*[^{]+)?\{?', stripped)
+                    if m_method_single and m_method_single.group(1) not in CONTROL_KEYWORDS:
+                        extracted_lines.append(line)
 
     if not extracted_lines:
         extracted_lines = [l for l in lines[:15] if l.strip()]

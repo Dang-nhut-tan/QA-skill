@@ -23,7 +23,7 @@ description: >-
 ## 3. Prerequisites
 * **Playwright MCP** server configured and operational.
 * Target web application running and accessible (local dev server or staging environment).
-* **Credentials Check:** Verify if Staging URL, test email, and Admin portal credentials (URL, username, password) are recorded in `.qa-state.json`. If missing and required for UI verification, proactively prompt the user to provide them.
+* **Credentials Check:** Verify if Staging URL and test account metadata are configured in `.env.local` or environment variables (per `module-intake`). Never persist plaintext passwords or secrets in `.qa-state.json`. If required credentials are not yet set, proactively instruct the user to configure `.env.local`.
 
 ## 4. Step-by-Step Execution Instructions
 

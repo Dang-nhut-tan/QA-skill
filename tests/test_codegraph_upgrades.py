@@ -503,5 +503,46 @@ export class BasketPage {
         self.assertIn("async checkout(", sig)
         self.assertNotIn("if (cartId)", sig, "Control structures must NOT be extracted as signatures")
 
+# =========================================================================
+    # Group F: Enterprise Hardening V3 (Brace Balancing & Multi-line Signatures)
+    # =========================================================================
+    def test_codegraph_brace_balancing_exact_end_line(self):
+        from scripts.codegraph_discovery import find_block_end
+        sample_code = """
+export class OrderService {
+    async checkout(cart: Cart): Promise<Order> {
+        if (cart.items.length === 0) {
+            throw new Error("Empty cart");
+        }
+        return await this.process(cart);
+    }
+
+    async getHistory(): Promise<Order[]> {
+        return [];
+    }
+}
+"""
+        checkout_pos = sample_code.find("async checkout")
+        end_line = find_block_end(sample_code, checkout_pos)
+        self.assertEqual(end_line, 8, f"checkout method should end at line 8, got {end_line}")
+
+    def test_token_benchmark_multiline_typescript(self):
+        sample_ts = """
+export async function createOrder(
+    userId: string,
+    basket: BasketItem[],
+    options?: CheckoutOptions
+): Promise<OrderResult> {
+    const total = basket.reduce((acc, i) => acc + i.price, 0);
+    return { orderId: "123", total };
+}
+"""
+        sig = extract_code_signatures(sample_ts, ".ts")
+        self.assertIn("export async function createOrder(", sig)
+        self.assertIn("userId: string", sig)
+        self.assertIn("basket: BasketItem[]", sig)
+        self.assertIn("options?: CheckoutOptions", sig)
+        self.assertNotIn("const total =", sig, "Implementation body should be excluded")
+
 if __name__ == "__main__":
     unittest.main()

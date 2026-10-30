@@ -28,7 +28,59 @@ if hasattr(sys.stdout, "reconfigure"):
 
 SYSTEM_ROOT = Path(__file__).resolve().parent.parent
 
-PAGE_OBJECT_DIRS = ["tests/pages", "e2e/pages", "page-objects", "04-src/tests/pages", "admin/tests/pages"]
+def find_block_end(content: str, start_pos: int) -> int:
+    """
+    Finds the line number where the code block starting at start_pos closes its matching curly brace.
+    Handles nested braces, single-line/multi-line comments, and string literals.
+    Falls back gracefully if braces are unbalanced.
+    """
+    brace_open_idx = content.find('{', start_pos)
+    if brace_open_idx == -1:
+        return content[:start_pos].count('\n') + 30
+    
+    depth = 0
+    in_string = False
+    string_char = None
+    in_comment = False
+    in_block_comment = False
+    i = brace_open_idx
+    length = len(content)
+    
+    while i < length:
+        ch = content[i]
+        if in_block_comment:
+            if ch == '*' and i + 1 < length and content[i + 1] == '/':
+                in_block_comment = False
+                i += 1
+        elif in_comment:
+            if ch == '\n':
+                in_comment = False
+        elif in_string:
+            if ch == '\\':
+                i += 1
+            elif ch == string_char:
+                in_string = False
+        else:
+            if ch in ('"', "'", '`'):
+                in_string = True
+                string_char = ch
+            elif ch == '/' and i + 1 < length:
+                if content[i + 1] == '/':
+                    in_comment = True
+                    i += 1
+                elif content[i + 1] == '*':
+                    in_block_comment = True
+                    i += 1
+            elif ch == '{':
+                depth += 1
+            elif ch == '}':
+                depth -= 1
+                if depth == 0:
+                    return content[:i].count('\n') + 1
+        i += 1
+    return content[:start_pos].count('\n') + 30
+
+PAGE_OBJECT_DIRS = ["tests/pages", "e2e/pages", "page-objects", "src/pages", "playwright/pages", "cypress/pages", "04-src/tests/pages", "admin/tests/pages"]
 
 class MethodDiscoveryEngine:
     def __init__(self, repo_path: Path):
@@ -245,7 +297,7 @@ class MethodDiscoveryEngine:
                                         "qualified_name": f"{rel_p}::{m_name}",
                                         "file_path": rel_p,
                                         "start_line": start_line,
-                                        "end_line": min(start_line + 30, total_lines),
+                                        "end_line": min(find_block_end(content, start_pos), total_lines),
                                         "signature": sig_compact,
                                         "docstring": "",
                                         "is_exported": "export" in sig_compact,
@@ -444,29 +496,8 @@ class MethodDiscoveryEngine:
                 "progressive_context": None
             }
 
-        # Multi-candidate ranking: rank candidates by reusability relevance
-        def score_candidate(cand: Dict[str, Any]) -> int:
-            c_name = cand["name"].lower()
-            score = 0
-            if c_name == action_name.lower():
-                score += 50
-            elif c_name in self.synonyms.get(action_name.lower(), []):
-                score += 35
-            elif action_name.lower() in c_name:
-                score += 20
-            
-            # Action component penalty: clickX without params scored slightly below full method X(params)
-            sig_raw = cand.get("signature", "")
-            if (c_name.startswith("click") or c_name.startswith("press")) and "()" in sig_raw:
-                score -= 5
-            elif "(" in sig_raw and ")" in sig_raw and not "()" in sig_raw:
-                score += 15 # has parameters
-            
-            if cand.get("is_exported"):
-                score += 10
-            return score
-
-        ranked_candidates = sorted(candidates, key=score_candidate, reverse=True)
+        # Candidate ranking utilizing unified parameter-aware heuristics & domain synonyms
+        ranked_candidates = sorted(candidates, key=lambda c: self.score_candidate(action_name, c), reverse=True)
         top_cand = ranked_candidates[0]
         classification, reason = self.classify_reuse(action_name, top_cand)
         prog_ctx = self.get_progressive_context(top_cand, level=4)

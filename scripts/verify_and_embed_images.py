@@ -44,62 +44,61 @@ def verify_and_fix_report_images(
     i = 0
     while i < len(lines):
         line = lines[i]
-        match = IMAGE_REGEX.search(line)
-        if match:
-            caption = match.group(1)
-            raw_path = match.group(2).strip()
-            
-            # Clean possible query or fragments
-            clean_rel = raw_path.split("?")[0].split("#")[0].strip()
-            # Normalize path (convert forward/backslashes)
-            normalized_rel = clean_rel.replace("\\", "/")
-            if normalized_rel.startswith("./"):
-                test_rel = normalized_rel[2:]
-            elif normalized_rel.startswith("/"):
-                test_rel = normalized_rel[1:]
-            else:
-                test_rel = normalized_rel
+        matches = list(IMAGE_REGEX.finditer(line))
+        if matches:
+            is_table_row = line.strip().startswith("|")
+            line_modified_text = line
+            fallback_links = []
 
-            # Resolve absolute path relative to project root or report dir
-            candidate_p1 = (project_root / test_rel).resolve()
-            candidate_p2 = (report_path.parent / test_rel).resolve()
-            
-            actual_file: Path = None
-            if candidate_p1.is_file() and candidate_p1.stat().st_size > 0:
-                actual_file = candidate_p1
-            elif candidate_p2.is_file() and candidate_p2.stat().st_size > 0:
-                actual_file = candidate_p2
+            for match in matches:
+                caption = match.group(1)
+                raw_path = match.group(2).strip()
+                clean_rel = raw_path.split("?")[0].split("#")[0].strip().replace("\\", "/")
+                test_rel = clean_rel[2:] if clean_rel.startswith("./") else (clean_rel[1:] if clean_rel.startswith("/") else clean_rel)
 
-            if not actual_file:
-                missing_images.append({
-                    "line": i + 1,
-                    "caption": caption,
-                    "referenced_path": raw_path,
-                    "checked_paths": [str(candidate_p1), str(candidate_p2)]
-                })
-                new_lines.append(line)
+                candidate_p1 = (project_root / test_rel).resolve()
+                candidate_p2 = (report_path.parent / test_rel).resolve()
+
+                actual_file = None
+                if candidate_p1.is_file() and candidate_p1.stat().st_size > 0:
+                    actual_file = candidate_p1
+                elif candidate_p2.is_file() and candidate_p2.stat().st_size > 0:
+                    actual_file = candidate_p2
+
+                if not actual_file:
+                    missing_images.append({
+                        "line": i + 1,
+                        "caption": caption,
+                        "referenced_path": raw_path,
+                        "checked_paths": [str(candidate_p1), str(candidate_p2)]
+                    })
+                else:
+                    found_images.append({
+                        "line": i + 1,
+                        "caption": caption,
+                        "file_path": str(actual_file),
+                        "size_bytes": actual_file.stat().st_size
+                    })
+                    posix_abs = actual_file.as_posix()
+                    file_uri = f"file:///{posix_abs}" if not posix_abs.startswith("/") else f"file://{posix_abs}"
+                    
+                    if is_table_row:
+                        # Inline link inside table cell to prevent breaking markdown table layout
+                        table_link = f"<br>*([Mở ảnh gốc: {test_rel}]({file_uri}))*"
+                        img_tag = f"![{caption}]({raw_path})"
+                        if img_tag in line_modified_text and "file:///" not in line_modified_text:
+                            line_modified_text = line_modified_text.replace(img_tag, f"{img_tag}{table_link}")
+                            modified = True
+                    else:
+                        fallback_links.append(f"  *([Mở ảnh gốc: {test_rel}]({file_uri}))*")
+
+            if is_table_row:
+                new_lines.append(line_modified_text)
             else:
-                found_images.append({
-                    "line": i + 1,
-                    "caption": caption,
-                    "file_path": str(actual_file),
-                    "size_bytes": actual_file.stat().st_size
-                })
-                
-                # Check if next line already has a clickable file URI
-                posix_abs = actual_file.as_posix()
-                file_uri = f"file:///{posix_abs}" if not posix_abs.startswith("/") else f"file://{posix_abs}"
-                fallback_line = f"  *([Mở ảnh gốc: {test_rel}]({file_uri}))*"
-                
                 new_lines.append(line)
-                
-                # Check if next line is already our link
-                has_link = False
-                if i + 1 < len(lines) and "file:///" in lines[i + 1]:
-                    has_link = True
-                
-                if auto_fix_links and not has_link:
-                    new_lines.append(fallback_line)
+                has_next_link = (i + 1 < len(lines) and "file:///" in lines[i + 1])
+                if auto_fix_links and fallback_links and not has_next_link:
+                    new_lines.extend(fallback_links)
                     modified = True
         else:
             new_lines.append(line)

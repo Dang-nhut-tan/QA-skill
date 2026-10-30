@@ -23,6 +23,19 @@ from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.worksheet.datavalidation import DataValidation
 from openpyxl.utils import get_column_letter
 
+# Dynamic sys.path fallback for safe invocation from any working directory
+SCRIPTS_DIR = Path(__file__).resolve().parent
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
+try:
+    from traceability_validator import validate_traceability
+except ImportError:
+    try:
+        from scripts.traceability_validator import validate_traceability
+    except ImportError:
+        validate_traceability = None
+
 FONT_NAME = "Segoe UI"
 HEADER_FONT = Font(name=FONT_NAME, size=11, bold=True, color="FFFFFF")
 TITLE_FONT = Font(name=FONT_NAME, size=14, bold=True, color="FFFFFF")
@@ -186,19 +199,20 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
     ]
     ws_tc.append(tc_headers)
 
+    testcases = data.get("testcases", [])
+    max_val_tc = max(1000, len(testcases) + 500)
+
     dv_severity = DataValidation(type="list", formula1='"Chặn,Sai,Nhỏ"', allow_blank=True)
     ws_tc.add_data_validation(dv_severity)
-    dv_severity.add("H2:H500")
+    dv_severity.add(f"H2:H{max_val_tc}")
 
     dv_auto = DataValidation(type="list", formula1='"Yes,No"', allow_blank=True)
     ws_tc.add_data_validation(dv_auto)
-    dv_auto.add("I2:I500")
+    dv_auto.add(f"I2:I{max_val_tc}")
 
     dv_status = DataValidation(type="list", formula1='"Pass,Fail,Pending,Skip"', allow_blank=True)
     ws_tc.add_data_validation(dv_status)
-    dv_status.add("M2:M500")
-
-    testcases = data.get("testcases", [])
+    dv_status.add(f"M2:M{max_val_tc}")
     for tc in testcases:
         row = [
             tc.get("id", ""),
@@ -271,11 +285,12 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
     ]
     ws_gaps.append(gap_headers)
 
+    gaps = data.get("gaps", [])
+    max_val_gap = max(500, len(gaps) + 200)
+
     dv_gap_status = DataValidation(type="list", formula1='"Pending,Answered,Skipped"', allow_blank=True)
     ws_gaps.add_data_validation(dv_gap_status)
-    dv_gap_status.add("H2:H200")
-
-    gaps = data.get("gaps", [])
+    dv_gap_status.add(f"H2:H{max_val_gap}")
     for gap in gaps:
         row = [
             gap.get("id", ""),
@@ -353,8 +368,10 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
     ready_count = sum(1 for t in testcases if str(t.get("automation_ready", "")).strip().lower() == "yes")
     not_ready_count = len(testcases) - ready_count
 
-    from traceability_validator import validate_traceability
-    t_audit = validate_traceability(data)
+    if validate_traceability:
+        t_audit = validate_traceability(data)
+    else:
+        t_audit = {"metrics": {}, "orphan_requirements": [], "orphan_testcases": [], "duplicate_groups": []}
     t_metrics = t_audit.get("metrics", {})
 
     orphan_req_str = "Không có (0) - Đạt 100% bao phủ" if t_metrics.get("orphan_requirements_count", 0) == 0 else f"{t_metrics.get('orphan_requirements_count')} yêu cầu: " + ", ".join(o.get('requirement', '') for o in t_audit.get('orphan_requirements', []))

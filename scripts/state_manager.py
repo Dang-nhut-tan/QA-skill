@@ -11,6 +11,7 @@ import sys
 import os
 import json
 import hashlib
+import shutil
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, Optional, List
@@ -50,7 +51,7 @@ ALLOWED_TRANSITIONS = {
     "WAITING_FOR_REQUIREMENT_CLARIFICATION": ["CONTEXT_DISCOVERY", "GAP_ANALYSIS", "RUNTIME_INVESTIGATION", "TESTCASE_GENERATION", "TESTCASE_REVIEW", "BLOCKED"],
     "RUNTIME_INVESTIGATION": ["TESTCASE_GENERATION", "WAITING_FOR_REQUIREMENT_CLARIFICATION", "BLOCKED"],
     "TESTCASE_GENERATION": ["TESTCASE_REVIEW", "WAITING_FOR_APPROVED_TESTCASES", "BLOCKED"],
-    "TESTCASE_REVIEW": ["WAITING_FOR_APPROVED_TESTCASES", "AUTOMATION_IMPLEMENTATION", "TESTCASE_GENERATION", "BLOCKED"],
+    "TESTCASE_REVIEW": ["WAITING_FOR_APPROVED_TESTCASES", "TESTCASE_GENERATION", "BLOCKED"],
     "WAITING_FOR_APPROVED_TESTCASES": ["AUTOMATION_IMPLEMENTATION", "TESTCASE_REVIEW", "BLOCKED"],
     "AUTOMATION_IMPLEMENTATION": ["AUTOMATION_EXECUTION", "COMPLETED", "BLOCKED"],
     "AUTOMATION_EXECUTION": ["COMPLETED", "AUTOMATION_IMPLEMENTATION", "GAP_ANALYSIS", "TESTCASE_GENERATION", "BLOCKED"],
@@ -139,13 +140,36 @@ class WorkflowStateManager:
     def load(self) -> Dict[str, Any]:
         if not self.exists():
             return {}
-        with open(self.state_file, "r", encoding="utf-8") as f:
-            return json.load(f)
+        try:
+            with open(self.state_file, "r", encoding="utf-8") as f:
+                content = f.read().strip()
+                if not content:
+                    return {}
+                return json.loads(content)
+        except (json.JSONDecodeError, UnicodeDecodeError, OSError) as ex:
+            # Self-healing: attempt to restore from atomic backup snapshot if present
+            bak_file = self.state_file.with_name(f"{self.state_file.name}.bak")
+            if bak_file.exists():
+                try:
+                    with open(bak_file, "r", encoding="utf-8") as bf:
+                        return json.load(bf)
+                except Exception:
+                    pass
+            return {"current_state": "BLOCKED", "error": f"Corrupted state file: {str(ex)}"}
 
     def save(self, data: Dict[str, Any]) -> None:
         data["updated_at"] = self._now()
-        with open(self.state_file, "w", encoding="utf-8") as f:
+        # Atomic file write with backup snapshot to prevent 0-byte state corruption
+        tmp_file = self.state_file.with_name(f"{self.state_file.name}.tmp")
+        bak_file = self.state_file.with_name(f"{self.state_file.name}.bak")
+        with open(tmp_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
+        if self.state_file.exists():
+            try:
+                shutil.copy2(self.state_file, bak_file)
+            except Exception:
+                pass
+        os.replace(tmp_file, self.state_file)
 
     def init_state(self, module_name: str, repo_info: Dict[str, Any], docs: Optional[List[str]] = None) -> Dict[str, Any]:
         doc_hashes = {}
