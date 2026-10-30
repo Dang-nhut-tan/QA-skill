@@ -555,5 +555,131 @@ class TestQASkillsRegression(unittest.TestCase):
             self.assertEqual(content.count("\n"), 0, "Table row must remain a single row with inline links!")
             self.assertIn("<br>*([Mở ảnh gốc", content)
 
+    # =========================================================================
+    # V4 REMEDIATION TESTS
+    # =========================================================================
+    def test_v4_fsm_allows_generation_rollback_to_gap_analysis(self):
+        """V4: FSM allows TESTCASE_GENERATION -> GAP_ANALYSIS for requirement uncertainty."""
+        with tempfile.TemporaryDirectory() as td:
+            mgr = WorkflowStateManager(workspace_root=td)
+            mgr.init_state("AuthModule", {"repo": "test"})
+            mgr.transition("CONTEXT_DISCOVERY")
+            mgr.transition("GAP_ANALYSIS")
+            mgr.transition("TESTCASE_GENERATION")
+            
+            # Transition back to GAP_ANALYSIS
+            s = mgr.transition("GAP_ANALYSIS", note="Severe requirement uncertainty discovered")
+            self.assertEqual(s["current_state"], "GAP_ANALYSIS")
+
+    def test_v4_state_manager_set_field_and_cli_metadata(self):
+        """V4: StateManager supports set_field and --metadata in transition."""
+        with tempfile.TemporaryDirectory() as td:
+            mgr = WorkflowStateManager(workspace_root=td)
+            mgr.init_state("AuthModule", {"repo": "test"})
+            
+            # Test set_field
+            mgr.set_field("custom_info.author", "LeadQA")
+            mgr.set_field("testcase_ids", ["TC-001", "TC-002"])
+            
+            s = mgr.load()
+            self.assertEqual(s["custom_info"]["author"], "LeadQA")
+            self.assertEqual(s["testcase_ids"], ["TC-001", "TC-002"])
+            
+            # Test transition with metadata
+            mgr.transition("CONTEXT_DISCOVERY", metadata={"extra_flag": True})
+            s2 = mgr.load()
+            self.assertTrue(s2["extra_flag"])
+
+    def test_v4_learn_manager_reject_action(self):
+        """V4: learn_manager supports reject action marking proposal REJECTED."""
+        from scripts.learn_manager import propose_learning, reject_learning, query_learnings
+        with tempfile.TemporaryDirectory() as td:
+            tmp_root = Path(td)
+            (tmp_root / "plugin.json").write_text("{}", encoding="utf-8")
+            (tmp_root / "scripts").mkdir(parents=True, exist_ok=True)
+            (tmp_root / "scripts" / "learn_manager.py").write_text("# stub", encoding="utf-8")
+            skills_dir = tmp_root / "skills" / "target-skill"
+            skills_dir.mkdir(parents=True, exist_ok=True)
+            (skills_dir / "SKILL.md").write_text("# Target Skill", encoding="utf-8")
+
+            # Propose
+            prop = propose_learning(
+                title="Bad Idea",
+                issue="Flaky test",
+                root_cause="Timing",
+                solution="Sleep 100s",
+                target_skill="target-skill",
+                project_root=str(tmp_root)
+            )
+            self.assertEqual(prop["status"], "PENDING_APPROVAL")
+
+            # Reject
+            rej = reject_learning(prop["id"], reason="Arbitrary sleep forbidden", project_root=str(tmp_root))
+            self.assertEqual(rej["status"], "REJECTED")
+            self.assertFalse(rej["active"])
+            self.assertEqual(rej["reject_reason"], "Arbitrary sleep forbidden")
+
+            # Query should not return rejected items
+            results = query_learnings(target_skill="target-skill", project_root=str(tmp_root))
+            self.assertEqual(len(results), 0)
+
+    def test_v4_traceability_deduplication_o_n_hash_map(self):
+        """V4: traceability_validator detects duplicates in O(N) single pass."""
+        from scripts.traceability_validator import validate_traceability
+        data = {
+            "declared_requirements": ["REQ-1"],
+            "testcases": [
+                {
+                    "id": "TC-001",
+                    "name": "Verify Valid Login",
+                    "steps": "1. Enter user\n2. Click login",
+                    "expected_result": "Dashboard displayed",
+                    "preconditions": "User exists",
+                    "requirement_ref": "REQ-1"
+                },
+                {
+                    "id": "TC-002",
+                    "name": "Verify Valid Login",  # Duplicate name
+                    "steps": "1. Fill form\n2. Submit",
+                    "expected_result": "Dashboard displayed",
+                    "preconditions": "User exists",
+                    "requirement_ref": "REQ-1"
+                },
+                {
+                    "id": "TC-003",
+                    "name": "Another Login Check",
+                    "steps": "1. Enter user\n2. Click login",  # Identical behavior to TC-001
+                    "expected_result": "Dashboard displayed",
+                    "preconditions": "User exists",
+                    "requirement_ref": "REQ-1"
+                }
+            ]
+        }
+        report = validate_traceability(data)
+        dups = report["duplicate_groups"]
+        self.assertGreaterEqual(len(dups), 2)
+        pairs = [d["pair"] for d in dups]
+        self.assertIn(["TC-001", "TC-002"], pairs)
+        self.assertIn(["TC-001", "TC-003"], pairs)
+
+    def test_v4_read_approved_testcases_detects_duplicate_id(self):
+        """V4: read_approved_testcases returns error if Excel contains duplicate IDs."""
+        import openpyxl
+        from scripts.read_approved_testcases import parse_approved_workbook
+        with tempfile.TemporaryDirectory() as td:
+            xlsx_path = Path(td) / "dup_testcases.xlsx"
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "Test Cases"
+            cols = ["Test Case ID", "Module", "Test Case Name", "Preconditions", "Test Data", "Test Steps", "Expected Result", "Severity", "Automation Ready"]
+            ws.append(cols)
+            ws.append(["TC-AUTH-001", "Auth", "Login with valid account", "None", "data", "1. Step", "Success", "Chặn", "Yes"])
+            ws.append(["TC-AUTH-001", "Auth", "Duplicate Row with same ID", "None", "data", "1. Step", "Success", "Sai", "Yes"])
+            wb.save(xlsx_path)
+
+            res = parse_approved_workbook(xlsx_path)
+            self.assertFalse(res["success"])
+            self.assertIn("Duplicate Test Case ID 'TC-AUTH-001'", res["error"])
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

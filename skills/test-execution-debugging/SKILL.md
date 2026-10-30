@@ -60,8 +60,11 @@ description: >-
      * Traceability Matrix: Mapping Excel Test Case ID -> Automated Test Function -> Result.
      * Defect Log: Detail every failed test with error stack, screenshot link, and classified cause.
 7. **Complete Workflow:**
-   * Update workflow state:
-     `python scripts/state_manager.py transition COMPLETED "Workflow execution completed successfully"`.
+   * Register execution deliverable and finalize workflow state:
+     ```bash
+     python scripts/state_manager.py set-artifact automation_summary automation-summary.md
+     python scripts/state_manager.py transition COMPLETED "Workflow execution completed successfully"
+     ```
 
 ## 5. Expected Outputs
 * `automation-summary.md` detailing verifiable results and defect classifications.

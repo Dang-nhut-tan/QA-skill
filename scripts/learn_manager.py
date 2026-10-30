@@ -179,6 +179,31 @@ def approve_learning(proposal_id: str, project_root: Optional[str] = None) -> Di
     
     return proposal
 
+def reject_learning(proposal_id: str, reason: str = "", project_root: Optional[str] = None) -> Dict[str, Any]:
+    skills_root = resolve_skills_root(project_root)
+    learnings_file = get_learnings_file(skills_root)
+    
+    data = load_learnings(learnings_file)
+    proposal = None
+    for p in data.get("proposals", []):
+        if p["id"] == proposal_id:
+            proposal = p
+            break
+            
+    if not proposal:
+        raise ValueError(f"Proposal {proposal_id} not found in {learnings_file}.")
+
+    data["proposals"].remove(proposal)
+    proposal["status"] = "REJECTED"
+    proposal["active"] = False
+    proposal["rejected_at"] = _now()
+    if reason:
+        proposal["reject_reason"] = reason
+    data.setdefault("rejected", []).append(proposal)
+    save_learnings(data, learnings_file)
+    print(f"[REJECTED] Learning proposal {proposal_id} marked as REJECTED in {learnings_file}.")
+    return proposal
+
 def query_learnings(module_name: Optional[str] = None, target_skill: Optional[str] = None, limit: int = 3, project_root: Optional[str] = None) -> List[Dict[str, Any]]:
     """
     Dynamic Context Injection: Retrieves top active learnings relevant to the target module and skill.
@@ -242,7 +267,7 @@ def list_learnings(as_json: bool = False, project_root: Optional[str] = None) ->
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Continuous Learning Manager for QA Agent System")
-    parser.add_argument("action", choices=["propose", "approve", "list", "query"], help="Action to execute")
+    parser.add_argument("action", choices=["propose", "approve", "reject", "list", "query"], help="Action to execute")
     parser.add_argument("--module", dest="module", default=None, help="Target module name for propose or query")
     parser.add_argument("--skill", dest="skill", default=None, help="Target skill name to filter learnings")
     parser.add_argument("--limit", dest="limit", type=int, default=3, help="Max results for query action")
@@ -263,6 +288,13 @@ if __name__ == "__main__":
             sys.exit(1)
         p = approve_learning(parsed.args[0], project_root=parsed.project_root)
         print(f"[SUCCESS] Approved and applied {p['id']}")
+    elif parsed.action == "reject":
+        if len(parsed.args) < 1:
+            print("Usage: python learn_manager.py reject <PROPOSAL_ID> [reason] [--project-root <path>]")
+            sys.exit(1)
+        reason = parsed.args[1] if len(parsed.args) > 1 else ""
+        p = reject_learning(parsed.args[0], reason=reason, project_root=parsed.project_root)
+        print(f"[SUCCESS] Rejected {p['id']}")
     elif parsed.action == "list":
         list_learnings(as_json=parsed.json, project_root=parsed.project_root)
     elif parsed.action == "query":

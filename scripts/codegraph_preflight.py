@@ -231,8 +231,12 @@ class CodeGraphPreflight:
             conn.close()
 
             newest_src_mtime = 0
+            ignored_dirs = {
+                ".git", "node_modules", "dist", "build", ".codegraph", "test-results",
+                ".venv", "venv", "env", ".next", ".turbo", ".output", "vendor", "__pycache__"
+            }
             for root, dirs, files in os.walk(self.repo_path):
-                dirs[:] = [d for d in dirs if d not in {".git", "node_modules", "dist", "build", ".codegraph", "test-results"}]
+                dirs[:] = [d for d in dirs if d not in ignored_dirs]
                 for f in files:
                     if f.endswith((".ts", ".tsx", ".js", ".jsx", ".py", ".go")):
                         try:
@@ -250,6 +254,7 @@ class CodeGraphPreflight:
 
             if not auto_sync:
                 self.results["diagnostics"].append("CodeGraph index is older than source files, but auto_sync is disabled.")
+                self.results["index_freshness"] = False
                 return False
 
             if self.cli_bin:
@@ -265,16 +270,17 @@ class CodeGraphPreflight:
                     return True
                 else:
                     self.results["diagnostics"].append(f"codegraph sync returned non-zero: {sync_res.stderr.strip()}")
-                    self.results["index_freshness"] = True
-                    return True
+                    self.results["index_freshness"] = False
+                    return False
             else:
-                self.results["index_freshness"] = True
-                return True
+                self.results["diagnostics"].append("CodeGraph CLI binary not available for sync.")
+                self.results["index_freshness"] = False
+                return False
 
         except Exception as e:
             self.results["diagnostics"].append(f"Freshness check warning: {str(e)}")
-            self.results["index_freshness"] = True
-            return True
+            self.results["index_freshness"] = False
+            return False
 
     def run_preflight(self, auto_init: bool = True, auto_sync: bool = True) -> Dict[str, Any]:
         c1 = self.check_cli()

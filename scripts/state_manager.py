@@ -50,7 +50,7 @@ ALLOWED_TRANSITIONS = {
     "GAP_ANALYSIS": ["WAITING_FOR_REQUIREMENT_CLARIFICATION", "RUNTIME_INVESTIGATION", "TESTCASE_GENERATION", "BLOCKED"],
     "WAITING_FOR_REQUIREMENT_CLARIFICATION": ["CONTEXT_DISCOVERY", "GAP_ANALYSIS", "RUNTIME_INVESTIGATION", "TESTCASE_GENERATION", "TESTCASE_REVIEW", "BLOCKED"],
     "RUNTIME_INVESTIGATION": ["TESTCASE_GENERATION", "WAITING_FOR_REQUIREMENT_CLARIFICATION", "BLOCKED"],
-    "TESTCASE_GENERATION": ["TESTCASE_REVIEW", "WAITING_FOR_APPROVED_TESTCASES", "BLOCKED"],
+    "TESTCASE_GENERATION": ["TESTCASE_REVIEW", "WAITING_FOR_APPROVED_TESTCASES", "GAP_ANALYSIS", "BLOCKED"],
     "TESTCASE_REVIEW": ["WAITING_FOR_APPROVED_TESTCASES", "TESTCASE_GENERATION", "BLOCKED"],
     "WAITING_FOR_APPROVED_TESTCASES": ["AUTOMATION_IMPLEMENTATION", "TESTCASE_REVIEW", "BLOCKED"],
     "AUTOMATION_IMPLEMENTATION": ["AUTOMATION_EXECUTION", "COMPLETED", "BLOCKED"],
@@ -299,6 +299,23 @@ class WorkflowStateManager:
         self.save(state)
         return state
 
+    def set_field(self, field_path: str, value: Any) -> Dict[str, Any]:
+        state = self.load()
+        if not state:
+            raise RuntimeError(f"Cannot set field: {STATE_FILE_NAME} does not exist.")
+        
+        value = sanitize_metadata(value) if isinstance(value, (dict, list, str)) else value
+        parts = field_path.strip().split(".")
+        curr = state
+        for p in parts[:-1]:
+            if p not in curr or not isinstance(curr[p], dict):
+                curr[p] = {}
+            curr = curr[p]
+        curr[parts[-1]] = value
+        state["updated_at"] = self._now()
+        self.save(state)
+        return state
+
     def validate_integrity(self) -> Dict[str, Any]:
         state = self.load()
         if not state:
@@ -367,12 +384,40 @@ if __name__ == "__main__":
 
     elif cmd == "transition":
         if len(sys.argv) < 3:
-            print(f"Usage: python state_manager.py transition <TARGET_STATE> [note]")
+            print(f"Usage: python state_manager.py transition <TARGET_STATE> [note] [--metadata '<json>']")
             sys.exit(1)
         tgt = sys.argv[2]
-        note = sys.argv[3] if len(sys.argv) > 3 else ""
-        s = mgr.transition(tgt, note=note)
+        note_parts = []
+        meta = None
+        args = sys.argv[3:]
+        i = 0
+        while i < len(args):
+            if args[i] == "--metadata" and i + 1 < len(args):
+                try:
+                    meta = json.loads(args[i+1])
+                except Exception as ex:
+                    print(f"[ERROR] Failed to parse --metadata JSON: {ex}")
+                    sys.exit(1)
+                i += 2
+            else:
+                note_parts.append(args[i])
+                i += 1
+        note = " ".join(note_parts)
+        s = mgr.transition(tgt, note=note, metadata=meta)
         print(f"[OK] State transitioned to {s['current_state']}")
+
+    elif cmd == "set-field":
+        if len(sys.argv) < 4:
+            print("Usage: python state_manager.py set-field <field_path> <value>")
+            sys.exit(1)
+        field_path = sys.argv[2]
+        raw_val = sys.argv[3]
+        try:
+            val = json.loads(raw_val)
+        except Exception:
+            val = raw_val
+        s = mgr.set_field(field_path, val)
+        print(f"[OK] Field '{field_path}' updated successfully.")
 
     elif cmd == "set-artifact":
         if len(sys.argv) < 4:

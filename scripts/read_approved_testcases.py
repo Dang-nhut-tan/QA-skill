@@ -71,6 +71,7 @@ def parse_approved_workbook(excel_path: Path) -> Dict[str, Any]:
     all_cases = []
     automation_ready_cases = []
     skipped_cases = []
+    seen_ids = set()
 
     for row_idx in range(2, ws.max_row + 1):
         tc_id = ws.cell(row=row_idx, column=col_map["Test Case ID"]).value
@@ -78,6 +79,14 @@ def parse_approved_workbook(excel_path: Path) -> Dict[str, Any]:
             continue
 
         tc_id_str = str(tc_id).strip()
+        tc_id_lower = tc_id_str.lower()
+        if tc_id_lower in seen_ids:
+            return {
+                "success": False,
+                "error": f"Duplicate Test Case ID '{tc_id_str}' detected at row {row_idx}. Test Case IDs must be unique across the workbook."
+            }
+        seen_ids.add(tc_id_lower)
+
         auto_ready_val = ws.cell(row=row_idx, column=col_map["Automation Ready"]).value
         try:
             is_ready = parse_automation_ready_val(auto_ready_val, row_idx)

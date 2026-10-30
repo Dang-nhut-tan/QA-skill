@@ -158,41 +158,56 @@ def validate_traceability(data: Dict[str, Any]) -> Dict[str, Any]:
         covered_requirements = sorted(list(all_referenced_tokens))
 
     # -------------------------------------------------------------
-    # 3. Deduplication Check (Detect Redundant / Overlapping Test Cases)
+    # 3. Deduplication Check (Single-Pass O(N) Hash Map Lookup)
     # -------------------------------------------------------------
     duplicate_groups = []
     checked_pairs = set()
+    seen_names = {}      # norm_name -> (tc_id, tc_dict)
+    seen_behaviors = {}  # (norm_steps, norm_exp, norm_pre) -> (tc_id, tc_dict)
     
-    for i in range(len(testcases)):
-        for j in range(i + 1, len(testcases)):
-            tc1 = testcases[i]
-            tc2 = testcases[j]
-            id1, id2 = tc1.get("id", f"Row{i}"), tc2.get("id", f"Row{j}")
-            pair_key = tuple(sorted([id1, id2]))
-            if pair_key in checked_pairs:
-                continue
-            checked_pairs.add(pair_key)
-            
-            # Compare key attributes
-            name1, name2 = normalize_text(tc1.get("name", "")), normalize_text(tc2.get("name", ""))
-            steps1, steps2 = normalize_text(tc1.get("steps", "")), normalize_text(tc2.get("steps", ""))
-            exp1, exp2 = normalize_text(tc1.get("expected_result", "")), normalize_text(tc2.get("expected_result", ""))
-            pre1, pre2 = normalize_text(tc1.get("preconditions", "")), normalize_text(tc2.get("preconditions", ""))
-            data1, data2 = normalize_text(tc1.get("test_data", "")), normalize_text(tc2.get("test_data", ""))
-            
-            # Exact duplicates on Name or (Steps and Expected Result)
-            is_exact_name = (name1 and name1 == name2)
-            is_identical_behavior = (steps1 and exp1 and steps1 == steps2 and exp1 == exp2 and pre1 == pre2)
-            
-            if is_exact_name or is_identical_behavior:
-                duplicate_groups.append({
-                    "pair": [id1, id2],
-                    "reason": "Exact duplicate name" if is_exact_name else "Identical steps and expected result",
-                    "details": {
-                        id1: tc1.get("name", ""),
-                        id2: tc2.get("name", "")
-                    }
-                })
+    for idx, tc in enumerate(testcases):
+        tc_id = tc.get("id", f"Row{idx}")
+        n_name = normalize_text(tc.get("name", ""))
+        n_steps = normalize_text(tc.get("steps", ""))
+        n_exp = normalize_text(tc.get("expected_result", ""))
+        n_pre = normalize_text(tc.get("preconditions", ""))
+        
+        # Check exact duplicate name
+        if n_name:
+            if n_name in seen_names:
+                prior_id, prior_tc = seen_names[n_name]
+                pair_key = tuple(sorted([prior_id, tc_id]))
+                if pair_key not in checked_pairs:
+                    checked_pairs.add(pair_key)
+                    duplicate_groups.append({
+                        "pair": [prior_id, tc_id],
+                        "reason": "Exact duplicate name",
+                        "details": {
+                            prior_id: prior_tc.get("name", ""),
+                            tc_id: tc.get("name", "")
+                        }
+                    })
+            else:
+                seen_names[n_name] = (tc_id, tc)
+                
+        # Check identical behavior (steps, expected result, preconditions)
+        if n_steps and n_exp:
+            beh_key = (n_steps, n_exp, n_pre)
+            if beh_key in seen_behaviors:
+                prior_id, prior_tc = seen_behaviors[beh_key]
+                pair_key = tuple(sorted([prior_id, tc_id]))
+                if pair_key not in checked_pairs:
+                    checked_pairs.add(pair_key)
+                    duplicate_groups.append({
+                        "pair": [prior_id, tc_id],
+                        "reason": "Identical steps and expected result",
+                        "details": {
+                            prior_id: prior_tc.get("name", ""),
+                            tc_id: tc.get("name", "")
+                        }
+                    })
+            else:
+                seen_behaviors[beh_key] = (tc_id, tc)
 
     # -------------------------------------------------------------
     # 4. Compile Final Audit Metrics
