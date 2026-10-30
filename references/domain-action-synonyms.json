@@ -1,0 +1,298 @@
+{
+  "version": "1.0.0",
+  "description": "Comprehensive enterprise domain action synonyms dictionary for QA test automation discovery.",
+  "actions": {
+    "login": [
+      "login",
+      "signin",
+      "authenticate",
+      "clicklogin",
+      "log_in",
+      "sign_in",
+      "dangnhap",
+      "dang_nhap",
+      "dang-nhap",
+      "logged_in",
+      "logging_in",
+      "logged-in"
+    ],
+    "logout": [
+      "logout",
+      "signout",
+      "log_out",
+      "sign_out",
+      "dangxuat",
+      "dang_xuat",
+      "dang-xuat",
+      "logged_out",
+      "logging_out",
+      "logged-out"
+    ],
+    "sso": [
+      "loginsso",
+      "loginwithsso",
+      "ssoauthenticate",
+      "oauthlogin"
+    ],
+    "register": [
+      "register",
+      "signup",
+      "sign_up",
+      "createaccount",
+      "onboard"
+    ],
+    "verify_otp": [
+      "verifyotp",
+      "submitotp",
+      "checkotp",
+      "confirmcode"
+    ],
+    "reset_password": [
+      "resetpassword",
+      "forgotpassword",
+      "sendresetlink",
+      "changepassword"
+    ],
+    "checkout": [
+      "checkout",
+      "processcheckout",
+      "gotocheckout",
+      "submitorder",
+      "thanhtoan",
+      "thanh_toan",
+      "dathang",
+      "dat_hang",
+      "checkedout",
+      "checkingout"
+    ],
+    "pay": [
+      "pay",
+      "makepayment",
+      "processpayment",
+      "charge",
+      "confirmorder",
+      "thanhtoan",
+      "thanh_toan",
+      "naptien",
+      "nap_tien",
+      "paid",
+      "paying"
+    ],
+    "refund": [
+      "refund",
+      "processrefund",
+      "reversecharge"
+    ],
+    "apply_coupon": [
+      "applycoupon",
+      "applydiscount",
+      "addpromocode",
+      "usevoucher"
+    ],
+    "calculate_tax": [
+      "calculatetax",
+      "gettaxestimate",
+      "computetax"
+    ],
+    "add": [
+      "add",
+      "additem",
+      "insert",
+      "append",
+      "createitem"
+    ],
+    "remove": [
+      "remove",
+      "removeitem",
+      "deleteitem",
+      "dropitem"
+    ],
+    "clear": [
+      "clear",
+      "reset",
+      "empty",
+      "clearcart"
+    ],
+    "approve": [
+      "approve",
+      "confirmrequest",
+      "acceptrequest",
+      "grantapproval",
+      "pheduyet",
+      "phe_duyet",
+      "duyetdon",
+      "duyet_don",
+      "approved",
+      "approving"
+    ],
+    "reject": [
+      "reject",
+      "declinerequest",
+      "denyapproval",
+      "refuserequest",
+      "tuchoi",
+      "tu_choi",
+      "bacbo",
+      "bac_bo",
+      "rejected",
+      "rejecting"
+    ],
+    "delegate": [
+      "delegate",
+      "assignreviewer",
+      "forwardapproval"
+    ],
+    "submit": [
+      "submit",
+      "send",
+      "confirm",
+      "postform",
+      "submitinquiry",
+      "guidi",
+      "gui_di",
+      "xacnhan",
+      "xac_nhan",
+      "submitted",
+      "submitting"
+    ],
+    "cancel": [
+      "cancel",
+      "abort",
+      "dismiss",
+      "closemodal",
+      "huybo",
+      "huy_bo",
+      "huy",
+      "cancelled",
+      "canceling"
+    ],
+    "search": [
+      "search",
+      "find",
+      "query",
+      "lookup",
+      "filterbysearch",
+      "timkiem",
+      "tim_kiem",
+      "tracuu",
+      "tra_cuu",
+      "searched",
+      "searching"
+    ],
+    "filter": [
+      "filter",
+      "applyfilter",
+      "refineresults",
+      "setfilter",
+      "boloc",
+      "bo_loc",
+      "loc",
+      "filtered",
+      "filtering"
+    ],
+    "select": [
+      "select",
+      "choose",
+      "pickoption",
+      "selectdropdown"
+    ],
+    "export": [
+      "export",
+      "exportexcel",
+      "exportcsv",
+      "downloadreport",
+      "xuatfile",
+      "xuat_file",
+      "xuatdulieu",
+      "xuat_du_lieu",
+      "exported",
+      "exporting"
+    ],
+    "import": [
+      "import",
+      "importexcel",
+      "importcsv",
+      "uploadbatch",
+      "nhapfile",
+      "nhap_file",
+      "nhapdulieu",
+      "nhap_du_lieu",
+      "imported",
+      "importing"
+    ],
+    "download": [
+      "download",
+      "downloadfile",
+      "fetchattachment"
+    ],
+    "upload": [
+      "upload",
+      "uploadfile",
+      "attachfile"
+    ],
+    "delete": [
+      "delete",
+      "destroy",
+      "purge",
+      "xoa",
+      "xoabo",
+      "xoa_bo",
+      "deleted",
+      "deleting"
+    ],
+    "update": [
+      "update",
+      "edit",
+      "modify",
+      "patch",
+      "capnhat",
+      "cap_nhat",
+      "chinhsua",
+      "chinh_sua",
+      "updated",
+      "updating"
+    ],
+    "navigate": [
+      "navigate",
+      "goto",
+      "openpage",
+      "visitroute"
+    ],
+    "refresh": [
+      "refresh",
+      "reload",
+      "refreshtable"
+    ],
+    "open_modal": [
+      "openmodal",
+      "showdialog",
+      "opendialog"
+    ],
+    "close_modal": [
+      "closemodal",
+      "hidedialog",
+      "closedialog"
+    ],
+    "toggle": [
+      "toggle",
+      "switch",
+      "togglemode",
+      "togglecheckbox"
+    ],
+    "order": [
+      "order",
+      "placeorder",
+      "createorder",
+      "submitorder",
+      "trackorder",
+      "donhang",
+      "don_hang",
+      "taodon",
+      "tao_don",
+      "dathang",
+      "dat_hang",
+      "ordered",
+      "ordering"
+    ]
+  }
+}

@@ -23,6 +23,7 @@ sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
 from scripts.codegraph_preflight import CodeGraphPreflight
 from scripts.codegraph_discovery import MethodDiscoveryEngine
+from scripts.token_benchmark import extract_code_signatures
 
 class TestCodeGraphUpgrades(unittest.TestCase):
 
@@ -285,6 +286,222 @@ export function calculateTax(amount: number, rate: number): number {
             savings_pct = (full_tokens_est - sig_tokens_est) / full_tokens_est * 100
             
             self.assertGreater(savings_pct, 60.0, "Progressive signature retrieval must achieve > 60% token reduction over full file")
+
+
+    # =========================================================================
+    # Group E: Enterprise Hardening (Synonyms, Destructured Params & AST JIT)
+    # =========================================================================
+
+    def test_synonyms_loaded_from_external_json(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            engine = MethodDiscoveryEngine(Path(tmp_dir))
+            # Verify 30+ domain categories are loaded
+            self.assertGreaterEqual(len(engine.synonyms), 30, "Should load at least 30 synonym categories from domain-action-synonyms.json")
+            self.assertIn("login", engine.synonyms)
+            self.assertIn("order", engine.synonyms)
+            self.assertIn("checkout", engine.synonyms)
+            self.assertIn("approve", engine.synonyms)
+            self.assertIn("upload", engine.synonyms)
+            self.assertIn("open_modal", engine.synonyms)
+            engine.close()
+
+    def test_synonyms_custom_override(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            p = Path(tmp_dir)
+            cg_dir = p / ".codegraph"
+            cg_dir.mkdir(parents=True, exist_ok=True)
+            custom_synonyms = {
+                "custom_action": ["doCustomThing", "performSpecialOps"]
+            }
+            (cg_dir / "synonyms.json").write_text(json.dumps(custom_synonyms), encoding="utf-8")
+
+            engine = MethodDiscoveryEngine(p)
+            self.assertIn("custom_action", engine.synonyms)
+            self.assertIn("doCustomThing", engine.synonyms["custom_action"])
+            engine.close()
+
+    def test_classification_destructured_parameters(self):
+        engine = MethodDiscoveryEngine(Path("."))
+        cand = {
+            "name": "login",
+            "file_path": "tests/pages/LoginPage.ts",
+            "start_line": 15,
+            "end_line": 25,
+            "signature": "({ username, password }: LoginCredentials)",
+            "kind": "method"
+        }
+        res, reason = engine.classify_reusability("login", cand)
+        self.assertEqual(res, "DIRECT_REUSE", f"Destructured credentials must be DIRECT_REUSE, got {res} ({reason})")
+
+    def test_classification_click_helper_button(self):
+        engine = MethodDiscoveryEngine(Path("."))
+        cand = {
+            "name": "clickLogin",
+            "file_path": "tests/pages/LoginPage.ts",
+            "start_line": 30,
+            "end_line": 35,
+            "signature": "()",
+            "kind": "method"
+        }
+        res, reason = engine.classify_reusability("login", cand)
+        self.assertEqual(res, "CONDITIONAL_REUSE", f"Click helper for login should be CONDITIONAL_REUSE, got {res} ({reason})")
+
+    def test_candidate_ranking_prefers_direct_method_over_click_helper(self):
+        engine = MethodDiscoveryEngine(Path("."))
+        helper_cand = {
+            "name": "clickLogin",
+            "file_path": "tests/pages/LoginPage.ts",
+            "start_line": 30,
+            "end_line": 35,
+            "signature": "()",
+            "kind": "method"
+        }
+        direct_cand = {
+            "name": "login",
+            "file_path": "tests/pages/LoginPage.ts",
+            "start_line": 15,
+            "end_line": 25,
+            "signature": "(username: string, password: string)",
+            "kind": "method"
+        }
+        score_helper = engine.score_candidate("login", helper_cand)
+        score_direct = engine.score_candidate("login", direct_cand)
+        self.assertGreater(score_direct, score_helper, "Direct method should score higher than click helper")
+
+    def test_empirical_ast_signature_extraction(self):
+        sample_ts = '''
+import { Page } from '@playwright/test';
+
+export interface UserProfile {
+    id: string;
+    email: string;
+    role: string;
+}
+
+export class ProfileService {
+    private page: Page;
+
+    constructor(page: Page) {
+        this.page = page;
+    }
+
+    public async updateProfile(profile: UserProfile): Promise<boolean> {
+        // Implementation details with many lines of code
+        const url = `/api/v1/users/${profile.id}`;
+        const resp = await this.page.request.put(url, { data: profile });
+        if (!resp.ok()) {
+            throw new Error('Failed to update');
+        }
+        return true;
+    }
+}
+'''
+        sig = extract_code_signatures(sample_ts, ".ts")
+        self.assertIn("export interface UserProfile", sig)
+        self.assertIn("export class ProfileService", sig)
+        self.assertIn("public async updateProfile", sig)
+        self.assertNotIn("Failed to update", sig, "Method bodies must be stripped in signature extraction")
+        self.assertLess(len(sig), len(sample_ts), "Signature extraction must reduce character size")
+
+
+    # =========================================================================
+    # Group F: Deep Hardening V2 (Multi-line fallback, Vietnamese search & unified ranking)
+    # =========================================================================
+    def test_end_to_end_discover_and_evaluate_ranks_method_over_click_with_whitespace(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            p = Path(tmp_dir)
+            pages = p / "tests" / "pages"
+            pages.mkdir(parents=True)
+            page_file = pages / "LoginPage.ts"
+            page_file.write_text('''
+export class LoginPage {
+    async login(username: string, password: string) {
+        return true;
+    }
+
+    async clickLogin( ) {
+        return false;
+    }
+}
+''', encoding="utf-8")
+
+            engine = MethodDiscoveryEngine(p)
+            res = engine.discover_and_evaluate("login")
+            engine.close()
+
+            self.assertEqual(res["status"], "FOUND")
+            self.assertEqual(res["candidate"]["name"], "login", "Unified class score_candidate must prioritize 'login' over 'clickLogin( )'")
+            self.assertEqual(res["classification"], "DIRECT_REUSE")
+
+    def test_fallback_search_multi_line_prettier_typescript(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            p = Path(tmp_dir)
+            pages = p / "tests" / "pages"
+            pages.mkdir(parents=True)
+            page_file = pages / "OrderPage.ts"
+            page_file.write_text('''
+export class OrderPage {
+    async placeOrder(
+        { orderId, items, customerId }: OrderRequest,
+        options?: OrderOptions
+    ): Promise<OrderResult> {
+        return { success: true };
+    }
+}
+''', encoding="utf-8")
+
+            engine = MethodDiscoveryEngine(p)
+            candidates = engine.fallback_search("placeOrder")
+            engine.close()
+
+            self.assertEqual(len(candidates), 1)
+            self.assertEqual(candidates[0]["name"], "placeOrder")
+            self.assertEqual(candidates[0]["start_line"], 3)
+            self.assertIn("orderId", candidates[0]["signature"])
+
+    def test_vietnamese_synonym_search_finds_english_code(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            p = Path(tmp_dir)
+            pages = p / "tests" / "pages"
+            pages.mkdir(parents=True)
+            page_file = pages / "AuthPage.ts"
+            page_file.write_text('''
+export class AuthPage {
+    async login(user: string, pass: string) {
+        return true;
+    }
+}
+''', encoding="utf-8")
+
+            engine = MethodDiscoveryEngine(p)
+            # Search using Vietnamese synonym 'dang_nhap'
+            res = engine.discover_and_evaluate("dang_nhap")
+            engine.close()
+
+            self.assertEqual(res["status"], "FOUND")
+            self.assertEqual(res["candidate"]["name"], "login", "Vietnamese 'dang_nhap' must discover and rank 'login' method!")
+
+    def test_token_benchmark_extracts_page_object_methods_without_public(self):
+        sample_po = '''
+export class BasketPage {
+    readonly page: Page;
+
+    async goto() {
+        await this.page.goto('/basket');
+    }
+
+    async checkout(cartId: string): Promise<boolean> {
+        if (cartId) {
+            await this.page.click('#checkout');
+        }
+        return true;
+    }
+}
+'''
+        sig = extract_code_signatures(sample_po, ".ts")
+        self.assertIn("async goto()", sig)
+        self.assertIn("async checkout(", sig)
+        self.assertNotIn("if (cartId)", sig, "Control structures must NOT be extracted as signatures")
 
 if __name__ == "__main__":
     unittest.main()

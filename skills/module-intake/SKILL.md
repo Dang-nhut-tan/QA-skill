@@ -2,7 +2,7 @@
 name: module-intake
 description: >-
   Receives the module testing request, detects available documentation and source code,
-  identifies repository capabilities, collects staging and admin environment credentials beforehand,
+  identifies repository capabilities, checks environment configuration safely without storing secrets,
   and initializes the persistent QA workflow state.
   Use when the user starts a new testing request or specifies a target module to test.
 ---
@@ -10,7 +10,7 @@ description: >-
 # Skill: Module Intake (Step 0)
 
 ## 1. Description & Trigger Conditions
-* **Purpose:** Intake the user's testing request, assess repository context, inspect existing documentation, proactively collect staging and admin environment credentials if missing, and initialize workflow tracking in `.qa-state.json`.
+* **Purpose:** Intake the user's testing request, assess repository context, inspect existing documentation, verify environment configuration safely without storing plaintext secrets, and initialize workflow tracking in `.qa-state.json`.
 * **Triggers:**
   * User requests testing for a feature or module (e.g., *"Test the Login module"*, *"Analyze and test Checkout"*, *"Tạo test case cho phân hệ Điểm danh"*).
   * Direct invocation by `workflow-orchestrator`.
@@ -20,7 +20,7 @@ description: >-
   * Target module name or description.
 * **Optional:**
   * Requirement documents (`.md`, `.pdf`, `.docx`, Swagger/OpenAPI specs).
-  * Staging URL, test user email, and Admin page credentials (username & password).
+  * Staging URL and test account metadata (via `.env.local` or runtime environment variables).
   * Explicit test focus (e.g., negative tests, security edge cases).
 
 ## 3. Prerequisites
@@ -54,22 +54,22 @@ description: >-
        5. Index freshness check (compares git commit hash / file mtime; runs `codegraph sync` if stale).
      * If preflight reports `READY`: proceed to Step 4 and persist preflight metadata in `.qa-state.json`.
      * If preflight reports `BLOCKED` (e.g. invalid repo path, missing node/codegraph environment): log actionable remediation and alert the user.
-4. **Proactive Staging & Admin Credentials Collection:**
+4. **Proactive Staging & Environment Configuration Check:**
    * Inspect existing project configuration (`.env`, `.env.local`, test fixtures, mock data) for:
      1. Staging Web URL (e.g., staging domain, local dev port).
-     2. Staging test user email / phone / password.
-     3. Admin Portal URL, Admin Username, and Admin Password.
-   * **If Credentials Are Missing / Unknown:**
-     - Proactively prompt the user in polite Vietnamese during the intake summary:
+     2. Staging test user identifiers and Admin Portal URL.
+   * **Security Rule (Zero Plaintext Secrets):**
+     - Never persist plaintext passwords, tokens, or sensitive API keys into `.qa-state.json`.
+     - Instruct the user to place test secrets in `.env.local` (already gitignored) or provide them as runtime environment variables for Playwright MCP:
        ```text
        Để phục vụ việc kiểm chứng giao diện thực tế (Playwright MCP) và kiểm tra luồng phân quyền trang quản trị:
-       Xin vui lòng cung cấp (nếu có):
-       1. Đường dẫn Staging (URL web kiểm thử).
-       2. Email / Tài khoản người dùng test.
-       3. Đường dẫn trang Quản trị (Admin) cùng Username & Mật khẩu.
-       (Nếu đang chạy môi trường demo/mock cục bộ, bạn có thể chỉ định: "dùng mock data").
+       Vui lòng thiết lập thông tin xác thực trong file .env.local (hoặc biến môi trường tạm thời):
+       1. STAGING_URL=<URL web kiểm thử>
+       2. TEST_USER=<Email/Tài khoản test>
+       3. TEST_PASSWORD=<Mật khẩu test>
+       (Lưu ý bảo mật: Hệ thống tuyệt đối không lưu mật khẩu thô vào file trạng thái .qa-state.json).
        ```
-     - Persist provided credentials securely in `.qa-state.json` under `environment.credentials` for subsequent Playwright UI verification in Step 3.
+     - Only record non-sensitive environment metadata (e.g., `environment.base_url`, `environment.auth_method`, `environment.has_admin_portal`) in `.qa-state.json`.
 5. **Initialize Workflow State:**
    * Invoke `python scripts/state_manager.py init "<ModuleName>"` to create or reset `.qa-state.json`.
    * Record discovered document paths, repository metadata, and environment details.

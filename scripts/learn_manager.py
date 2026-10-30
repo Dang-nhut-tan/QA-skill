@@ -103,10 +103,13 @@ def load_learnings(learnings_file: Optional[Path] = None) -> Dict[str, Any]:
 def save_learnings(data: Dict[str, Any], learnings_file: Optional[Path] = None) -> None:
     l_file = learnings_file or get_learnings_file()
     l_file.parent.mkdir(parents=True, exist_ok=True)
-    with open(l_file, "w", encoding="utf-8") as f:
+    # Atomic write to prevent file corruption during parallel execution
+    tmp_file = l_file.with_name(f"{l_file.name}.tmp")
+    with open(tmp_file, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
+    os.replace(tmp_file, l_file)
 
-def propose_learning(title: str, issue: str, root_cause: str, solution: str, target_skill: str, project_root: Optional[str] = None) -> Dict[str, Any]:
+def propose_learning(title: str, issue: str, root_cause: str, solution: str, target_skill: str, module: Optional[str] = None, tags: Optional[List[str]] = None, project_root: Optional[str] = None) -> Dict[str, Any]:
     skills_root = resolve_skills_root(project_root)
     learnings_file = get_learnings_file(skills_root)
     
@@ -116,11 +119,14 @@ def propose_learning(title: str, issue: str, root_cause: str, solution: str, tar
     proposal = {
         "id": proposal_id,
         "title": title,
+        "module": module or "General",
+        "tags": tags or [],
         "issue": issue,
         "root_cause": root_cause,
         "solution": solution,
         "target_skill": target_skill,
         "status": "PENDING_APPROVAL",
+        "active": True,
         "created_at": _now()
     }
     
@@ -160,40 +166,54 @@ def approve_learning(proposal_id: str, project_root: Optional[str] = None) -> Di
     if not skill_file.exists():
         raise FileNotFoundError(f"Target skill file '{skill_file}' does not exist.")
 
-    # 1. Format the insight markdown block
-    insight_block = f"""
-## Project-Specific Learnings & Best Practices
-> [!TIP]
-> **{proposal['title']}** (Mã: {proposal['id']} - Đã duyệt: {_now()[:10]})
-> - **Vấn đề / Điểm nghẽn lặp lại:** {proposal['issue']}
-> - **Nguyên nhân gốc rễ:** {proposal['root_cause']}
-> - **Giải pháp tối ưu đã kiểm chứng:** {proposal['solution']}
-"""
-
-    # 2. Append to target skill
-    content = skill_file.read_text(encoding="utf-8")
-    if "## Project-Specific Learnings & Best Practices" in content:
-        sub_block = f"""> [!TIP]
-> **{proposal['title']}** (Mã: {proposal['id']} - Đã duyệt: {_now()[:10]})
-> - **Vấn đề / Điểm nghẽn lặp lại:** {proposal['issue']}
-> - **Nguyên nhân gốc rễ:** {proposal['root_cause']}
-> - **Giải pháp tối ưu đã kiểm chứng:** {proposal['solution']}
-"""
-        content += "\n" + sub_block
-    else:
-        content += "\n" + insight_block
-
-    skill_file.write_text(content, encoding="utf-8")
-    print(f"[OK] Knowledge injected into skill: {skill_file}")
-
-    # 3. Update status in database
+    # ARCHITECTURAL DECISION: Prevent Token Bloat in SKILL.md
+    # Instead of unbounded append into SKILL.md system prompt, learnings are stored structured
+    # in references/project-learnings.json and retrieved dynamically per module context.
     data["proposals"].remove(proposal)
     proposal["status"] = "APPLIED"
+    proposal["active"] = True
     proposal["applied_at"] = _now()
     data.setdefault("applied", []).append(proposal)
     save_learnings(data, learnings_file)
+    print(f"[OK] Learning {proposal_id} approved and persisted in {learnings_file} (SKILL.md kept clean).")
     
     return proposal
+
+def query_learnings(module_name: Optional[str] = None, target_skill: Optional[str] = None, limit: int = 3, project_root: Optional[str] = None) -> List[Dict[str, Any]]:
+    """
+    Dynamic Context Injection: Retrieves top active learnings relevant to the target module and skill.
+    Injected on-demand into prompt context without polluting static SKILL.md files.
+    """
+    try:
+        skills_root = resolve_skills_root(project_root)
+        learnings_file = get_learnings_file(skills_root)
+    except Exception:
+        learnings_file = get_learnings_file()
+
+    data = load_learnings(learnings_file)
+    applied = data.get("applied", [])
+
+    matching = []
+    mod_clean = (module_name or "").strip().lower()
+    skill_clean = (target_skill or "").strip().lower()
+
+    for item in applied:
+        if not item.get("active", True):
+            continue
+        # Filter by target_skill if specified
+        if skill_clean:
+            item_skill = str(item.get("target_skill", "")).strip().lower()
+            if item_skill != skill_clean:
+                continue
+        # Filter by module_name if specified
+        item_mod = str(item.get("module", "")).lower()
+        if mod_clean and (item_mod == mod_clean or mod_clean in item_mod):
+            matching.append(item)
+        elif not mod_clean or item_mod == "general":
+            matching.append(item)
+
+    # Return top 'limit' matches
+    return matching[:limit]
 
 def list_learnings(as_json: bool = False, project_root: Optional[str] = None) -> None:
     try:
@@ -222,7 +242,10 @@ def list_learnings(as_json: bool = False, project_root: Optional[str] = None) ->
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Continuous Learning Manager for QA Agent System")
-    parser.add_argument("action", choices=["propose", "approve", "list"], help="Action to execute")
+    parser.add_argument("action", choices=["propose", "approve", "list", "query"], help="Action to execute")
+    parser.add_argument("--module", dest="module", default=None, help="Target module name for propose or query")
+    parser.add_argument("--skill", dest="skill", default=None, help="Target skill name to filter learnings")
+    parser.add_argument("--limit", dest="limit", type=int, default=3, help="Max results for query action")
     parser.add_argument("args", nargs="*", help="Arguments for the selected action")
     parser.add_argument("--project-root", dest="project_root", default=None, help="Explicit target project root path")
     parser.add_argument("--json", action="store_true", help="Output in JSON format (for list action)")
@@ -233,7 +256,7 @@ if __name__ == "__main__":
         if len(parsed.args) < 5:
             print("Usage: python learn_manager.py propose <title> <issue> <root_cause> <solution> <target_skill> [--project-root <path>]")
             sys.exit(1)
-        p = propose_learning(parsed.args[0], parsed.args[1], parsed.args[2], parsed.args[3], parsed.args[4], project_root=parsed.project_root)
+        p = propose_learning(parsed.args[0], parsed.args[1], parsed.args[2], parsed.args[3], parsed.args[4], module=parsed.module, project_root=parsed.project_root)
     elif parsed.action == "approve":
         if len(parsed.args) < 1:
             print("Usage: python learn_manager.py approve <PROPOSAL_ID> [--project-root <path>]")
@@ -242,3 +265,11 @@ if __name__ == "__main__":
         print(f"[SUCCESS] Approved and applied {p['id']}")
     elif parsed.action == "list":
         list_learnings(as_json=parsed.json, project_root=parsed.project_root)
+    elif parsed.action == "query":
+        res = query_learnings(module_name=parsed.module, target_skill=parsed.skill, limit=parsed.limit, project_root=parsed.project_root)
+        if parsed.json:
+            print(json.dumps(res, indent=2, ensure_ascii=False))
+        else:
+            print(f"[RELEVANT LEARNINGS for module '{parsed.module or 'All'}']: {len(res)} items")
+            for r in res:
+                print(f"  - [{r['id']}] {r['title']}: {r['solution']}")

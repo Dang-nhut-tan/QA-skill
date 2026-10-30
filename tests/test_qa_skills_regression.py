@@ -31,7 +31,7 @@ from scripts.export_testcases import (
     FILL_NHO
 )
 from scripts.traceability_validator import split_requirement_references
-from scripts.learn_manager import resolve_skills_root
+from scripts.learn_manager import resolve_skills_root, propose_learning, approve_learning, query_learnings
 from scripts.verify_and_embed_images import verify_and_fix_report_images
 
 class MockCell:
@@ -243,6 +243,234 @@ class TestQASkillsRegression(unittest.TestCase):
             updated_content = report.read_text(encoding="utf-8")
             self.assertIn("file:///", updated_content)
             self.assertIn("Mở ảnh gốc", updated_content)
+
+
+    # =========================================================================
+    # Test 7: Security Sanitizer - Secret keys rejected from state metadata
+    # =========================================================================
+    def test_state_manager_rejects_plaintext_secrets_in_init(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            mgr = WorkflowStateManager(tmp_dir)
+            forbidden_keys = [
+                {"db_password": "supersecretpassword"},
+                {"auth_token": "bearer xyz123"},
+                {"client_secret": "my-secret-key"},
+                {"api_key": "AIzaSy..."}
+            ]
+            for bad_meta in forbidden_keys:
+                with self.subTest(meta=bad_meta):
+                    with self.assertRaises(ValueError) as ctx:
+                        mgr.init_state("AuthModule", bad_meta)
+                    self.assertIn("Security Alert", str(ctx.exception))
+
+    def test_state_manager_rejects_plaintext_secrets_in_transition(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            mgr = WorkflowStateManager(tmp_dir)
+            mgr.init_state("AuthModule", {"repo": "myapp"})
+            with self.assertRaises(ValueError) as ctx:
+                mgr.transition(
+                    "WAITING_FOR_REQUIREMENT_CLARIFICATION",
+                    "Attempting to log secret",
+                    metadata={"user_password": "PlainPassword123"}
+                )
+            self.assertIn("Security Alert", str(ctx.exception))
+
+    def test_state_manager_accepts_clean_metadata(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            mgr = WorkflowStateManager(tmp_dir)
+            state = mgr.init_state("AuthModule", {"repo_name": "clean-repo", "module_version": "1.2.0"})
+            self.assertEqual(state["repo_info"]["module_version"], "1.2.0")
+
+    # =========================================================================
+    # Test 8: FSM State Transition Matrix Validation
+    # =========================================================================
+    def test_fsm_rejects_invalid_state_jumps(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            mgr = WorkflowStateManager(tmp_dir)
+            mgr.init_state("TestModule", {"repo": "test"})
+            
+            # INITIALIZED directly to COMPLETED is forbidden
+            with self.assertRaises(ValueError) as ctx:
+                mgr.transition("COMPLETED", "Illegal jump directly to completed")
+            self.assertIn("FSM Transition Violation", str(ctx.exception))
+
+            # INITIALIZED directly to AUTOMATION_IMPLEMENTATION is forbidden
+            with self.assertRaises(ValueError) as ctx:
+                mgr.transition("AUTOMATION_IMPLEMENTATION", "Illegal jump skipping gates")
+            self.assertIn("FSM Transition Violation", str(ctx.exception))
+
+    def test_fsm_allows_valid_linear_transitions(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            mgr = WorkflowStateManager(tmp_dir)
+            mgr.init_state("TestModule", {"repo": "test"})
+            
+            # Step 1 -> GAP_ANALYSIS
+            s1 = mgr.transition("GAP_ANALYSIS", "Starting gap analysis")
+            self.assertEqual(s1["current_state"], "GAP_ANALYSIS")
+
+            # Step 2 -> WAITING_FOR_REQUIREMENT_CLARIFICATION
+            s2 = mgr.transition("WAITING_FOR_REQUIREMENT_CLARIFICATION", "Human Gate 1")
+            self.assertEqual(s2["current_state"], "WAITING_FOR_REQUIREMENT_CLARIFICATION")
+
+            # Step 3 -> TESTCASE_GENERATION
+            s3 = mgr.transition("TESTCASE_GENERATION", "User approved, designing test cases")
+            self.assertEqual(s3["current_state"], "TESTCASE_GENERATION")
+
+    # =========================================================================
+    # Test 9: Zero Token Bloat Continuous Learning (Skill Immutability)
+    # =========================================================================
+    def test_learn_manager_does_not_mutate_skill_md_on_approval(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_root = Path(tmp_dir)
+            skills_dir = tmp_root / "skills" / "automation-implementation"
+            skills_dir.mkdir(parents=True)
+            (tmp_root / "scripts").mkdir(parents=True)
+            (tmp_root / "plugin.json").write_text("{}", encoding="utf-8")
+            (tmp_root / "scripts" / "learn_manager.py").write_text("# marker", encoding="utf-8")
+            
+            skill_md = skills_dir / "SKILL.md"
+            initial_content = "---\nname: automation-implementation\n---\n# Original Skill Instructions\nStrictly immutable.\n"
+            skill_md.write_text(initial_content, encoding="utf-8")
+
+            # Propose learning
+            proposal = propose_learning(
+                title="Flaky Submit Button Wait",
+                issue="Button click race condition in slow 3G",
+                root_cause="useSubmitOnce hook async transition",
+                solution="Use waitForResponse instead of arbitrary delay",
+                target_skill="automation-implementation",
+                tags=["flaky", "submit"],
+                project_root=str(tmp_root)
+            )
+            self.assertEqual(proposal["status"], "PENDING_APPROVAL")
+
+            # Approve learning
+            approved = approve_learning(proposal["id"], project_root=str(tmp_root))
+            self.assertEqual(approved["status"], "APPLIED")
+
+            # CRITICAL ASSERTION: SKILL.md must remain COMPLETELY UNCHANGED
+            current_content = skill_md.read_text(encoding="utf-8")
+            self.assertEqual(current_content, initial_content, "SKILL.md must NEVER be modified to avoid token bloat!")
+
+            # Verify structured JSON contains the approved learning
+            learnings_file = tmp_root / "references" / "project-learnings.json"
+            self.assertTrue(learnings_file.exists())
+            with open(learnings_file, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            self.assertTrue(any(item["id"] == proposal["id"] and item["status"] == "APPLIED" for item in data.get("applied", [])))
+
+            # Verify dynamic query retrieves the learning
+            queried = query_learnings(project_root=str(tmp_root))
+            self.assertEqual(len(queried), 1)
+            self.assertEqual(queried[0]["id"], proposal["id"])
+
+
+    # =========================================================================
+    # Test 10: Enterprise Hardening V2 (Hyphenated keys, URI redaction, FSM Rollback)
+    # =========================================================================
+    def test_state_manager_rejects_hyphenated_and_advanced_secret_keys(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            mgr = WorkflowStateManager(tmp_dir)
+            hyphen_cases = [
+                {"x-api-key": "secret_key_1"},
+                {"auth-token": "jwt.abc.xyz"},
+                {"access-key-id": "AKIA123"},
+                {"jwt": "header.payload.sig"},
+                {"bearer": "token123"},
+                {"passphrase": "my long pass phrase"},
+                {"otp": "123456"}
+            ]
+            for case in hyphen_cases:
+                with self.subTest(case=case):
+                    with self.assertRaises(ValueError) as ctx:
+                        mgr.init_state("AuthModule", case)
+                    self.assertIn("Security Alert", str(ctx.exception))
+
+    def test_state_manager_redacts_credentials_in_uri(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            mgr = WorkflowStateManager(tmp_dir)
+            clean_meta = {
+                "db_uri": "postgres://admin:SuperSecretPass123@staging-db:5432/main",
+                "api_endpoint": "https://service_user:Token999@api.example.com/v1"
+            }
+            state = mgr.init_state("DataModule", clean_meta)
+            db_res = state["repo_info"]["db_uri"]
+            api_res = state["repo_info"]["api_endpoint"]
+            self.assertNotIn("SuperSecretPass123", db_res)
+            self.assertIn("***REDACTED***", db_res)
+            self.assertNotIn("Token999", api_res)
+            self.assertIn("***REDACTED***", api_res)
+
+    def test_fsm_allows_clarification_and_execution_rollback(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            mgr = WorkflowStateManager(tmp_dir)
+            mgr.init_state("AuthModule", {"repo": "app"})
+            
+            # 1. INITIALIZED -> GAP_ANALYSIS -> WAITING_FOR_REQUIREMENT_CLARIFICATION
+            mgr.transition("GAP_ANALYSIS", "Found gaps")
+            mgr.transition("WAITING_FOR_REQUIREMENT_CLARIFICATION", "Human Gate 1")
+
+            # 2. Rollback to CONTEXT_DISCOVERY when BA updates spec scope
+            s_disc = mgr.transition("CONTEXT_DISCOVERY", "BA updated spec, re-scanning context")
+            self.assertEqual(s_disc["current_state"], "CONTEXT_DISCOVERY")
+
+            # 3. Advance to AUTOMATION_EXECUTION
+            mgr.transition("GAP_ANALYSIS", "Analysis 2")
+            mgr.transition("TESTCASE_GENERATION", "Gen testcases")
+            mgr.transition("TESTCASE_REVIEW", "Review")
+            mgr.transition("WAITING_FOR_APPROVED_TESTCASES", "Gate 2")
+            mgr.transition("AUTOMATION_IMPLEMENTATION", "Writing tests")
+            mgr.transition("AUTOMATION_EXECUTION", "Running suite")
+
+            # 4. Rollback from AUTOMATION_EXECUTION to GAP_ANALYSIS when test exposes spec defect
+            s_back = mgr.transition("GAP_ANALYSIS", "Spec bug discovered during test execution")
+            self.assertEqual(s_back["current_state"], "GAP_ANALYSIS")
+
+    def test_fsm_blocks_excessive_clarification_loops(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            mgr = WorkflowStateManager(tmp_dir)
+            mgr.init_state("AuthModule", {"repo": "app"})
+            mgr.transition("GAP_ANALYSIS", "1")
+            mgr.transition("WAITING_FOR_REQUIREMENT_CLARIFICATION", "Gate")
+
+            # Loop 1
+            mgr.transition("GAP_ANALYSIS", "Back 1")
+            mgr.transition("WAITING_FOR_REQUIREMENT_CLARIFICATION", "Gate")
+
+            # Loop 2
+            mgr.transition("GAP_ANALYSIS", "Back 2")
+            mgr.transition("WAITING_FOR_REQUIREMENT_CLARIFICATION", "Gate")
+
+            # Loop 3 must be blocked by safety guard
+            with self.assertRaises(ValueError) as ctx:
+                mgr.transition("GAP_ANALYSIS", "Back 3")
+            self.assertIn("FSM Safety Guard: Exceeded maximum allowed clarification loops", str(ctx.exception))
+
+    def test_learn_manager_query_filters_by_target_skill(self):
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            tmp_root = Path(tmp_dir)
+            (tmp_root / "skills" / "skill-a").mkdir(parents=True)
+            (tmp_root / "skills" / "skill-b").mkdir(parents=True)
+            (tmp_root / "scripts").mkdir(parents=True)
+            (tmp_root / "plugin.json").write_text("{}", encoding="utf-8")
+            (tmp_root / "scripts" / "learn_manager.py").write_text("# marker", encoding="utf-8")
+            (tmp_root / "skills" / "skill-a" / "SKILL.md").write_text("# A", encoding="utf-8")
+            (tmp_root / "skills" / "skill-b" / "SKILL.md").write_text("# B", encoding="utf-8")
+
+            p1 = propose_learning("Fix A", "Issue A", "Root A", "Sol A", "skill-a", module="Orders", project_root=str(tmp_root))
+            approve_learning(p1["id"], project_root=str(tmp_root))
+
+            p2 = propose_learning("Fix B", "Issue B", "Root B", "Sol B", "skill-b", module="Orders", project_root=str(tmp_root))
+            approve_learning(p2["id"], project_root=str(tmp_root))
+
+            # Query with target_skill isolates correctly
+            res_a = query_learnings(module_name="Orders", target_skill="skill-a", project_root=str(tmp_root))
+            self.assertEqual(len(res_a), 1)
+            self.assertEqual(res_a[0]["id"], p1["id"])
+
+            res_b = query_learnings(module_name="Orders", target_skill="skill-b", project_root=str(tmp_root))
+            self.assertEqual(len(res_b), 1)
+            self.assertEqual(res_b[0]["id"], p2["id"])
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -47,17 +47,19 @@ description: >-
 
      Bạn có đồng ý duyệt để AI tự động nạp kinh nghiệm này vào Skill không? (Đồng ý / Từ chối / Chỉnh sửa)
      ```
-4. **Execute Injection Upon Approval:**
+4. **Execute Structured Learning Upon Approval:**
    * When user confirms *"Đồng ý"* or confirms proposal:
      Run: `python scripts/learn_manager.py approve <PROPOSAL_ID>`
-   * The script automatically appends the verified rule into `skills/<target_skill>/SKILL.md` under the section `## Project-Specific Learnings & Best Practices`.
-   * Future invocations of that skill will immediately inherit and respect the new lesson.
+   * The script activates and stores the verified learning in `references/project-learnings.json` (STATUS: APPROVED).
+   * **Zero Token Bloat Guarantee:** `SKILL.md` core files remain immutable and clean. Instead, active skills dynamically retrieve relevant learnings at runtime using:
+     `python scripts/learn_manager.py query --skill <target_skill> --module <module_name>`
 5. **Rejection or Discard:**
-   * If user rejects: discard without modifying any skill files.
+   * If user rejects: `python scripts/learn_manager.py reject <PROPOSAL_ID>` to mark it REJECTED without modifying state or reference files.
 
 ## 4. Expected Outputs
-* Proposal generated in `references/project-learnings.json`.
-* Target `SKILL.md` augmented with the approved learning block upon human approval.
+* Proposal recorded and updated in `references/project-learnings.json` (Structured JSON storage).
+* Dynamic runtime query availability via `learn_manager.py query`.
+* Zero unbounded token inflation in static `SKILL.md` files.
 * Trace recorded in `.qa-state.json`.
 
 ## 5. Human Approval Requirements

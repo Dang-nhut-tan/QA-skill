@@ -26,6 +26,8 @@ if hasattr(sys.stdout, "reconfigure"):
     except Exception:
         pass
 
+SYSTEM_ROOT = Path(__file__).resolve().parent.parent
+
 PAGE_OBJECT_DIRS = ["tests/pages", "e2e/pages", "page-objects", "04-src/tests/pages", "admin/tests/pages"]
 
 class MethodDiscoveryEngine:
@@ -33,7 +35,66 @@ class MethodDiscoveryEngine:
         self.repo_path = Path(repo_path).resolve()
         self.db_path = self.repo_path / ".codegraph" / "codegraph.db"
         self._conn = None
+        self.synonyms = self._load_synonyms()
 
+    def _load_synonyms(self) -> Dict[str, List[str]]:
+        """
+        Loads domain action synonyms from system reference or built-in dictionary,
+        and merges with repository custom config overrides.
+        """
+        base_synonyms = {}
+
+        # 1. Load base synonyms from system reference
+        sys_ref = SYSTEM_ROOT / "references" / "domain-action-synonyms.json"
+        if sys_ref.exists():
+            try:
+                with open(sys_ref, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    actions = data.get("actions", data)
+                    if isinstance(actions, dict):
+                        base_synonyms = dict(actions)
+            except Exception:
+                pass
+
+        if not base_synonyms:
+            base_synonyms = {
+                "login": ["login", "signin", "authenticate", "clicklogin", "log_in", "sign_in"],
+                "logout": ["logout", "signout", "log_out", "sign_out"],
+                "order": ["order", "placeorder", "createorder", "submitorder", "trackorder"],
+                "checkout": ["checkout", "processcheckout", "gotocheckout", "submitorder"],
+                "pay": ["pay", "makepayment", "processpayment", "charge"],
+                "add": ["add", "additem", "insert", "append", "createitem"],
+                "remove": ["remove", "removeitem", "deleteitem", "dropitem"],
+                "clear": ["clear", "reset", "empty", "clearcart"],
+                "submit": ["submit", "send", "confirm", "postform"],
+                "cancel": ["cancel", "abort", "dismiss", "closemodal"],
+                "search": ["search", "find", "query", "lookup"],
+                "filter": ["filter", "applyfilter", "refineresults"],
+                "select": ["select", "choose", "pickoption"],
+                "export": ["export", "exportexcel", "exportcsv"],
+                "approve": ["approve", "confirmrequest", "acceptrequest"],
+                "reject": ["reject", "declinerequest", "denyapproval"]
+            }
+
+        # 2. Check and merge custom repo overrides
+        custom_paths = [
+            self.repo_path / ".codegraph" / "synonyms.json",
+            self.repo_path / "domain-action-synonyms.json",
+            self.repo_path / "qa-synonyms.json",
+            self.repo_path / "references" / "domain-action-synonyms.json"
+        ]
+        for cp in custom_paths:
+            if cp.exists():
+                try:
+                    with open(cp, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        custom_actions = data.get("actions", data)
+                        if isinstance(custom_actions, dict):
+                            base_synonyms.update(custom_actions)
+                except Exception:
+                    pass
+
+        return base_synonyms
     def _get_db(self) -> Optional[sqlite3.Connection]:
         if not self.db_path.exists():
             return None
@@ -46,6 +107,25 @@ class MethodDiscoveryEngine:
         if self._conn:
             self._conn.close()
             self._conn = None
+
+    def _get_search_terms(self, action_name: str) -> List[str]:
+        """
+        Expands an action name into search variants including category name and synonyms.
+        Enables multi-language and variant search (e.g. 'dang_nhap' -> ['dang_nhap', 'dangnhap', 'login', 'signin']).
+        """
+        action_clean = action_name.strip().lower()
+        terms = {action_clean, action_clean.replace("_", ""), action_clean.replace("-", "")}
+        
+        for cat, syns in self.synonyms.items():
+            cat_lower = cat.lower()
+            syns_lower = [s.lower() for s in syns]
+            if action_clean == cat_lower or action_clean in syns_lower or cat_lower in action_clean:
+                terms.add(cat_lower)
+                for s in syns_lower:
+                    if len(s) >= 3:
+                        terms.add(s)
+                        terms.add(s.replace("_", ""))
+        return [t for t in terms if len(t) >= 2]
 
     def discover_candidates(self, action_name: str, scope_hint: Optional[str] = None, fallback: bool = True) -> List[Dict[str, Any]]:
         """
@@ -106,17 +186,27 @@ class MethodDiscoveryEngine:
         Deterministic regex fallback scanner for repositories without CodeGraph DB
         or for dynamic objects not captured in the AST index.
         Scans Page Object directories and helper folders.
+        Supports single-line and multi-line method signatures (e.g. formatted by Prettier),
+        and expands domain synonyms (e.g. Vietnamese 'dang_nhap' -> finds 'login').
         """
         candidates = []
-        action_clean = action_name.strip().lower()
+        search_terms = self._get_search_terms(action_name)
+        action_pattern = "|".join(re.escape(t) for t in sorted(search_terms, key=len, reverse=True))
 
         target_dirs = list(PAGE_OBJECT_DIRS)
         if scope_hint:
             target_dirs.insert(0, scope_hint)
 
-        p_method = re.compile(rf'(?:async\s+)?([a-zA-Z0-9_$]*{re.escape(action_clean)}[a-zA-Z0-9_$]*)\s*\(([^)]*)\)\s*\{{', re.IGNORECASE)
-        p_arrow = re.compile(rf'(?:export\s+)?(?:const|let|var)\s+([a-zA-Z0-9_$]*{re.escape(action_clean)}[a-zA-Z0-9_$]*)\s*=\s*(?:async\s*)?\(([^)]*)\)\s*(?::\s*[^=]+)?=>', re.IGNORECASE)
-        p_obj_method = re.compile(rf'([a-zA-Z0-9_$]*{re.escape(action_clean)}[a-zA-Z0-9_$]*)\s*\(([^)]*)\)\s*(?::\s*([^{{]+))?\{{', re.IGNORECASE)
+        p_patterns = [
+            # standard / async method: async methodName(...) { or methodName(...) {
+            re.compile(rf'(?:async\s+)?([a-zA-Z0-9_$]*(?:{action_pattern})[a-zA-Z0-9_$]*)\s*\((.*?)\)\s*(?::\s*[^{{]+)?\{{', re.IGNORECASE | re.DOTALL),
+            # arrow function: const methodName = async (...) =>
+            re.compile(rf'(?:export\s+)?(?:const|let|var)\s+([a-zA-Z0-9_$]*(?:{action_pattern})[a-zA-Z0-9_$]*)\s*=\s*(?:async\s*)?\((.*?)\)\s*(?::\s*[^=]+)?=>', re.IGNORECASE | re.DOTALL),
+            # object method: methodName(...) : Type {
+            re.compile(rf'([a-zA-Z0-9_$]*(?:{action_pattern})[a-zA-Z0-9_$]*)\s*\((.*?)\)\s*(?::\s*([^{{]+))?\{{', re.IGNORECASE | re.DOTALL)
+        ]
+
+        seen_candidates = set()
 
         for td in target_dirs:
             dir_p = self.repo_path / td
@@ -127,33 +217,44 @@ class MethodDiscoveryEngine:
                     if f.endswith((".ts", ".tsx", ".js", ".mjs", ".jsx")):
                         f_path = Path(root) / f
                         try:
-                            lines = f_path.read_text(encoding="utf-8").splitlines()
+                            content = f_path.read_text(encoding="utf-8", errors="ignore")
                             rel_p = f_path.relative_to(self.repo_path).as_posix()
-                            for idx, line in enumerate(lines):
-                                l_str = line.strip()
-                                m1 = p_method.search(l_str) or p_arrow.search(l_str) or p_obj_method.search(l_str)
-                                if m1:
-                                    m_name = m1.group(1) if m1.group(1) else m1.group(2)
-                                    m_name = m_name.replace("async", "").strip()
-                                    if action_clean in m_name.lower():
-                                        candidates.append({
-                                            "id": f"fallback:{rel_p}:{idx+1}",
-                                            "kind": "method/function",
-                                            "name": m_name,
-                                            "qualified_name": f"{rel_p}::{m_name}",
-                                            "file_path": rel_p,
-                                            "start_line": idx + 1,
-                                            "end_line": min(idx + 30, len(lines)),
-                                            "signature": l_str,
-                                            "docstring": "",
-                                            "is_exported": "export" in l_str,
-                                            "source": "fallback_ast_scan"
-                                        })
+                            total_lines = content.count("\n") + 1
+
+                            for p_regex in p_patterns:
+                                for match in p_regex.finditer(content):
+                                    m_name = match.group(1).replace("async", "").strip()
+                                    if not m_name or not any(t in m_name.lower() for t in search_terms):
+                                        continue
+
+                                    start_pos = match.start()
+                                    start_line = content[:start_pos].count("\n") + 1
+                                    cand_key = f"{rel_p}:{m_name}:{start_line}"
+                                    if cand_key in seen_candidates:
+                                        continue
+                                    seen_candidates.add(cand_key)
+
+                                    # Extract matched signature snippet (compacted to single line)
+                                    sig_raw = match.group(0).rstrip("{").strip()
+                                    sig_compact = " ".join(line.strip() for line in sig_raw.splitlines())
+
+                                    candidates.append({
+                                        "id": f"fallback:{rel_p}:{start_line}",
+                                        "kind": "method/function",
+                                        "name": m_name,
+                                        "qualified_name": f"{rel_p}::{m_name}",
+                                        "file_path": rel_p,
+                                        "start_line": start_line,
+                                        "end_line": min(start_line + 30, total_lines),
+                                        "signature": sig_compact,
+                                        "docstring": "",
+                                        "is_exported": "export" in sig_compact,
+                                        "source": "fallback_ast_scan"
+                                    })
                         except Exception:
                             pass
 
         return candidates
-
     def get_progressive_context(self, candidate: Dict[str, Any], level: int = 2, target_level: Optional[int] = None) -> Dict[str, Any]:
         """
         Progressive Context Retrieval (Levels 1 to 5):
@@ -219,49 +320,113 @@ class MethodDiscoveryEngine:
 
         return result
 
+    def _parse_params(self, sig: str) -> Dict[str, Any]:
+        """
+        Extracts and analyzes parameter signature.
+        Handles destructured objects ({ user, pass }), regular parameters, and paramless calls.
+        """
+        m = re.search(r'\((.*?)\)', sig, re.DOTALL)
+        if not m:
+            return {"param_count": 0, "is_empty": True, "has_destructured": False, "raw": ""}
+        raw = m.group(1).strip()
+        if not raw:
+            return {"param_count": 0, "is_empty": True, "has_destructured": False, "raw": ""}
+        
+        has_destructured = "{" in raw and "}" in raw
+        # Remove destructured contents temporarily to count outer parameters accurately
+        normalized = re.sub(r'\{.*?\}', 'DESTRUCTURED_OBJ', raw)
+        parts = [p.strip() for p in normalized.split(',') if p.strip()]
+        return {
+            "param_count": len(parts),
+            "is_empty": False,
+            "has_destructured": has_destructured,
+            "raw": raw
+        }
+
     def classify_reuse(self, requirement_action: str, candidate: Dict[str, Any]) -> Tuple[str, str]:
         """
-        Classifies candidate into DIRECT_REUSE, CONDITIONAL_REUSE, NOT_REUSABLE.
+        Parameter-aware and AST-informed reuse classification.
+        Classifies candidate into: DIRECT_REUSE, CONDITIONAL_REUSE, NOT_REUSABLE.
         """
         cand_name = candidate["name"]
         if cand_name.startswith("_"):
             return "NOT_REUSABLE", f"Method '{cand_name}' is private/internal and must not be reused directly in test automation."
 
         name = cand_name.lower()
-        sig = candidate.get("signature", "").lower()
+        sig = candidate.get("signature", "")
         req = requirement_action.lower().strip()
+        params_info = self._parse_params(sig)
 
-        # 1. Exact match
-        if name == req:
-            return "DIRECT_REUSE", f"Method '{candidate['name']}' matches required action directly with signature: {candidate.get('signature', '')}"
+        # Action component helpers (e.g. clickLogin() with 0 params) vs full action (e.g. login(u, p))
+        is_click_button_only = (name.startswith("click") or name.startswith("press")) and params_info["is_empty"]
 
-        # 2. Semantic equivalents
-        direct_synonyms = {
-            "login": ["login", "signin", "clicklogin", "authenticate"],
-            "add": ["add", "additem", "insert"],
-            "logout": ["logout", "signout"],
-            "clear": ["clear", "reset", "empty"],
-            "submit": ["submit", "send", "confirm"]
-        }
+        # Check in synonyms dictionary
+        syns = self.synonyms.get(req, [req])
+        is_synonym_match = (name == req) or (name in syns)
 
-        if req in direct_synonyms:
-            syns = direct_synonyms[req]
-            if name in syns:
-                if "page" in sig or "context" in sig or "{" in sig:
-                    return "CONDITIONAL_REUSE", f"Method '{candidate['name']}' matches action '{req}' but requires specific parameters or setup."
-                return "DIRECT_REUSE", f"Method '{candidate['name']}' is a direct semantic match for action '{req}'."
-            # If it contains the action name but has extra suffixes/prefixes (e.g. loginWithSso)
-            if any(s in name for s in syns) and name not in syns:
-                return "CONDITIONAL_REUSE", f"Method '{candidate['name']}' is a specialized variant for action '{req}' and may require specific options."
+        if is_synonym_match:
+            # If it's a 0-parameter click button helper when requirement expects action (e.g. login)
+            if is_click_button_only and req in ["login", "checkout", "pay", "submit", "register"]:
+                return "CONDITIONAL_REUSE", f"Action component helper '{candidate['name']}' performs button interaction only; requires preceding form input actions."
+
+            # Structured parameters or destructured options (e.g., login({ username, password }))
+            if params_info["has_destructured"] or params_info["param_count"] >= 1:
+                return "DIRECT_REUSE", f"Method '{candidate['name']}' directly matches required action '{req}' with contract parameters: ({params_info['raw']})"
+
+            # If page fixture or browser context parameter is needed
+            if "page:" in sig.lower() or "context:" in sig.lower():
+                return "CONDITIONAL_REUSE", f"Method '{candidate['name']}' matches action '{req}' but requires injecting test fixture or page context."
+
+            return "DIRECT_REUSE", f"Method '{candidate['name']}' is a direct match for action '{req}' with signature: {sig}"
+
+        # Specialized variants (e.g. loginWithSso for login)
+        if any(s in name for s in syns) and name not in syns:
+            return "CONDITIONAL_REUSE", f"Method '{candidate['name']}' is a specialized variant for action '{req}' and may require specific options or credentials."
 
         if req in name:
-            return "CONDITIONAL_REUSE", f"Method '{candidate['name']}' contains '{req}' but might require additional configuration."
+            return "CONDITIONAL_REUSE", f"Method '{candidate['name']}' contains '{req}' but may require additional configuration."
 
         return "NOT_REUSABLE", f"Candidate '{candidate['name']}' does not fulfill the required action contract '{requirement_action}'."
 
     # Alias for flexibility
     classify_reusability = classify_reuse
 
+    def score_candidate(self, action_name: str, cand: Dict[str, Any]) -> int:
+        """
+        Ranks candidate relevance for an action based on name match, parameters, and location.
+        """
+        score = 0
+        name_lower = cand.get("name", "").lower()
+        norm_action = action_name.lower().replace(" ", "").replace("_", "")
+
+        # Exact match
+        if name_lower == norm_action:
+            score += 50
+        elif norm_action in name_lower:
+            score += 35
+        elif any(syn in name_lower or name_lower in syn for syn in self.synonyms.get(norm_action, [])):
+            score += 20
+
+        # Location heuristic
+        fpath = cand.get("file_path", "").lower()
+        if any(k in fpath for k in ["page", "service", "action", "helper"]):
+            score += 15
+        if norm_action in fpath:
+            score += 10
+
+        # Parameter awareness
+        sig = cand.get("signature", "")
+        params = self._parse_params(sig)
+        if params.get("param_count", 0) > 0:
+            score += 15
+        elif (name_lower.startswith("click") or name_lower.startswith("press")) and norm_action not in ["click", "press"]:
+            # Action component penalty: click/press helper without params scored below direct action
+            score -= 5
+
+        if cand.get("is_exported"):
+            score += 10
+
+        return score
     def discover_and_evaluate(self, action_name: str, scope_hint: Optional[str] = None) -> Dict[str, Any]:
         """
         Executes end-to-end discovery: CodeGraph -> Fallback -> Classification -> Progressive Context.
@@ -279,7 +444,30 @@ class MethodDiscoveryEngine:
                 "progressive_context": None
             }
 
-        top_cand = candidates[0]
+        # Multi-candidate ranking: rank candidates by reusability relevance
+        def score_candidate(cand: Dict[str, Any]) -> int:
+            c_name = cand["name"].lower()
+            score = 0
+            if c_name == action_name.lower():
+                score += 50
+            elif c_name in self.synonyms.get(action_name.lower(), []):
+                score += 35
+            elif action_name.lower() in c_name:
+                score += 20
+            
+            # Action component penalty: clickX without params scored slightly below full method X(params)
+            sig_raw = cand.get("signature", "")
+            if (c_name.startswith("click") or c_name.startswith("press")) and "()" in sig_raw:
+                score -= 5
+            elif "(" in sig_raw and ")" in sig_raw and not "()" in sig_raw:
+                score += 15 # has parameters
+            
+            if cand.get("is_exported"):
+                score += 10
+            return score
+
+        ranked_candidates = sorted(candidates, key=score_candidate, reverse=True)
+        top_cand = ranked_candidates[0]
         classification, reason = self.classify_reuse(action_name, top_cand)
         prog_ctx = self.get_progressive_context(top_cand, level=4)
 
@@ -291,7 +479,8 @@ class MethodDiscoveryEngine:
             "discovery_source": discovery_source,
             "total_candidates": len(candidates),
             "candidate": top_cand,
-            "progressive_context": prog_ctx
+            "progressive_context": prog_ctx,
+            "ranked_candidates_count": len(ranked_candidates)
         }
 
 

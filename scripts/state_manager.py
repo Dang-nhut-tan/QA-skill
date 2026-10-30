@@ -1,3 +1,4 @@
+import re
 #!/usr/bin/env python3
 """
 scripts/state_manager.py
@@ -40,6 +41,60 @@ HUMAN_CHECKPOINT_STATES = {
     "WAITING_FOR_REQUIREMENT_CLARIFICATION",
     "WAITING_FOR_APPROVED_TESTCASES"
 }
+
+ALLOWED_TRANSITIONS = {
+    "INITIALIZED": ["CONTEXT_DISCOVERY", "DISCOVERY_INCOMPLETE", "GAP_ANALYSIS", "WAITING_FOR_REQUIREMENT_CLARIFICATION", "BLOCKED"],
+    "CONTEXT_DISCOVERY": ["GAP_ANALYSIS", "DISCOVERY_INCOMPLETE", "BLOCKED"],
+    "DISCOVERY_INCOMPLETE": ["CONTEXT_DISCOVERY", "BLOCKED"],
+    "GAP_ANALYSIS": ["WAITING_FOR_REQUIREMENT_CLARIFICATION", "RUNTIME_INVESTIGATION", "TESTCASE_GENERATION", "BLOCKED"],
+    "WAITING_FOR_REQUIREMENT_CLARIFICATION": ["CONTEXT_DISCOVERY", "GAP_ANALYSIS", "RUNTIME_INVESTIGATION", "TESTCASE_GENERATION", "TESTCASE_REVIEW", "BLOCKED"],
+    "RUNTIME_INVESTIGATION": ["TESTCASE_GENERATION", "WAITING_FOR_REQUIREMENT_CLARIFICATION", "BLOCKED"],
+    "TESTCASE_GENERATION": ["TESTCASE_REVIEW", "WAITING_FOR_APPROVED_TESTCASES", "BLOCKED"],
+    "TESTCASE_REVIEW": ["WAITING_FOR_APPROVED_TESTCASES", "AUTOMATION_IMPLEMENTATION", "TESTCASE_GENERATION", "BLOCKED"],
+    "WAITING_FOR_APPROVED_TESTCASES": ["AUTOMATION_IMPLEMENTATION", "TESTCASE_REVIEW", "BLOCKED"],
+    "AUTOMATION_IMPLEMENTATION": ["AUTOMATION_EXECUTION", "COMPLETED", "BLOCKED"],
+    "AUTOMATION_EXECUTION": ["COMPLETED", "AUTOMATION_IMPLEMENTATION", "GAP_ANALYSIS", "TESTCASE_GENERATION", "BLOCKED"],
+    "COMPLETED": ["INITIALIZED", "CONTEXT_DISCOVERY", "AUTOMATION_EXECUTION"],
+    "BLOCKED": VALID_STATES
+}
+
+FORBIDDEN_SECRET_KEYS = {
+    "password", "passwd", "secret", "token", "credentials", "auth_key", 
+    "api_key", "access_key", "private_key", "jwt", "bearer", "passphrase",
+    "otp", "totp", "pin", "authorization", "session_id", "conn_str"
+}
+
+URI_CREDENTIAL_PATTERN = re.compile(r'([a-zA-Z0-9+.-]+://[^:\s@]+:)([^@\s]+)(@)')
+
+def redact_credentials_in_string(val: str) -> str:
+    """
+    Scans a string value for URI credentials (e.g. postgres://user:password@host)
+    and redacts the password portion to prevent secret leakage into state.
+    """
+    if "://" in val and "@" in val:
+        return URI_CREDENTIAL_PATTERN.sub(r'\1***REDACTED***\3', val)
+    return val
+
+def sanitize_metadata(data: Any) -> Any:
+    """
+    Recursively inspects metadata dictionaries, lists, and strings.
+    - Normalizes hyphens to underscores to catch keys like 'x-api-key', 'auth-token'.
+    - Raises ValueError if sensitive credential keys are found.
+    - Redacts embedded credentials inside URI string values.
+    """
+    if isinstance(data, dict):
+        sanitized = {}
+        for k, v in data.items():
+            k_norm = str(k).lower().replace("-", "_")
+            if any(forbidden in k_norm for forbidden in FORBIDDEN_SECRET_KEYS):
+                raise ValueError(f"Security Alert: Attempted to persist sensitive credential key '{k}' into state.")
+            sanitized[k] = sanitize_metadata(v)
+        return sanitized
+    elif isinstance(data, list):
+        return [sanitize_metadata(x) for x in data]
+    elif isinstance(data, str):
+        return redact_credentials_in_string(data)
+    return data
 
 STATE_FILE_NAME = ".qa-state.json"
 
@@ -107,7 +162,7 @@ class WorkflowStateManager:
             "version": "1.0.0",
             "module_name": module_name,
             "current_state": "INITIALIZED",
-            "repo_info": repo_info,
+            "repo_info": sanitize_metadata(repo_info),
             "created_at": self._now(),
             "updated_at": self._now(),
             "completed_steps": [],
@@ -134,7 +189,7 @@ class WorkflowStateManager:
         self.save(state)
         return state
 
-    def transition(self, target_state: str, note: str = "", metadata: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+    def transition(self, target_state: str, note: str = "", metadata: Optional[Dict[str, Any]] = None, enforce_fsm: bool = True) -> Dict[str, Any]:
         if target_state not in VALID_STATES:
             raise ValueError(f"Invalid state '{target_state}'. Must be one of {VALID_STATES}")
         
@@ -143,6 +198,22 @@ class WorkflowStateManager:
             raise RuntimeError(f"Cannot transition: {STATE_FILE_NAME} does not exist. Run init first.")
 
         prev_state = state.get("current_state")
+
+        if enforce_fsm and prev_state and prev_state != target_state:
+            allowed = ALLOWED_TRANSITIONS.get(prev_state, [])
+            if target_state not in allowed:
+                raise ValueError(f"FSM Transition Violation: Cannot transition from '{prev_state}' to '{target_state}'. Allowed states: {allowed}")
+
+        # Guard against infinite clarification loops
+        if prev_state == "WAITING_FOR_REQUIREMENT_CLARIFICATION" and target_state in ["CONTEXT_DISCOVERY", "GAP_ANALYSIS"]:
+            cycles = state.get("clarification_cycles", 0) + 1
+            if cycles > 2:
+                raise ValueError(
+                    f"FSM Safety Guard: Exceeded maximum allowed clarification loops ({cycles}/2). "
+                    "Manual review or human gate approval is required before re-triggering discovery."
+                )
+            state["clarification_cycles"] = cycles
+
         state["current_state"] = target_state
         if prev_state and prev_state not in state.get("completed_steps", []):
             state.setdefault("completed_steps", []).append(prev_state)
@@ -157,6 +228,7 @@ class WorkflowStateManager:
             state["pending_approval"] = None
 
         if metadata:
+            metadata = sanitize_metadata(metadata)
             for k, v in metadata.items():
                 if k == "artifacts" and isinstance(v, dict):
                     state.setdefault("artifacts", {}).update(v)
@@ -198,7 +270,8 @@ class WorkflowStateManager:
             raise RuntimeError(f"Cannot set artifact: {STATE_FILE_NAME} does not exist.")
         if "artifacts" not in state:
             state["artifacts"] = {}
-        state["artifacts"][artifact_key] = file_path
+        sanitized = sanitize_metadata({artifact_key: str(file_path)})
+        state["artifacts"].update(sanitized)
         self.save(state)
         return state
 
