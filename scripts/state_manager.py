@@ -10,6 +10,7 @@ and resumability without storing secrets or credentials.
 import sys
 import os
 import json
+import time
 import hashlib
 import shutil
 import logging
@@ -188,7 +189,14 @@ class WorkflowStateManager:
                 shutil.copy2(self.state_file, bak_file)
             except OSError as exc:
                 logger.warning("Unable to create state backup %s: %s", bak_file, exc)
-        os.replace(tmp_file, self.state_file)
+        for attempt in range(5):
+            try:
+                os.replace(tmp_file, self.state_file)
+                break
+            except PermissionError:
+                if attempt == 4:
+                    raise
+                time.sleep(0.02)
 
     def init_state(self, module_name: str, repo_info: Dict[str, Any], docs: Optional[List[str]] = None) -> Dict[str, Any]:
         if self.module_name is not None:
