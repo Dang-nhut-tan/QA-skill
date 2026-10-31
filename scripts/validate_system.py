@@ -231,7 +231,11 @@ def run_dry_run_simulation():
         export_to_excel(testcase_payload, excel_out)
         assert excel_out.exists(), "Exported Excel file does not exist"
 
-        s4 = mgr.transition("WAITING_FOR_APPROVED_TESTCASES", "Excel generated and delivered to user")
+        s4 = mgr.transition(
+            "WAITING_FOR_APPROVED_TESTCASES",
+            "Excel generated and delivered to user",
+            metadata={"artifacts": {"approved_excel": str(excel_out)}},
+        )
         assert s4["current_state"] == "WAITING_FOR_APPROVED_TESTCASES"
         assert s4["pending_approval"] is not None
 
@@ -243,7 +247,11 @@ def run_dry_run_simulation():
         assert approved_result["skipped_count"] == 1
         assert approved_result["ready_testcases"][0].get("status") == "Pending"
 
-        s5 = mgr.transition("AUTOMATION_IMPLEMENTATION", "User approved workbook; 2 ready cases selected")
+        s5 = mgr.transition(
+            "AUTOMATION_IMPLEMENTATION",
+            "User approved workbook; 2 ready cases selected",
+            approval_token="validation-user-approval",
+        )
         assert s5["current_state"] == "AUTOMATION_IMPLEMENTATION"
 
         # 7. Resumability check

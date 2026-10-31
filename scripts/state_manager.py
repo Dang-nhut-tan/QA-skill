@@ -103,6 +103,41 @@ def sanitize_metadata(data: Any) -> Any:
 
 STATE_FILE_NAME = ".qa-state.json"
 
+class ConcurrentStateUpdateError(RuntimeError):
+    """Raised when a caller tries to overwrite a newer state revision."""
+
+
+class StateFileLock:
+    """Small cross-platform inter-process lock based on exclusive lock-file creation."""
+
+    def __init__(self, lock_path: Path, timeout: float = 10.0, poll_interval: float = 0.05):
+        self.lock_path = Path(lock_path)
+        self.timeout = timeout
+        self.poll_interval = poll_interval
+        self._fd = None
+
+    def __enter__(self):
+        deadline = time.monotonic() + self.timeout
+        self.lock_path.parent.mkdir(parents=True, exist_ok=True)
+        while True:
+            try:
+                self._fd = os.open(str(self.lock_path), os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+                os.write(self._fd, f"{os.getpid()}\n".encode("ascii"))
+                return self
+            except FileExistsError:
+                if time.monotonic() >= deadline:
+                    raise TimeoutError(f"Timed out waiting for state lock: {self.lock_path}")
+                time.sleep(self.poll_interval)
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        if self._fd is not None:
+            os.close(self._fd)
+            self._fd = None
+        try:
+            self.lock_path.unlink()
+        except FileNotFoundError:
+            pass
+
 def _resolve_state_file(workspace_root: Path, module_name: Optional[str] = None) -> Path:
     if module_name:
         slug = re.sub(r'[^a-zA-Z0-9_-]', '_', module_name.strip().lower())
@@ -142,6 +177,10 @@ class WorkflowStateManager:
         self.module_name = module_name
         self.state_file = _resolve_state_file(self.workspace_root, module_name)
 
+    @property
+    def lock_file(self) -> Path:
+        return self.state_file.with_name(f"{self.state_file.name}.lock")
+
     def _now(self) -> str:
         return datetime.now(timezone.utc).isoformat()
 
@@ -178,28 +217,42 @@ class WorkflowStateManager:
             return {"current_state": "BLOCKED", "error": f"Corrupted state file: {str(ex)}"}
 
     def save(self, data: Dict[str, Any]) -> None:
-        data["updated_at"] = self._now()
-        # Atomic file write with backup snapshot to prevent 0-byte state corruption
-        tmp_file = self.state_file.with_name(f"{self.state_file.name}.tmp")
-        bak_file = self.state_file.with_name(f"{self.state_file.name}.bak")
-        with open(tmp_file, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=2, ensure_ascii=False)
-        if self.state_file.exists():
-            try:
-                shutil.copy2(self.state_file, bak_file)
-            except OSError as exc:
-                logger.warning("Unable to create state backup %s: %s", bak_file, exc)
-        for attempt in range(5):
-            try:
-                os.replace(tmp_file, self.state_file)
-                break
-            except PermissionError:
-                if attempt == 4:
-                    raise
-                time.sleep(0.02)
+        with StateFileLock(self.lock_file):
+            disk_version = 0
+            if self.state_file.exists():
+                try:
+                    with open(self.state_file, "r", encoding="utf-8") as current_file:
+                        disk_version = int(json.load(current_file).get("_version", 0))
+                except (OSError, ValueError, TypeError, json.JSONDecodeError):
+                    disk_version = 0
+            expected_version = int(data.get("_version", 0))
+            if self.state_file.exists() and expected_version != disk_version:
+                raise ConcurrentStateUpdateError(
+                    f"State changed on disk (expected version {expected_version}, found {disk_version}); reload and retry."
+                )
+            data["_version"] = disk_version + 1
+            data["updated_at"] = self._now()
+            # Atomic file write with backup snapshot to prevent 0-byte state corruption
+            tmp_file = self.state_file.with_name(f"{self.state_file.name}.{os.getpid()}.tmp")
+            bak_file = self.state_file.with_name(f"{self.state_file.name}.bak")
+            with open(tmp_file, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+            if self.state_file.exists():
+                try:
+                    shutil.copy2(self.state_file, bak_file)
+                except OSError as exc:
+                    logger.warning("Unable to create state backup %s: %s", bak_file, exc)
+            for attempt in range(5):
+                try:
+                    os.replace(tmp_file, self.state_file)
+                    break
+                except PermissionError:
+                    if attempt == 4:
+                        raise
+                    time.sleep(0.02)
 
     def init_state(self, module_name: str, repo_info: Dict[str, Any], docs: Optional[List[str]] = None) -> Dict[str, Any]:
-        if self.module_name is not None:
+        if module_name:
             self.module_name = module_name
             self.state_file = _resolve_state_file(self.workspace_root, module_name)
         doc_hashes = {}
@@ -243,7 +296,7 @@ class WorkflowStateManager:
         self.save(state)
         return state
 
-    def transition(self, target_state: str, note: str = "", metadata: Optional[Dict[str, Any]] = None, enforce_fsm: bool = True) -> Dict[str, Any]:
+    def transition(self, target_state: str, note: str = "", metadata: Optional[Dict[str, Any]] = None, enforce_fsm: bool = True, approval_token: Optional[str] = None) -> Dict[str, Any]:
         if target_state not in VALID_STATES:
             raise ValueError(f"Invalid state '{target_state}'. Must be one of {VALID_STATES}")
         
@@ -257,6 +310,17 @@ class WorkflowStateManager:
             allowed = ALLOWED_TRANSITIONS.get(prev_state, [])
             if target_state not in allowed:
                 raise ValueError(f"FSM Transition Violation: Cannot transition from '{prev_state}' to '{target_state}'. Allowed states: {allowed}")
+
+        if prev_state == "WAITING_FOR_APPROVED_TESTCASES" and target_state == "AUTOMATION_IMPLEMENTATION":
+            artifacts = state.get("artifacts", {})
+            workbook_value = artifacts.get("approved_excel") or artifacts.get("excel_testcases")
+            workbook_path = Path(workbook_value) if workbook_value else None
+            if workbook_path and not workbook_path.is_absolute():
+                workbook_path = self.workspace_root / workbook_path
+            if not workbook_path or workbook_path.suffix.lower() != ".xlsx" or not workbook_path.is_file():
+                raise ValueError("Human Gate 2 requires an existing approved .xlsx testcase workbook.")
+            if not isinstance(approval_token, str) or not approval_token.strip():
+                raise ValueError("Human Gate 2 requires a non-empty approval_token supplied by the approving user.")
 
         # Guard against infinite clarification loops
         if prev_state == "WAITING_FOR_REQUIREMENT_CLARIFICATION" and target_state in ["CONTEXT_DISCOVERY", "GAP_ANALYSIS"]:
@@ -426,11 +490,12 @@ if __name__ == "__main__":
 
     elif cmd == "transition":
         if len(clean_args) < 2:
-            print(f"Usage: python state_manager.py transition <TARGET_STATE> [note] [--metadata '<json>'] [--module <mod>]")
+            print(f"Usage: python state_manager.py transition <TARGET_STATE> [note] [--metadata '<json>'] [--approval-token <token>] [--module <mod>]")
             sys.exit(1)
         tgt = clean_args[1]
         note_parts = []
         meta = None
+        approval_token = None
         args = clean_args[2:]
         i = 0
         while i < len(args):
@@ -441,11 +506,14 @@ if __name__ == "__main__":
                     print(f"[ERROR] Failed to parse --metadata JSON: {ex}")
                     sys.exit(1)
                 i += 2
+            elif args[i] == "--approval-token" and i + 1 < len(args):
+                approval_token = args[i+1]
+                i += 2
             else:
                 note_parts.append(args[i])
                 i += 1
         note = " ".join(note_parts)
-        s = mgr.transition(tgt, note=note, metadata=meta)
+        s = mgr.transition(tgt, note=note, metadata=meta, approval_token=approval_token)
         print(f"[OK] State transitioned to {s['current_state']}")
 
     elif cmd == "set-field":

@@ -81,10 +81,18 @@ def test_golden_pipeline_without_mocks(tmp_path):
     loaded = load_workbook(workbook, read_only=True)
     assert "Test Cases" in loaded.sheetnames
     loaded.close()
-    state.transition("WAITING_FOR_APPROVED_TESTCASES", note="Exported workbook awaiting QA Lead signoff")
+    state.transition(
+        "WAITING_FOR_APPROVED_TESTCASES",
+        note="Exported workbook awaiting QA Lead signoff",
+        metadata={"artifacts": {"approved_excel": str(workbook)}},
+    )
 
     # Step 6: Round-Trip Ingestion verification (reading back approved test cases)
-    state.transition("AUTOMATION_IMPLEMENTATION", note="Approved by QA Lead, verified round-trip")
+    state.transition(
+        "AUTOMATION_IMPLEMENTATION",
+        note="Approved by QA Lead, verified round-trip",
+        approval_token="qa-lead-approved",
+    )
     approved_result = parse_approved_workbook(workbook)
     assert approved_result["success"] is True
     assert approved_result["total_cases"] == 1

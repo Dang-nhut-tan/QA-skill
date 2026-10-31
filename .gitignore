@@ -166,3 +166,5 @@ $RECYCLE.BIN/
 telemetry/
 docs/
 *.docx
+
+.agents/

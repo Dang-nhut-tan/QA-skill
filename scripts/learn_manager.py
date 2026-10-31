@@ -16,6 +16,11 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 
+try:
+    from state_manager import StateFileLock, ConcurrentStateUpdateError
+except ImportError:
+    from scripts.state_manager import StateFileLock, ConcurrentStateUpdateError
+
 logger = logging.getLogger(__name__)
 
 if hasattr(sys.stdout, "reconfigure"):
@@ -96,7 +101,7 @@ def get_learnings_file(skills_root: Optional[Path] = None) -> Path:
 def load_learnings(learnings_file: Optional[Path] = None) -> Dict[str, Any]:
     l_file = learnings_file or get_learnings_file()
     if not l_file.exists():
-        return {"proposals": [], "applied": []}
+        return {"_version": 0, "proposals": [], "applied": []}
     try:
         with open(l_file, "r", encoding="utf-8") as f:
             return json.load(f)
@@ -107,11 +112,26 @@ def load_learnings(learnings_file: Optional[Path] = None) -> Dict[str, Any]:
 def save_learnings(data: Dict[str, Any], learnings_file: Optional[Path] = None) -> None:
     l_file = learnings_file or get_learnings_file()
     l_file.parent.mkdir(parents=True, exist_ok=True)
-    # Atomic write to prevent file corruption during parallel execution
-    tmp_file = l_file.with_name(f"{l_file.name}.tmp")
-    with open(tmp_file, "w", encoding="utf-8") as f:
-        json.dump(data, f, indent=2, ensure_ascii=False)
-    os.replace(tmp_file, l_file)
+    lock_file = l_file.with_name(f"{l_file.name}.lock")
+    with StateFileLock(lock_file):
+        disk_version = 0
+        if l_file.exists():
+            try:
+                with open(l_file, "r", encoding="utf-8") as current_file:
+                    disk_version = int(json.load(current_file).get("_version", 0))
+            except (OSError, ValueError, TypeError, json.JSONDecodeError):
+                disk_version = 0
+        expected_version = int(data.get("_version", 0))
+        if l_file.exists() and expected_version != disk_version:
+            raise ConcurrentStateUpdateError(
+                f"Learning store changed on disk (expected version {expected_version}, found {disk_version}); reload and retry."
+            )
+        data["_version"] = disk_version + 1
+        # Atomic write to prevent file corruption during parallel execution
+        tmp_file = l_file.with_name(f"{l_file.name}.{os.getpid()}.tmp")
+        with open(tmp_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2, ensure_ascii=False)
+        os.replace(tmp_file, l_file)
 
 def propose_learning(title: str, issue: str, root_cause: str, solution: str, target_skill: str, module: Optional[str] = None, tags: Optional[List[str]] = None, project_root: Optional[str] = None) -> Dict[str, Any]:
     skills_root = resolve_skills_root(project_root)

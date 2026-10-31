@@ -89,6 +89,14 @@ ALIGN_DATA_CENTER = Alignment(horizontal="center", vertical="top", wrap_text=Tru
 ALIGN_DATA_LEFT = Alignment(horizontal="left", vertical="top", wrap_text=True)
 ALIGN_HEADER = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
+FORMULA_PREFIXES = ("=", "+", "-", "@")
+
+def sanitize_cell_value(val):
+    """Prevent untrusted workbook text from being interpreted as a formula or DDE command."""
+    if isinstance(val, str) and val.startswith(FORMULA_PREFIXES):
+        return f"'{val}"
+    return val
+
 def style_severity_cell(cell):
     val = unicodedata.normalize('NFC', str(cell.value or "")).strip().lower()
     if any(k in val for k in ["chặn", "chan", "blocker", "critical"]):
@@ -232,7 +240,7 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
             tc.get("notes", ""),
             tc.get("status", "Pending")
         ]
-        ws_tc.append(row)
+        ws_tc.append([sanitize_cell_value(value) for value in row])
 
     ws_tc.freeze_panes = "A2"
     max_row_tc = max(2, len(testcases) + 1)
@@ -305,7 +313,7 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
             gap.get("suggested_options", ""),
             gap.get("status", "Pending")
         ]
-        ws_gaps.append(row)
+        ws_gaps.append([sanitize_cell_value(value) for value in row])
 
     ws_gaps.freeze_panes = "A2"
     max_row_gap = max(2, len(gaps) + 1)

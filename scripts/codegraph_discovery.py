@@ -242,7 +242,7 @@ class MethodDiscoveryEngine:
                     if isinstance(actions, dict):
                         base_synonyms = dict(actions)
             except (OSError, json.JSONDecodeError, TypeError) as exc:
-                logger.warning("Unable to load bundled domain synonyms from %s: %s", synonyms_file, exc)
+                logger.warning("Unable to load bundled domain synonyms from %s: %s", sys_ref, exc)
 
         if not base_synonyms:
             base_synonyms = {
@@ -280,7 +280,7 @@ class MethodDiscoveryEngine:
                         if isinstance(custom_actions, dict):
                             base_synonyms.update(custom_actions)
                 except (OSError, json.JSONDecodeError, TypeError) as exc:
-                    logger.warning("Unable to load repository synonym overrides from %s: %s", custom_file, exc)
+                    logger.warning("Unable to load repository synonym overrides from %s: %s", cp, exc)
 
         return base_synonyms
     def _get_db(self) -> Optional[sqlite3.Connection]:
@@ -347,7 +347,13 @@ class MethodDiscoveryEngine:
                 params.append(f"%{scope_hint.strip().lower()}%")
 
             count_params = list(params)
-            query_sql += f" ORDER BY CASE WHEN lower(name) = ? THEN 0 ELSE 1 END, start_line LIMIT {int(max_candidates)}"
+            raw_limit = max(int(max_candidates) * 3, 100)
+            query_sql += (
+                " ORDER BY CASE "
+                "WHEN lower(file_path) LIKE '%page%' OR lower(file_path) LIKE '%pages%' THEN 0 "
+                "WHEN lower(name) = ? THEN 1 ELSE 2 END, start_line "
+                f"LIMIT {raw_limit}"
+            )
             params.append(action_clean)
 
             try:
@@ -376,6 +382,13 @@ class MethodDiscoveryEngine:
 
         if not candidates and fallback:
             candidates = self.fallback_search(action_name, scope_hint)
+
+        if candidates:
+            candidates = sorted(
+                candidates,
+                key=lambda candidate: self.score_candidate(action_name, candidate),
+                reverse=True,
+            )[:max_candidates]
 
         return candidates
 

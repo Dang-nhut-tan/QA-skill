@@ -167,7 +167,7 @@ def audit_plugin_tokens():
                 total_tokens += cnt
                 file_count += 1
             except (OSError, UnicodeError) as exc:
-                logger.warning("Unable to read benchmark source %s: %s", p, exc)
+                logger.warning("Unable to read benchmark source %s: %s", f, exc)
 
         # Scan MCP or tool schemas (*.json)
         for f in p_dir.glob("**/*.json"):
@@ -178,7 +178,7 @@ def audit_plugin_tokens():
                 total_tokens += cnt
                 file_count += 1
             except (OSError, UnicodeError) as exc:
-                logger.warning("Unable to inspect benchmark source %s: %s", p, exc)
+                logger.warning("Unable to inspect benchmark source %s: %s", f, exc)
 
         plugin_metrics[p_name] = {
             "tokens": total_tokens,
@@ -236,7 +236,7 @@ def profile_module_context(repo_path: str, module_pattern: str):
                 "empirical_ratio": round((s_cnt / t_cnt * 100), 1) if t_cnt > 0 else 0.0
             })
         except (OSError, ValueError, TypeError) as exc:
-            logger.warning("Unable to read telemetry record from %s: %s", telemetry_file, exc)
+            logger.warning("Unable to read telemetry record from %s: %s", f, exc)
 
     full_tokens = count_tokens(full_text)
     jit_tokens = count_tokens(signature_text)

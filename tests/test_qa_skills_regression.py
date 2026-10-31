@@ -418,8 +418,14 @@ class TestQASkillsRegression(unittest.TestCase):
             mgr.transition("GAP_ANALYSIS", "Analysis 2")
             mgr.transition("TESTCASE_GENERATION", "Gen testcases")
             mgr.transition("TESTCASE_REVIEW", "Review")
-            mgr.transition("WAITING_FOR_APPROVED_TESTCASES", "Gate 2")
-            mgr.transition("AUTOMATION_IMPLEMENTATION", "Writing tests")
+            approved_workbook = Path(tmp_dir) / "approved-testcases.xlsx"
+            approved_workbook.write_bytes(b"approved")
+            mgr.transition(
+                "WAITING_FOR_APPROVED_TESTCASES",
+                "Gate 2",
+                metadata={"artifacts": {"approved_excel": str(approved_workbook)}},
+            )
+            mgr.transition("AUTOMATION_IMPLEMENTATION", "Writing tests", approval_token="approved")
             mgr.transition("AUTOMATION_EXECUTION", "Running suite")
 
             # 4. Rollback from AUTOMATION_EXECUTION to GAP_ANALYSIS when test exposes spec defect
@@ -511,10 +517,10 @@ class TestQASkillsRegression(unittest.TestCase):
             self.assertTrue(mgr.exists())
 
             mgr.transition("CONTEXT_DISCOVERY", "test transition")
-            bak_file = Path(tmp_dir) / ".qa-state.json.bak"
+            bak_file = mgr.state_file.with_name(f"{mgr.state_file.name}.bak")
             self.assertTrue(bak_file.exists(), "Backup snapshot must exist after save")
 
-            state_file = Path(tmp_dir) / ".qa-state.json"
+            state_file = mgr.state_file
             state_file.write_text("CORRUPTED INVALID JSON {", encoding="utf-8")
 
             loaded = mgr.load()
