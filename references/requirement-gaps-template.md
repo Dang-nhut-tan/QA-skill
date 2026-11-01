@@ -1,4 +1,4 @@
-# BÁO CÁO ĐIỀU TRA ĐIỂM BẤT CẬP & PHIẾU LÀM RÕ NGHIỆP VỤ (KÈM MINH CHỨNG GIAO DIỆN)
+# BÁO CÁO ĐIỀU TRA ĐIỂM BẤT CẬP & XÁC MINH HÀNG RÀO AN TOÀN NGHIỆP VỤ
 ## Phân hệ: [Tên Phân Hệ] (Module: [ModuleName])
 
 > **Thời điểm lập:** [YYYY-MM-DD HH:MM:SS]  
@@ -10,72 +10,49 @@
 
 ## 1. TỔNG QUAN KẾT QUẢ ĐIỀU TRA & XÁC MINH GIAO DIỆN
 
-* **Tổng số vấn đề phát hiện:** `[N]` kẽ hở / điểm bất cập nghiệp vụ.
+* **Tổng số bất cập/kẽ hở thực tế (True GAPs):** `[N]` điểm bất cập (Cần BA/PO làm rõ). Nếu hệ thống chạy chuẩn 100%, ghi `0` điểm bất cập.
+* **Tổng số hàng rào an toàn đã kiểm chứng (Verified Guards):** `[M]` cơ chế bảo vệ phân quyền/nghiệp vụ hoạt động chuẩn xác (Đạt - PASS).
 * **Tình trạng xác minh thực tế qua Playwright MCP:**
-  - `[X]` vấn đề đã xác minh kèm chuỗi ảnh minh chứng trực quan (Trước $\rightarrow$ Sau thao tác).
-  - `[Y]` vấn đề thuộc tầng logic backend ngầm (đối soát qua mã nguồn AST).
-* **Mức độ rủi ro:**
-  - `[R1]` vấn đề rủi ro cao (ảnh hưởng đến luồng chính, bảo mật, hoặc toàn vẹn dữ liệu).
-  - `[R2]` vấn đề mơ hồ nghiệp vụ cần BA/PO chốt phương án.
-  - `[R3]` vấn đề nghi ngờ là lỗi triển khai (Potential Defect).
+  - `[X]` kịch bản kiểm chứng có ảnh chụp minh chứng trực quan (Trước $\rightarrow$ Sau thao tác).
+  - `[Y]` quy tắc backend ngầm đối soát qua AST mã nguồn.
+* **Phân bổ rủi ro thực tế:**
+  - Chỉ tính điểm bất cập thực sự (True GAPs) vào phân bổ rủi ro. Các hàng rào bảo vệ đã hoạt động chuẩn (Verified Guards) được tính là **ĐẠT (PASS)**, tuyệt đối không tính là Blocker hay Bug.
 
 ---
 
-## 2. PHÂN LOẠI CHI TIẾT 5 NHÓM ĐIỂM BẤT CẬP
+## 2. BẢNG TỔNG HỢP HÀNG RÀO AN TOÀN ĐÃ KIỂM CHỨNG (VERIFIED GUARDS - NẾU CÓ)
+*(Dành cho các quy định phân quyền, chặn quyền trái thẩm quyền, tự duyệt đơn, giới hạn hạn mức... đã hoạt động chuẩn xác trên UI)*
+
+| Mã Hàng Rào | Luồng Nghiệp Vụ Bảo Vệ | Bằng Chứng Mã Nguồn (AST) | Kết Quả UI Thực Tế (Playwright) | Đánh Giá An Toàn |
+| :---: | :--- | :--- | :---: | :---: |
+| **GUARD-001** | [Ví dụ: Phó quản lý không được duyệt đơn] | `Symbol: canApprove = false` | Nút Duyệt bị disabled, có thông báo phân quyền | **ĐẠT (PASS)** |
+| **GUARD-002** | [Ví dụ: Chặn tự duyệt đơn cá nhân] | `Symbol: laDonCuaToi` | Ẩn hoàn toàn nút Duyệt ở tab Đơn cá nhân | **ĐẠT (PASS)** |
+
+---
+
+## 3. BẢNG PHÂN LOẠI ĐIỂM BẤT CẬP THỰC TẾ (TRUE GAPs - NẾU CÓ)
+*(Chỉ ghi nhận khi có mâu thuẫn thực tế: tài liệu cấm nhưng UI cho làm, tài liệu thiếu gây mơ hồ, hoặc code bị crash/bug)*
 
 | Mã Vấn Đề (Issue ID) | Phân Loại Kẽ Hở | Luồng Nghiệp Vụ Liên Quan | Bằng Chứng Mã Nguồn (AST) | Xác Minh Giao Diện (Playwright MCP) | Mức Độ Rủi Ro |
 | :---: | :--- | :--- | :--- | :---: | :---: |
-| **GAP-001** | Mơ hồ yêu cầu *(Requirement Ambiguity)* | [Luồng ảnh hưởng] | File: `path/to/file.ts#L45-L60`<br>Symbol: `functionName` | Đã chụp 2 ảnh tái hiện (Input -> Result) | Cao |
-| **GAP-002** | Nghi ngờ lỗi code *(Potential Defect)* | [Luồng ảnh hưởng] | File: `path/to/service.ts#L102`<br>Symbol: `validator` | Đã chụp 2 ảnh tái hiện (Input -> Result) | Cao |
-| **GAP-003** | Thiếu tài liệu *(Missing Documentation)* | [Luồng ảnh hưởng] | File: `path/to/hook.ts`<br>Symbol: `useSubmitOnce` | Logic ngầm client-side | Thấp |
+| **GAP-001** | Mơ hồ yêu cầu *(Requirement Ambiguity)* | [Luồng ảnh hưởng] | File: `path/to/file.ts#L45-L60` | Đã chụp ảnh minh chứng hành vi bất thường | Cao / Trung bình |
+| **GAP-002** | Nghi ngờ lỗi code *(Potential Defect)* | [Luồng ảnh hưởng] | File: `path/to/service.ts#L102` | UI vi phạm quy định nghiệp vụ | Cao |
+
+*(Nếu không phát hiện bất cập nào, ghi: `Không phát hiện điểm bất cập nào. Toàn bộ các luồng nghiệp vụ tuân thủ đúng quy định.`)*
 
 ---
 
-## 3. PHIẾU LÀM RÕ NGHIỆP VỤ CHO BA / PO (KÈM BẰNG CHỨNG HÌNH ẢNH & BƯỚC TÁI HIỆN)
+## 4. CHI TIẾT TỪNG MỤC CẦN LÀM RÕ CHO BA / PO (KÈM BẰNG CHỨNG HÌNH ẢNH)
 
-### Chi Tiết Từng Điểm Bất Cập:
-
-#### Điểm Bất Cập [GAP-001]: [Tên ngắn gọn vấn đề]
-* **Luồng liên quan:** [Tên luồng, ví dụ: Đăng nhập / Khóa tài khoản]
-* **Mức độ rủi ro:** Cao / Trung bình / Thấp
-* **Bằng chứng mã nguồn (AST Evidence):**
-  - *Tệp & Vị trí:* `src/features/auth/useLogin.ts#L45`
-  - *Cài đặt thực tế:* `LOGIN_THROTTLE.MAX_ATTEMPTS = 5` (Chưa có logic tự giải phóng phiên).
-  - *Tài liệu đặc tả:* Tài liệu không ghi rõ thời gian khóa bao lâu hoặc do admin mở.
-* **Các bước tái hiện trên giao diện (UI Reproduction Steps):**
-  1. Mở trang đăng nhập (`/login`).
-  2. Nhập tài khoản `test_user01` và mật khẩu sai liên tục 5 lần.
-  3. Bấm nút 'Đăng nhập' ở lần thứ 5 và quan sát phản hồi.
-* **Chuỗi ảnh chụp minh chứng tái hiện từ Playwright MCP:**
-  - *Ảnh 1 — Trạng thái nhập liệu trước khi bấm:*  
-    ![GAP-001 Trạng thái nhập liệu](./screenshots/GAP-001-01-input.png)  
-    *([Mở ảnh gốc: screenshots/GAP-001-01-input.png](file:///path/to/project/screenshots/GAP-001-01-input.png))*  
-    *(Tệp: `./screenshots/GAP-001-01-input.png`)*
-  - *Ảnh 2 — Khoảnh khắc xảy ra bất cập / Lỗi hiển thị:*  
-    ![GAP-001 Kết quả thực tế](./screenshots/GAP-001-02-result.png)  
-    *([Mở ảnh gốc: screenshots/GAP-001-02-result.png](file:///path/to/project/screenshots/GAP-001-02-result.png))*  
-    *(Tệp: `./screenshots/GAP-001-02-result.png`)*
-* **Hành vi quan sát được trên màn hình (Observed UI Behavior):**
-  - Màn hình hiển thị thông báo lỗi: `Tài khoản tạm thời bị khóa do nhập sai nhiều lần.`
-  - Nút đăng nhập bị vô hiệu hóa nhưng không có đồng hồ đếm ngược hay hướng dẫn mở lại.
-* **Tác động nghiệp vụ:** Người dùng thật bị khóa tài khoản sẽ không biết phải chờ bao lâu hay liên hệ ai để mở khóa.
-* **Câu hỏi đối soát cho BA / PO:** **"[Tài khoản bị khóa sau 5 lần nhập sai sẽ tự mở sau bao lâu, hay cần quản trị viên mở thủ công]?"**
-* **Các phương án đề xuất:**
-  - **Phương án A:** Khóa tạm 15 phút, sau 15 phút tự mở khóa.
-  - **Phương án B:** Khóa cứng, bắt buộc liên hệ HR/Admin để reset trạng thái.
-* **Ý kiến phản hồi từ BA / Người dùng:** `[Chờ người dùng / BA giải đáp hoặc duyệt phương án]`
+*(Trình bày chi tiết từng GAP-xxx nếu có, hoặc các khuyến nghị tối ưu hóa REC-xxx)*
 
 ---
 
-## 4. HƯỚNG DẪN DÀNH CHO NGƯỜI DÙNG TẠI ĐIỂM DỪNG 1 (HUMAN GATE 1)
+## 5. HƯỚNG DẪN DÀNH CHO NGƯỜI DÙNG TẠI ĐIỂM DỪNG 1 (HUMAN GATE 1)
 
 > [!IMPORTANT]
 > **HỆ THỐNG ĐANG TẠM DỪNG TẠI ĐÂY.**  
 > AI tuyệt đối không tự ý viết test case tiếp theo khi chưa có sự xác nhận của bạn.
 
-Vui lòng xem xét các điểm bất cập và ảnh chụp màn hình minh chứng ở trên:
-* **Nếu bạn đồng ý với hiện trạng hoặc muốn tiếp tục thiết kế test case:**  
-  > Hãy gửi tin nhắn: **`tiếp tục`** (hoặc **`proceed`**). Hệ thống sẽ chuyển sang Bước 4 (Thiết kế Test Case).
-* **Nếu bạn có câu trả lời cụ thể từ BA / PO:**  
-  > Hãy gửi tin nhắn theo cú pháp:  
-  > **`Trả lời GAP-001: Chọn Phương án A`** (hoặc nội dung quy định thực tế). AI sẽ cập nhật quy tắc nghiệp vụ vào hệ thống rồi tiếp tục.
+* **Nếu đồng ý hoặc muốn tiếp tục:** Gửi tin nhắn: **`tiếp tục`** (hoặc **`proceed`**).
+* **Nếu có câu trả lời từ BA/PO cho GAP:** Gửi tin nhắn: **`Trả lời GAP-xxx: Chọn Phương án A`**.

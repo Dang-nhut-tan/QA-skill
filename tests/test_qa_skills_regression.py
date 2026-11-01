@@ -687,5 +687,27 @@ class TestQASkillsRegression(unittest.TestCase):
             self.assertFalse(res["success"])
             self.assertIn("Duplicate Test Case ID 'TC-AUTH-001'", res["error"])
 
+    def test_anti_false_alarm_rule_present_in_requirement_gap_skill(self):
+        """V5: requirement-gap-analysis skill enforces anti-false-alarm and negative testing guards."""
+        skill_file = PROJECT_ROOT / "skills" / "requirement-gap-analysis" / "SKILL.md"
+        content = skill_file.read_text(encoding="utf-8")
+        self.assertIn("Strict Falsification & Negative Testing Rule", content)
+        self.assertIn("CHỐNG BÁO ĐỘNG GIẢ", content)
+        self.assertIn("Hàng Rào An Toàn Đã Kiểm Chứng", content)
+
+    def test_playwright_negative_testing_guideline_present(self):
+        """V5: playwright-investigation skill distinguishes disabled buttons from defects."""
+        pw_file = PROJECT_ROOT / "skills" / "playwright-investigation" / "SKILL.md"
+        content = pw_file.read_text(encoding="utf-8")
+        self.assertIn("Xác Nhận Kịch Bản Hạn Chế Quyền", content)
+        self.assertIn("PASS - GUARD ACTIVE", content)
+
+    def test_requirement_gaps_template_contains_verified_guards_section(self):
+        """V5: requirement-gaps-template.md has separate tables for Verified Guards and True GAPs."""
+        tpl_file = PROJECT_ROOT / "references" / "requirement-gaps-template.md"
+        content = tpl_file.read_text(encoding="utf-8")
+        self.assertIn("HÀNG RÀO AN TOÀN ĐÃ KIỂM CHỨNG (VERIFIED GUARDS", content)
+        self.assertIn("BẢNG PHÂN LOẠI ĐIỂM BẤT CẬP THỰC TẾ (TRUE GAPs", content)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
