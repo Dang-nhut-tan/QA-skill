@@ -47,6 +47,22 @@ description: >-
      - **Ephemeral Scoped Context Rule:** These code snippets are strictly temporary working context for Step 2 to detect hidden business logic and construct high-precision clarification questions. **DO NOT write raw implementation bodies into `module-context.md`**.
      - **Neutral Discrepancy Protocol:** At Human Gate 1, formulate questions neutrally with multiple options (Option A: standard industry practice, Option B: current code implementation, Option C: alternative policy, Option D: custom). Never anchor or lead the BA into codifying developer bugs.
 
+1.6. **Strict Falsification & Negative Testing Rule (Phân Biệt Lỗi/Bất Cập vs Hàng Rào An Toàn Đã Đạt):**
+   * **CHỐNG BÁO ĐỘNG GIẢ & SUY DIỄN NGƯỢC (Anti-False-Alarm Protocol):**
+     Khi đối chiếu mã nguồn (AST) và kiểm chứng giao diện thực tế (Playwright MCP):
+     - **TRƯỜNG HỢP 1: HÀNG RÀO AN TOÀN ĐANG HOẠT ĐỘNG CHUẨN (Verified Security Guard / Constraint):**
+       + Ví dụ: Đặc tả yêu cầu *"Phó quản lý không được duyệt đơn"*, và trên UI thực tế nút Duyệt đã bị khóa mờ (`disabled`), kèm khung cảnh báo màu vàng rõ ràng.
+       + Hoặc: Đặc tả cấm *"Tự duyệt đơn của chính mình"*, và trên UI tab đơn cá nhân đã ẩn toàn bộ nút Duyệt/Từ chối.
+       -> **ĐÂY LÀ KỊCH BẢN KIỂM THỬ TIÊU CỰC THÀNH CÔNG (PASS), HỆ THỐNG AN TOÀN 100%, TUYỆT ĐỐI KHÔNG PHẢI LỖ HỔNG HAY BẤT CẬP!**
+       + **NGHIÊM CẤM:** Không được gắn mã `GAP-xxx`, không được đánh giá mức độ nghiêm trọng là `Chặn (Blocker)` hay `Sai (Major)`. Không được suy diễn ngược kiểu: *"Nếu bật nút duyệt lên thì sẽ có rủi ro..."*.
+       + **QUY TẮC PHÂN LOẠI:** Xếp riêng vào mục `## Hàng Rào An Toàn Đã Kiểm Chứng (Verified Guards)` với mã `GUARD-xxx` và kết quả `ĐẠT (PASS)`.
+     - **TRƯỜNG HỢP 2: KHI NÀO MỚI ĐƯỢC COI LÀ BẤT CẬP (TRUE GAP)?**
+       + Chỉ ghi nhận là `GAP-xxx` khi có sự **mâu thuẫn, kẽ hở hoặc lỗi thực tế**:
+         * Đặc tả cấm nhưng trên UI nút vẫn bấm được (Confirmed Defect / Security Bypass).
+         * Đặc tả không quy định dẫn đến giao diện xử lý mơ hồ, gây nghẽn luồng người dùng (Requirement Ambiguity).
+         * Thao tác trên UI dẫn đến crash, văng lỗi 500, mất dữ liệu (Implementation Bug).
+
+
 2. **Formulate BA/PO Clarification Table:**
    * Create prioritized table with columns:
      * `Issue ID` (e.g., `GAP-001`)

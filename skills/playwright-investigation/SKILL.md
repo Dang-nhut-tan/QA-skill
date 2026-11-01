@@ -55,6 +55,13 @@ description: >-
 > [!WARNING]
 > Playwright MCP observes **WHAT THE APPLICATION CURRENTLY DOES**, not whether that behavior is **CORRECT BUSINESS LOGIC**. All observed behaviors remain subject to BA/PO review and confirmation.
 
+> [!IMPORTANT]
+> **Xác Nhận Kịch Bản Hạn Chế Quyền (Negative Testing / Security Guards):**
+> Khi kiểm chứng hành động hạn chế quyền (ví dụ: Phó quản lý không được duyệt đơn, Nhân viên không được tự sửa công):
+> - Nếu UI hiển thị đúng trạng thái bị khóa (`disabled`), có cảnh báo ngăn chặn phù hợp -> Ghi nhận kết quả: `[PASS - GUARD ACTIVE: Hàng rào bảo vệ hoạt động chính xác]`.
+> - Tuyệt đối không báo cáo trạng thái nút bị khóa như một lỗi hệ thống (Defect/Blocker).
+
+
 ### 4.4. Embed Visual Proof & Enforce Image Existence (`<module-name>-gaps.md`)
 * Embed screenshot paths and reproduction steps directly into each `GAP-xxx` card within `<module-name>-gaps.md`.
 * **Mandatory Physical Verification & Dual-Mode Links:**
