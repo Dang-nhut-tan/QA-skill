@@ -40,9 +40,11 @@ description: >-
    * *Rule:* Do not force complex POM structures if the repository follows a simpler functional test pattern. Respect the surrounding style.
 
 ### Phase 6.3 — Implement Test Automation:
-1. **Script Construction Standards:**
+1. **Ponytail Senior Dev Standards (Minimalist, Flake-Free & High-Efficiency):**
+   * **Shortest Working Diff (Tối giản mã nguồn):** The best code is the code never written. Solve the whole problem with the least new code. Never introduce redundant wrappers, factory boilerplate, or "for later" abstractions. If an existing POM method or test helper does the job, reuse it directly (Direct Reuse).
+   * **Smart UI Stability (`waitForUIStable`):** Prohibit arbitrary sleeps (`sleep(5000)` or `waitForTimeout`). Use web-first assertions (`toBeVisible()`, `toHaveURL()`) and UI stability helpers (`waitForUIStable`) to handle network/DOM settling safely.
+   * **Smart Assertions:** Target observable UI state and explicit business feedback (e.g., verifying user profile badge, redirect URL, or specific toast error popup) instead of asserting entire page bodies or trivial internal states.
    * **Stable Locators:** Prefer accessible roles and text (`getByRole`, `getByLabel`, `getByTestId`, or semantic `data-section`) over brittle CSS/XPath chains.
-   * **No Arbitrary Sleeps:** Prohibit hardcoded `sleep(5000)` or `waitForTimeout`. Use web-first assertions and explicit auto-waiting (`toBeVisible()`, `toHaveURL()`).
    * **Test Independence:** Ensure each test can run in isolation without depending on execution side-effects of preceding tests.
    * **Collision-Resistant Test Data:** Use dynamic timestamps or random suffixes for unique fields (e.g. `testuser_${Date.now()}`).
    * **Zero Hardcoded Secrets:** Read credentials from environment variables (`process.env.TEST_USER`) or local `.env` files.
