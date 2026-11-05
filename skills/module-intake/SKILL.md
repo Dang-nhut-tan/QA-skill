@@ -33,12 +33,12 @@ description: >-
    * If the user's request is ambiguous, record initial assumptions without blocking execution.
 2. **Scan & Convert Available Documentation (Microsoft MarkItDown):**
    * Check project directories (e.g., `docs/`, `specs/`, root files) or user-provided files for specifications.
-   * **Mandatory Preprocessing with Microsoft MarkItDown:**
-     * If the input file is a **PDF (`.pdf`), Excel (`.xlsx`, `.xls`), Word (`.docx`), or PPTX**:
-       Execute MarkItDown to convert it into a clean Markdown (`.md`) file:
+   * **On-Demand Preprocessing via Offline MarkItDown CLI & Section Chunking:**
+     * If the input file is a binary format like **PDF (`.pdf`), Excel (`.xlsx`, `.xls`), Word (`.docx`), or PPTX**:
+       Execute MarkItDown offline via CLI (0 token runtime, no MCP overhead):
        `markitdown "<input_file>" -o "<output_file>.md"`
-       (or invoke MCP tool `convert_to_markdown` from the `markitdown` server).
-     * Use the converted `.md` file as the primary text specification for CodeGraph ingestion and Gap Analysis.
+     * **Section Chunking & Token Cap Rule:** If the converted document exceeds 2,000 tokens, apply section-level chunking to extract ONLY the specific module requirements relevant to the current test scope. Never inject raw monolithic multi-page documents into subsequent LLM prompts.
+     * Use the extracted, scoped text specification for CodeGraph ingestion and Step 2 Gap Analysis.
    * Record paths and compute SHA-256 hashes of input and converted documents for traceability.
 3. **Inspect Repository Environment & CodeGraph Preflight:**
    * Determine project structure (root directory, language, package manager).
