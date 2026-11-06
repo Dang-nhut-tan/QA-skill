@@ -452,13 +452,91 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
     except UnicodeEncodeError:
         print(f"[OK] Exported: {actual_path} (Total: {len(testcases)} | Chan: {chan_count} | Sai: {sai_count} | Nho: {nho_count} | Ready: {ready_count})")
 
+def build_template(output_path: Path):
+    sample_payload = {
+        "summary": {
+            "module_name": "Authentication / Đăng nhập",
+            "covered_flows": "• Luồng Đăng nhập hợp lệ chính thống (Happy Path)\n• Cơ chế phòng thủ chống spam click submit liên tục (useSubmitOnce)\n• Chuyển đổi qua lại giữa Tab Mã NV và Số điện thoại",
+            "uncovered_risks": "• Luồng xác thực đăng nhập một lần (SSO OAuth2 qua Google/Microsoft)\n• Luồng mở khoá bằng mã PIN vật lý bảo mật phần cứng",
+            "environment_assumptions": "• Môi trường Staging không bật Google reCAPTCHA v3\n• Database có sẵn tài khoản mẫu đã kích hoạt và không bị khoá"
+        },
+        "testcases": [
+            {
+                "id": "TC-AUTH-001",
+                "module": "Authentication",
+                "name": "Đăng nhập thành công với thông tin hợp lệ (Happy Path)",
+                "preconditions": "Tài khoản đã kích hoạt, không có cảnh báo máy lạ",
+                "test_data": "Tên đăng nhập: user01, Mật khẩu: Pass@123",
+                "steps": "1. Mở màn hình Đăng nhập (/dang-nhap)\n2. Nhập tên đăng nhập và mật khẩu hợp lệ\n3. Bấm nút 'Đăng nhập'",
+                "expected_result": "Hệ thống xác thực thành công, màn hình tự động chuyển hướng vào Trang chủ Dashboard",
+                "severity": "Chặn",
+                "automation_ready": "Yes",
+                "automation_blocker": "",
+                "requirement_ref": "SPEC-AU-01 / BR§2.1",
+                "notes": "Luồng đăng nhập cốt lõi sống còn",
+                "status": "Pass"
+            },
+            {
+                "id": "TC-AUTH-002",
+                "module": "Authentication",
+                "name": "Kiểm tra giới hạn số lần gửi: Chặn gửi liên tục khi tài khoản yêu cầu quá giới hạn 3 lần trong 24 giờ",
+                "preconditions": "Tài khoản nhân viên đã gửi 3 yêu cầu cấp lại trong 24 giờ qua",
+                "test_data": "Mã nhân viên: NV-102 (đã đạt giới hạn 3 lần/24h)",
+                "steps": "1. Mở màn hình Quên Mật Khẩu\n2. Nhập Mã nhân viên NV-102 vào ô nhập liệu\n3. Bấm nút 'Gửi Yêu Cầu' lần thứ 4",
+                "expected_result": "- Trên màn hình: Hiển thị thông báo thành công chung (Mã: VBO-QM-03) nhằm bảo mật an toàn tài khoản.\n- Trong hệ thống: Không phát sinh thêm bản ghi yêu cầu mới do đã vượt quá 3 lần/24h.",
+                "severity": "Chặn",
+                "automation_ready": "Yes",
+                "automation_blocker": "",
+                "requirement_ref": "SPEC-HT-26 (RateLimiting)",
+                "notes": "Bảo vệ chống spam liên tục và tránh lộ trạng thái tài khoản",
+                "status": "Pass"
+            },
+            {
+                "id": "TC-AUTH-003",
+                "module": "Authentication",
+                "name": "Chuyển đổi hình thức đăng nhập (Mã nhân viên sang Số điện thoại) tự động xoá ô nhập liệu",
+                "preconditions": "Đang ở màn hình đăng nhập mặc định chọn tab Mã nhân viên",
+                "test_data": "Dữ liệu gõ dở dang: NV009988",
+                "steps": "1. Nhập 'NV009988' vào ô Mã nhân viên\n2. Bấm chọn tab 'Số điện thoại'",
+                "expected_result": "Giao diện chuyển sang tab Số điện thoại, ô nhập liệu tự động được xoá trắng nội dung cũ, gợi ý đổi sang định dạng Số điện thoại",
+                "severity": "Sai",
+                "automation_ready": "Yes",
+                "automation_blocker": "",
+                "requirement_ref": "SPEC-AU-02 / BR§2.3",
+                "notes": "UX form chuyển tab mượt mà",
+                "status": "Pending"
+            }
+        ],
+        "gaps": [
+            {
+                "id": "GAP-01",
+                "related_flow": "Authentication Flow",
+                "current_evidence": "src/auth/jwt.config.ts:42",
+                "uncertainty": "Tài liệu spec mô tả timeout session 15 phút, nhưng mã nguồn cấu hình JWT refresh token 24h",
+                "business_impact": "Rủi ro an ninh khi người dùng không đăng xuất chủ động",
+                "question_for_ba": "Hệ thống áp dụng 15 phút idle timeout hay 24h JWT lifetime?",
+                "suggested_options": "A) 15 phút idle timeout (Bảo mật cao)\nB) 24h session (Tiện lợi người dùng)",
+                "status": "Đã làm rõ"
+            }
+        ]
+    }
+    export_to_excel(sample_payload, output_path)
+    print(f"[OK] Generated high-end polished Excel template at: {output_path}")
+
 if __name__ == "__main__":
-    if len(sys.argv) < 3:
+    if len(sys.argv) == 2 and sys.argv[1] == "--template":
+        out = Path(__file__).resolve().parent.parent / "templates" / "testcase-template.xlsx"
+        build_template(out)
+    elif len(sys.argv) == 3 and sys.argv[1] == "--template":
+        out = Path(sys.argv[2])
+        build_template(out)
+    elif len(sys.argv) < 3:
         print("Usage: python export_testcases.py <input_data.json> <output_workbook.xlsx>")
+        print("       python export_testcases.py --template [output_template.xlsx]")
         sys.exit(1)
-    
-    in_file = Path(sys.argv[1])
-    out_file = Path(sys.argv[2])
-    with open(in_file, "r", encoding="utf-8") as f:
-        payload = json.load(f)
-    export_to_excel(payload, out_file)
+    else:
+        in_file = Path(sys.argv[1])
+        out_file = Path(sys.argv[2])
+        with open(in_file, "r", encoding="utf-8") as f:
+            payload = json.load(f)
+        export_to_excel(payload, out_file)

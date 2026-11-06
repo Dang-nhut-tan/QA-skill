@@ -709,5 +709,68 @@ class TestQASkillsRegression(unittest.TestCase):
         self.assertIn("HÀNG RÀO AN TOÀN ĐÃ KIỂM CHỨNG (VERIFIED GUARDS", content)
         self.assertIn("BẢNG PHÂN LOẠI ĐIỂM BẤT CẬP THỰC TẾ (TRUE GAPs", content)
 
+    def test_linter_detects_prohibited_sleep(self):
+        """V6: lint_test_code flags arbitrary sleeps (waitForTimeout, sleep)."""
+        from scripts.lint_test_code import lint_file
+        with tempfile.NamedTemporaryFile(suffix='.spec.js', delete=False, mode='w', encoding='utf-8') as f:
+            f.write("test('TC-01: Login', async ({ page }) => {\n    await page.waitForTimeout(3000);\n    expect(true).toBe(true);\n});")
+            tmp_p = Path(f.name)
+        try:
+            violations = lint_file(tmp_p)
+            self.assertTrue(any(v[1] == "ZERO_SLEEP_VIOLATION" for v in violations))
+        finally:
+            tmp_p.unlink(missing_ok=True)
+
+    def test_linter_detects_hardcoded_secrets(self):
+        """V6: lint_test_code flags hardcoded credentials."""
+        from scripts.lint_test_code import lint_file
+        with tempfile.NamedTemporaryFile(suffix='.spec.js', delete=False, mode='w', encoding='utf-8') as f:
+            f.write("test('TC-02: Auth', async () => {\n    const password = 'RealSecretPassword99';\n    expect(password).toBeDefined();\n});")
+            tmp_p = Path(f.name)
+        try:
+            violations = lint_file(tmp_p)
+            self.assertTrue(any(v[1] == "HARDCODED_SECRET_VIOLATION" for v in violations))
+        finally:
+            tmp_p.unlink(missing_ok=True)
+
+    def test_linter_passes_clean_senior_dev_spec(self):
+        """V6: lint_test_code approves specs adhering to Senior Dev standards."""
+        from scripts.lint_test_code import lint_file
+        with tempfile.NamedTemporaryFile(suffix='.spec.js', delete=False, mode='w', encoding='utf-8') as f:
+            f.write("test('TC-AUTH-001: Clean Spec', async ({ page }) => {\n    const pass = process.env.TEST_PASSWORD;\n    await expect(page.locator('.user')).toBeVisible();\n});")
+            tmp_p = Path(f.name)
+        try:
+            violations = lint_file(tmp_p)
+            self.assertEqual(len(violations), 0)
+        finally:
+            tmp_p.unlink(missing_ok=True)
+
+    def test_export_testcases_build_template_creates_valid_workbook(self):
+        """V6: export_testcases.build_template creates template matching 13-column schema."""
+        import openpyxl
+        from scripts.export_testcases import build_template
+        with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as f:
+            tmp_p = Path(f.name)
+        try:
+            build_template(tmp_p)
+            wb = openpyxl.load_workbook(tmp_p)
+            self.assertEqual(wb.sheetnames, ['Test Cases', 'Requirement Gaps', 'Coverage Summary'])
+            self.assertEqual(wb['Test Cases'].max_column, 13)
+        finally:
+            tmp_p.unlink(missing_ok=True)
+
+    def test_generate_template_wrapper_delegation(self):
+        """V6: generate_template delegates to export_testcases.build_template without error."""
+        import openpyxl
+        from scripts.generate_template import build_template
+        with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as f:
+            tmp_p = Path(f.name)
+        try:
+            build_template(tmp_p)
+            wb = openpyxl.load_workbook(tmp_p)
+            self.assertEqual(wb.sheetnames, ['Test Cases', 'Requirement Gaps', 'Coverage Summary'])
+        finally:
+            tmp_p.unlink(missing_ok=True)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

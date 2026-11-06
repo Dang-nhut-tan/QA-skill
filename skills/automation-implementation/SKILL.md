@@ -51,6 +51,8 @@ description: >-
    * **Explicit ID Traceability:** Every test case must explicitly reference its Excel Test Case ID in its title and describe block (e.g., `test('TC-AUTH-001: ...')`).
 2. **Review & Self-Correction:**
    * Check syntax using `node --check <file>` or language linter.
+   * Run automated test linter to verify Ponytail Senior Dev standards (zero sleeps, zero secrets, valid IDs):
+     `python scripts/lint_test_code.py <file>`
    * Ensure error messages on failed assertions provide actionable debugging clues.
 3. **Transition Workflow State:**
    * Update workflow state:

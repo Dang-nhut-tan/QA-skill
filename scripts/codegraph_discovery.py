@@ -128,7 +128,7 @@ class JavaScriptTypeScriptASTAdapter(BaseLanguageASTAdapter):
     """Active adapter for JavaScript/TypeScript fallback scanning."""
 
     language = "javascript-typescript"
-    extensions = (".js", ".jsx", ".mjs", ".ts", ".tsx")
+    extensions = (".js", ".jsx", ".mjs", ".ts", ".tsx", ".vue")
 
     def __init__(self, synonyms: Optional[Dict[str, List[str]]] = None):
         self.synonyms = synonyms or {}

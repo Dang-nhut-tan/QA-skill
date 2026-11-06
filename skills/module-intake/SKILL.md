@@ -37,6 +37,7 @@ description: >-
      * If the input file is a binary format like **PDF (`.pdf`), Excel (`.xlsx`, `.xls`), Word (`.docx`), or PPTX**:
        Execute MarkItDown offline via CLI (0 token runtime, no MCP overhead):
        `markitdown "<input_file>" -o "<output_file>.md"`
+     * **Graceful Fallback:** If `markitdown` CLI is missing or throws an error on the current environment, fallback to direct text/markdown reading or standard Python extraction (`python -c "import pypdf..."` / `docx2txt`) to ensure the intake flow never breaks.
      * **Section Chunking & Token Cap Rule:** If the converted document exceeds 2,000 tokens, apply section-level chunking to extract ONLY the specific module requirements relevant to the current test scope. Never inject raw monolithic multi-page documents into subsequent LLM prompts.
      * Use the extracted, scoped text specification for CodeGraph ingestion and Step 2 Gap Analysis.
    * Record paths and compute SHA-256 hashes of input and converted documents for traceability.
