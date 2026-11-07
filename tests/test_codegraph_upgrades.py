@@ -13,7 +13,9 @@ import sys
 import json
 import sqlite3
 import tempfile
+import subprocess
 import unittest
+from unittest import mock
 from pathlib import Path
 
 # Setup paths
@@ -34,8 +36,30 @@ class TestCodeGraphUpgrades(unittest.TestCase):
     def test_preflight_cli_available(self):
         preflight = CodeGraphPreflight()
         has_cli, version = preflight.check_cli_available()
+        if not has_cli:
+            self.skipTest("codegraph CLI not installed in host environment")
         self.assertTrue(has_cli, "codegraph CLI should be detected in the system")
         self.assertTrue(len(version) > 0, "CLI version string should not be empty")
+
+    def test_preflight_cli_detection_mocked(self):
+        preflight = CodeGraphPreflight()
+        with mock.patch.object(preflight, "_find_codegraph_cli", return_value="/usr/local/bin/codegraph"),              mock.patch("subprocess.run") as mock_run:
+            mock_run.return_value = subprocess.CompletedProcess(
+                args=["/usr/local/bin/codegraph", "--version"],
+                returncode=0,
+                stdout="1.6.2\n",
+                stderr=""
+            )
+            has_cli, version = preflight.check_cli_available()
+            self.assertTrue(has_cli)
+            self.assertEqual(version, "1.6.2")
+
+    def test_preflight_cli_missing_mocked(self):
+        preflight = CodeGraphPreflight()
+        with mock.patch.object(preflight, "_find_codegraph_cli", return_value=None):
+            has_cli, msg = preflight.check_cli_available()
+            self.assertFalse(has_cli)
+            self.assertIn("CodeGraph CLI not found", msg)
 
     def test_preflight_invalid_repo(self):
         with tempfile.TemporaryDirectory() as tmp_dir:

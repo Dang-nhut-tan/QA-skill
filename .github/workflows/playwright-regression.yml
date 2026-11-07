@@ -31,6 +31,14 @@ jobs:
         python-version: '3.12'
         cache: 'pip'
 
+    - name: Setup Node.js for CLI Tooling
+      uses: actions/setup-node@v4
+      with:
+        node-version: 20
+
+    - name: Install CodeGraph CLI
+      run: npm install -g @colbymchenry/codegraph
+
     - name: Install Python Dependencies
       run: |
         python -m pip install --upgrade pip
