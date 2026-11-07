@@ -108,13 +108,55 @@ class ConcurrentStateUpdateError(RuntimeError):
 
 
 class StateFileLock:
-    """Small cross-platform inter-process lock based on exclusive lock-file creation."""
+    """
+    Cross-platform inter-process lock based on exclusive lock-file creation
+    with automatic stale lock detection and deadlock recovery (TTL + PID validation).
+    """
 
-    def __init__(self, lock_path: Path, timeout: float = 10.0, poll_interval: float = 0.05):
+    def __init__(self, lock_path: Path, timeout: float = 10.0, poll_interval: float = 0.05, stale_ttl: float = 60.0):
         self.lock_path = Path(lock_path)
         self.timeout = timeout
         self.poll_interval = poll_interval
+        self.stale_ttl = stale_ttl
         self._fd = None
+
+    @staticmethod
+    def _is_pid_running(pid: int) -> bool:
+        if pid <= 0:
+            return False
+        try:
+            if sys.platform == "win32":
+                import ctypes
+                PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+                handle = ctypes.windll.kernel32.OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
+                if handle:
+                    ctypes.windll.kernel32.CloseHandle(handle)
+                    return True
+                err = ctypes.windll.kernel32.GetLastError()
+                return err == 5  # ERROR_ACCESS_DENIED means process exists
+            else:
+                os.kill(pid, 0)
+                return True
+        except Exception:
+            return False
+
+    def _is_stale(self) -> bool:
+        try:
+            if not self.lock_path.exists():
+                return False
+            # Check TTL
+            mtime = self.lock_path.stat().st_mtime
+            if (time.time() - mtime) > self.stale_ttl:
+                return True
+            # Check dead PID
+            content = self.lock_path.read_text(encoding="ascii", errors="ignore").strip()
+            if content.isdigit():
+                pid = int(content)
+                if not self._is_pid_running(pid):
+                    return True
+        except (FileNotFoundError, PermissionError, OSError):
+            pass
+        return False
 
     def __enter__(self):
         deadline = time.monotonic() + self.timeout
@@ -125,13 +167,22 @@ class StateFileLock:
                 os.write(self._fd, f"{os.getpid()}\n".encode("ascii"))
                 return self
             except FileExistsError:
+                if self._is_stale():
+                    try:
+                        self.lock_path.unlink()
+                        continue
+                    except (FileNotFoundError, PermissionError, OSError):
+                        pass
                 if time.monotonic() >= deadline:
                     raise TimeoutError(f"Timed out waiting for state lock: {self.lock_path}")
                 time.sleep(self.poll_interval)
 
     def __exit__(self, exc_type, exc_value, traceback):
         if self._fd is not None:
-            os.close(self._fd)
+            try:
+                os.close(self._fd)
+            except OSError:
+                pass
             self._fd = None
         try:
             self.lock_path.unlink()

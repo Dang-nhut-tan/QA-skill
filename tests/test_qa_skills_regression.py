@@ -772,5 +772,68 @@ class TestQASkillsRegression(unittest.TestCase):
         finally:
             tmp_p.unlink(missing_ok=True)
 
+    def test_state_file_lock_stale_pid_recovery(self):
+        """V7: StateFileLock automatically breaks lock and succeeds if PID is dead."""
+        from scripts.state_manager import StateFileLock
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            lock_path = Path(tmp_dir) / "test.lock"
+            # Write a dead PID (e.g. 99999999)
+            lock_path.write_text("99999999\n", encoding="ascii")
+            # Should acquire lock without timing out
+            with StateFileLock(lock_path, timeout=1.0) as lock:
+                self.assertTrue(lock_path.exists())
+                current_pid = lock_path.read_text(encoding="ascii").strip()
+                self.assertEqual(current_pid, str(os.getpid()))
+
+    def test_state_file_lock_stale_ttl_recovery(self):
+        """V7: StateFileLock automatically breaks lock if mtime is older than stale_ttl."""
+        from scripts.state_manager import StateFileLock
+        import time
+        with tempfile.TemporaryDirectory() as tmp_dir:
+            lock_path = Path(tmp_dir) / "test.lock"
+            # Write current PID but set mtime to 100 seconds ago
+            lock_path.write_text(f"{os.getpid()}\n", encoding="ascii")
+            old_time = time.time() - 100
+            os.utime(lock_path, (old_time, old_time))
+            # With stale_ttl=10.0, should consider it stale and acquire
+            with StateFileLock(lock_path, timeout=1.0, stale_ttl=10.0) as lock:
+                self.assertTrue(lock_path.exists())
+
+    def test_linter_detects_floating_promise(self):
+        """V7: lint_test_code flags async assertion missing await (C5)."""
+        from scripts.lint_test_code import lint_file
+        with tempfile.NamedTemporaryFile(suffix='.spec.js', delete=False, mode='w', encoding='utf-8') as f:
+            f.write("test('TC-ORDER-001: Checkout', async ({ page }) => {\n    expect(page.locator('.toast')).toBeVisible();\n});")
+            tmp_p = Path(f.name)
+        try:
+            violations = lint_file(tmp_p)
+            self.assertTrue(any(v[1] == "FLOATING_PROMISE_VIOLATION" for v in violations))
+        finally:
+            tmp_p.unlink(missing_ok=True)
+
+    def test_linter_detects_broken_selector_syntax(self):
+        """V7: lint_test_code flags broken attribute selector missing brackets (C3)."""
+        from scripts.lint_test_code import lint_file
+        with tempfile.NamedTemporaryFile(suffix='.spec.js', delete=False, mode='w', encoding='utf-8') as f:
+            f.write("test('TC-DASH-002: Progress', async ({ page }) => {\n    await page.waitForSelector('role=\"progressbar\"');\n    await expect(page.locator('.done')).toBeVisible();\n});")
+            tmp_p = Path(f.name)
+        try:
+            violations = lint_file(tmp_p)
+            self.assertTrue(any(v[1] == "SELECTOR_SYNTAX_VIOLATION" for v in violations))
+        finally:
+            tmp_p.unlink(missing_ok=True)
+
+    def test_linter_detects_static_worker_collision(self):
+        """V7: lint_test_code flags static worker identifier causing race conditions (C2)."""
+        from scripts.lint_test_code import lint_file
+        with tempfile.NamedTemporaryFile(suffix='.spec.js', delete=False, mode='w', encoding='utf-8') as f:
+            f.write("test('TC-USER-003: Create Profile', async ({ page }) => {\n    const payload = { workerCode: 'STATIC_WORKER_01' };\n    await expect(page.locator('.res')).toBeVisible();\n});")
+            tmp_p = Path(f.name)
+        try:
+            violations = lint_file(tmp_p)
+            self.assertTrue(any(v[1] == "COLLISION_DATA_VIOLATION" for v in violations))
+        finally:
+            tmp_p.unlink(missing_ok=True)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

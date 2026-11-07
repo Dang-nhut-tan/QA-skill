@@ -3,13 +3,13 @@ name: automation-implementation
 description: >-
   Inspects the existing project testing framework, reuses established Page Objects and fixtures,
   and writes clean, robust automation test scripts strictly mapped to approved Excel Test Case IDs.
-  Non-destructive, zero arbitrary sleeps, collision-resistant data.
+  Non-destructive, zero arbitrary sleeps, collision-resistant data, real DB mutations, multi-viewport, safe promises.
 ---
 
 # Skill: Automation Implementation (Phases 6.2 & 6.3)
 
 ## 1. Description & Trigger Conditions
-* **Purpose:** Inspect the host project's existing testing infrastructure (runner, POMs, fixtures, configs) and write production-grade automation scripts for the approved test cases without introducing unwanted boilerplate or incompatible frameworks.
+* **Purpose:** Inspect the host project's existing testing infrastructure (runner, Page Object Models, fixtures, configs) and write production-grade automation scripts for approved test cases without introducing unwanted boilerplate or incompatible frameworks.
 * **Triggers:**
   * Completed `automation-readiness`.
   * State is `AUTOMATION_IMPLEMENTATION`.
@@ -21,7 +21,7 @@ description: >-
   * `.qa-state.json`.
 
 ## 3. Prerequisites
-* Project repository contains or supports a test framework (e.g. Playwright, Cypress, PyTest, Jest).
+* Project repository contains or supports a test framework (e.g., Playwright, Cypress, PyTest, Jest).
 
 ## 4. Step-by-step Execution Instructions
 
@@ -33,34 +33,91 @@ description: >-
    * Query CodeGraph and fallback Page Object directories for reusable methods:
      `python scripts/codegraph_discovery.py "<action_name>" --repo "<repo_path>"`
    * **Mandatory Reuse Policy (Prevent Duplicate Code):**
-     - **DIRECT_REUSE:** Must call the existing method directly (e.g. `await loginPage.clickLogin()`). Do NOT write duplicate locators or inline actions.
-     - **CONDITIONAL_REUSE:** Adapt call parameters or wrap the method (e.g. passing optional options). Do NOT re-implement from scratch.
+     - **DIRECT_REUSE:** Call existing methods directly (e.g., `await loginPage.clickLogin()`). Do NOT write duplicate locators or inline actions.
+     - **CONDITIONAL_REUSE:** Adapt call parameters or wrap the method (e.g., passing optional options). Do NOT re-implement from scratch.
      - **NOT_FOUND / NOT_REUSABLE:** Only implement a new POM method or step when confirmed missing from both CodeGraph and Page Object directories.
    * *Rule:* Never introduce a new testing framework if the project already has one, unless the user explicitly approves.
    * *Rule:* Do not force complex POM structures if the repository follows a simpler functional test pattern. Respect the surrounding style.
 
 ### Phase 6.3 — Implement Test Automation:
-1. **Ponytail Senior Dev Standards (Minimalist, Flake-Free & High-Efficiency):**
-   * **Shortest Working Diff (Tối giản mã nguồn):** The best code is the code never written. Solve the whole problem with the least new code. Never introduce redundant wrappers, factory boilerplate, or "for later" abstractions. If an existing POM method or test helper does the job, reuse it directly (Direct Reuse).
-   * **Smart UI Stability (`waitForUIStable`):** Prohibit arbitrary sleeps (`sleep(5000)` or `waitForTimeout`). Use web-first assertions (`toBeVisible()`, `toHaveURL()`) and UI stability helpers (`waitForUIStable`) to handle network/DOM settling safely.
-   * **Smart Assertions:** Target observable UI state and explicit business feedback (e.g., verifying user profile badge, redirect URL, or specific toast error popup) instead of asserting entire page bodies or trivial internal states.
-   * **Stable Locators:** Prefer accessible roles and text (`getByRole`, `getByLabel`, `getByTestId`, or semantic `data-section`) over brittle CSS/XPath chains.
-   * **Test Independence:** Ensure each test can run in isolation without depending on execution side-effects of preceding tests.
-   * **Collision-Resistant Test Data:** Use dynamic timestamps or random suffixes for unique fields (e.g. `testuser_${Date.now()}`).
-   * **Zero Hardcoded Secrets:** Read credentials from environment variables (`process.env.TEST_USER`) or local `.env` files.
-   * **Explicit ID Traceability:** Every test case must explicitly reference its Excel Test Case ID in its title and describe block (e.g., `test('TC-AUTH-001: ...')`).
-2. **Review & Self-Correction:**
-   * Check syntax using `node --check <file>` or language linter.
-   * Run automated test linter to verify Ponytail Senior Dev standards (zero sleeps, zero secrets, valid IDs):
+
+#### 1. [CRITICAL_FORBIDDEN - ZERO TOLERANCE]
+Any AI agent implementing test automation MUST strictly adhere to the following 5 engineering constraints:
+1. **C1 (Anti-Over-Mocking Guard):** STRICTLY PROHIBIT 100% network mocking (`page.route`) across the entire test suite. MUST include at least 1-2 real backend mutation tests (real DB / API mutation) to verify that frontend, backend services, and persistence layers interact correctly.
+2. **C2 (Collision-Resistant Dynamic Isolation):** STRICTLY PROHIBIT hardcoding static entity/user identifiers (e.g., `'TEST_USER_STATIC'`, `'USER_01'`). MUST generate dynamic, collision-resistant identifiers for parallel execution:
+   `const uniqueUserId = 'user_auto_' + Date.now() + '_' + (process.env.TEST_WORKER_INDEX || '0');`
+3. **C3 (Multi-Viewport Matrix):** STRICTLY PROHIBIT testing exclusively on a single viewport (e.g., mobile-only). For administration panels, dashboards, and responsive web apps, MUST verify both Desktop (1920x1080) and Mobile responsive viewports.
+4. **C4 (Process & State Concurrency):** Prevent race conditions and deadlocks when managing multi-process file locks. Utilize `StateFileLock` with automatic stale lock recovery (process liveness check + TTL timeout).
+5. **C5 (Zero Floating Promises):** STRICTLY PROHIBIT un-awaited asynchronous assertions (web-first assertions such as `toBeVisible`, `toHaveText`, `toHaveURL`). Every async expectation must be preceded by `await` to prevent silent false positives.
+
+#### 2. Contrastive Code Patterns (DO vs. DON'T)
+
+```javascript
+// ============================================================================
+// C1: Anti-Over-Mocking Guard (Real Mutation vs Network Mocking)
+// ============================================================================
+// ❌ WRONG (100% Mocking hides real DB and backend regressions):
+await page.route('**/api/orders/**', route => route.fulfill({ status: 200, json: { id: 101, status: 'created' } }));
+
+// ✅ CORRECT (Verify actual persistence and backend response for critical mutations):
+const response = await request.post('/api/orders', { data: dynamicOrderPayload });
+await expect(response.status()).toBe(201);
+
+// ============================================================================
+// C2: Dynamic Data Isolation (Prevents race conditions in parallel CI runs)
+// ============================================================================
+// ❌ WRONG (Static identifier causes collision when run in parallel workers):
+const testUsername = 'testuser_qa_static';
+
+// ✅ CORRECT (Unique, collision-resistant identifier per worker and timestamp):
+const testUsername = `user_${Date.now()}_${process.env.TEST_WORKER_INDEX || '0'}`;
+
+// ============================================================================
+// C3: Selector Syntax Validity
+// ============================================================================
+// ❌ WRONG (Missing brackets causes selector parse failure or silent swallow):
+await page.waitForSelector('role="progressbar"');
+
+// ✅ CORRECT (Valid attribute selector syntax):
+await page.waitForSelector('[role="progressbar"]', { state: 'hidden', timeout: 5000 });
+
+// ============================================================================
+// C5: Zero Floating Promises (Web-First Assertions)
+// ============================================================================
+// ❌ WRONG (Missing await -> Promise is dropped -> Silent false positive):
+expect(page.locator('.alert-success')).toBeVisible();
+
+// ✅ CORRECT (Awaited web-first assertion):
+await expect(page.locator('.alert-success')).toBeVisible();
+```
+
+#### 3. Review, Self-Correction & Mandatory Linter Gate:
+1. **Syntax Check:**
+   * Run syntax check: `node --check <file>` or language compiler.
+2. **Automated Linter Gate:**
+   * The AI agent MUST execute the static linter before completing the task:
      `python scripts/lint_test_code.py <file>`
-   * Ensure error messages on failed assertions provide actionable debugging clues.
-3. **Transition Workflow State:**
+   * If any violation is detected (arbitrary sleeps, hardcoded secrets, floating promises, broken selector syntax, collision-prone identifiers), the AI MUST NOT report completion. It must self-correct the code and re-run the linter until achieving `0 violations`.
+3. **Technical Self-Audit Verification Card:**
+   * At the conclusion of the code generation output, the AI agent MUST output the following audit card:
+     ```markdown
+     ### Technical Self-Audit Verification Card
+     | # | Engineering Standard (C1-C5) | Status | Code Evidence / Verification Proof |
+     |:--|:---|:---:|:---|
+     | 1 | C1: Real Backend Mutation Test | PASS | Test ID: TC-XXX executes real mutation without route mocking |
+     | 2 | C2: Dynamic Data Isolation | PASS | Line XX: Isolated via Date.now() / worker index |
+     | 3 | C3: Multi-Viewport Matrix | PASS | Tested across Desktop (1920x1080) and Mobile viewports |
+     | 4 | C4: State Concurrency Safe | PASS | StateFileLock with PID check & TTL recovery applied |
+     | 5 | C5: 100% Awaited Assertions | PASS | Linter verified 0 floating promises |
+     ```
+4. **Transition Workflow State:**
    * Update workflow state:
-     `python scripts/state_manager.py transition AUTOMATION_EXECUTION "Automation scripts generated; ready for execution"`.
+     `python scripts/state_manager.py transition AUTOMATION_EXECUTION "Automation scripts generated and verified via Linter Gate"`.
 
 ## 5. Expected Outputs
-* Automated test spec files adhering to the project's native style.
+* Automated test spec files adhering to the project's native style and Senior Dev standards.
 * Traceability mapping between spec functions and Excel Test Case IDs.
+* Verified Technical Self-Audit Verification Card confirming C1-C5 compliance.
 * Updated `.qa-state.json` transitioning to `AUTOMATION_EXECUTION`.
 
 ## 6. Failure Handling
@@ -71,4 +128,6 @@ description: >-
 
 ## 8. Completion Criteria
 * All approved test cases are coded into executable test files.
+* `python scripts/lint_test_code.py` passes with 0 violations.
+* Technical Self-Audit Verification Card is provided in the final output.
 * State is `AUTOMATION_EXECUTION`.
