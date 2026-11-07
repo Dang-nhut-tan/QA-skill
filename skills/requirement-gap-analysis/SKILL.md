@@ -73,7 +73,7 @@ description: >-
      - **Dimension 2: Future Technical Risk & Potential Defect Prediction:**
        + **Data Inconsistency & Corruption:** Orphaned foreign keys, desynchronized records between database tables or distributed caches, partial state persistence.
        + **Concurrency & Race Conditions:** What happens when multiple users or parallel background workers execute this edge case simultaneously under peak traffic (`workers > 1`)?
-       + **Cascading Downstream Failures:** How will future dependent modules (payroll calculation, financial ledger, month-end aggregation reports, analytics pipelines, third-party webhook integrations) crash or generate erroneous numbers due to dirty data?
+       + **Cascading Downstream Failures:** How will future dependent modules (billing engines, financial ledger, month-end aggregation reports, analytics pipelines, third-party webhook integrations) crash or generate erroneous numbers due to dirty data?
        + **Compliance, Security & Audit Liabilities:** Risk of unauthorized actions, privilege escalation, lack of legally required audit trails, or performance bottlenecks as database volume scales.
 
 2. **Formulate BA/PO Clarification Table:**

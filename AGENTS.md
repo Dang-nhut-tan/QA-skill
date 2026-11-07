@@ -15,16 +15,15 @@ You strictly adhere to **progressive disclosure**, **deterministic dependency di
 5. **No False Success:** Never report a test as passed unless an actual CLI execution produced an exit code of 0 with green assertions.
 6. **Continuous Learning (Human-in-the-Loop):** When encountering recurring errors (>= 2 times) or project-specific obstacles, formulate a Lesson-Learned Proposal. If approved by the user, automatically inject it into the appropriate Skill via `scripts/learn_manager.py`. Never edit skills silently.
 7. **Bidirectional Requirement Traceability:** Enforce 100% forward coverage (every critical requirement has >= 1 test case), 100% backward grounding (every test case references verified code symbols or spec IDs; zero orphan/hallucinated tests), and semantic deduplication (zero redundant test cases).
-8. **Dynamic Risk-Based Coverage (RBC):** Eliminate rigid test case quotas (no fixed 7-10 Chặn, 5-7 Sai). Scale test suite size dynamically by Module Complexity Tier (Tier S: 5–8, Tier M: 10–18, Tier L: 18–30+). Never pad simple modules with useless tests. Strictly separate defect Severity (`Chặn`, `Sai`, `Nhỏ`) from test execution Priority (P0, P1, P2).
-9. **Non-IT Business-Accessible Phrasing (Zero Dev Jargon):** Test cases must be instantly comprehensible and actionable by non-IT stakeholders (Manual Testers, BAs, Product Owners, Business Users). Strictly avoid literal machine translations (e.g., "phanh chống ngập", "chặn âm thầm") and raw dev jargon ("web_anon", "RPC", "UI trả về", "DB không chèn dòng", "insufficient_privilege"). Test steps must be concrete, user-centric actions (`1. Mở màn hình... 2. Nhập vào ô... 3. Bấm nút...`) following `references/business-terminology-guide.md`.
+8. **Dynamic Risk-Based Coverage (RBC):** Eliminate rigid test case quotas (no arbitrary fixed quotas). Scale test suite size dynamically by Module Complexity Tier (Tier S: 5–8, Tier M: 10–18, Tier L: 18–30+). Never pad simple modules with useless tests. Strictly separate defect Severity (`Critical/Blocker`, `Major`, `Minor`) from test execution Priority (P0, P1, P2).
+9. **Non-IT Business-Accessible Phrasing (Zero Dev Jargon):** Test cases must be instantly comprehensible and actionable by non-IT stakeholders (Manual Testers, BAs, Product Owners, Business Users). Strictly avoid awkward machine translations and internal raw dev jargon (e.g., "web_anon", "RPC error 500", "UI returns null", "DB insert omitted", "insufficient_privilege"). Test steps must be concrete, user-centric actions (`1. Open screen... 2. Enter value into field... 3. Click button...`) following `references/business-terminology-guide.md`.
 10. **Controlled, Observable Dependency Discovery:**
     - **Configurable graph traversal:** CodeGraph discovery uses cycle-safe BFS with a `visited_set`, configurable depth/node ceilings, process timeout, and binary-folder exclusion. Defaults protect runtime and memory; they are not proof of complete coverage.
     - **Transparent truncation:** If a configured ceiling, parser failure, timeout, or index failure prevents complete traversal, record `DISCOVERY_STATUS: TRUNCATED` or `DISCOVERY_INCOMPLETE`, including the reason and unvisited node identifiers. Never report complete discovery when traversal was partial.
     - **High-Efficiency Context Loading:** Decouple discovery from context loading. Never ingest raw `codegraph-out/graph.json` or full monolithic graph reports into LLM prompt context. Use on-demand subgraph queries, signature-first inspection (interfaces, types, and validation schemas before full implementation bodies), and commit/hash caching.
     - **Zero False Completion:** Never conclude that analysis is complete merely because a token budget was reached. If technical obstacles (parser error, timeout) prevent full traversal, explicitly record state as `DISCOVERY_INCOMPLETE`.
-11. **Language Separation Architecture (English Engine, Vietnamese Deliverables):**
-    - **Engine in English:** All internal agent instructions, skill definitions, system prompts, architecture guidelines, and state metadata are strictly maintained in standard engineering English for maximum LLM precision.
-    - **Deliverables in Vietnamese:** All user-facing artifacts (e.g., `<module>-gaps.md`, `<module>-testcases.xlsx`, executive discrepancy tables, and chat messages) MUST be generated in natural, professional Vietnamese accessible to non-IT stakeholders (QA manual, BA, PO, business users).
+11. **Universal Professional English Standard:**
+    - All internal agent instructions, skill definitions, system prompts, architecture guidelines, test artifacts (`<module>-gaps.md`, `<module>-testcases.xlsx`), and executive discrepancy tables are strictly maintained in standard professional English for maximum technical precision and international enterprise compatibility.
 
 ---
 
@@ -52,11 +51,11 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
    1. Clickable file link to [<module>-gaps.md] (with embedded screenshots & reproduction steps)
    2. Executive discrepancy table in chat
    3. WAIT FOR USER INSTRUCTION:
-      - User commands "tiếp tục" (or provides BA answers) --> Proceed to Step 4
-      - STRICT PROHIBITION: DO NOT PROCEED TO STEP 4 WITHOUT USER "TIẾP TỤC" OR BA ANSWERS!
+      - User commands "proceed" or "continue" (or provides BA answers) --> Proceed to Step 4
+      - STRICT PROHIBITION: DO NOT PROCEED TO STEP 4 WITHOUT USER COMMAND ("proceed" / "continue") OR BA ANSWERS!
 ═══════════════════════════════════════════════════════════════════════════
         │
-        ▼ (Only when user explicitly commands "tiếp tục" or provides BA answers)
+        ▼ (Only when user explicitly commands "proceed" or "continue" or provides BA answers)
 [Step 4: testcase-design]             --> Generates dynamic risk-based test cases (Tier S: 5–8, M: 10–18, L: 18–30+)
         │
         ▼
@@ -95,7 +94,7 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
 
 ## 4. Strict Guardrails & Prohibitions
 
-* **PROHIBITED:** Proceeding from Checkpoint 1 (`WAITING_FOR_REQUIREMENT_CLARIFICATION`) to test case design without user commanding "tiếp tục" or providing BA clarification answers.
+* **PROHIBITED:** Proceeding from Checkpoint 1 (`WAITING_FOR_REQUIREMENT_CLARIFICATION`) to test case design without user commanding "proceed" or "continue" or providing BA clarification answers.
 * **PROHIBITED:** Writing automation code before the user approves and submits the Excel test cases.
 * **PROHIBITED:** Modifying user-approved expected results during test debugging.
 * **PROHIBITED:** Using hardcoded waits (`sleep`, `waitForTimeout`). Use web-first assertions only.

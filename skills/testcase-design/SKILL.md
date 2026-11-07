@@ -36,8 +36,8 @@ description: >-
 * > Determine test suite scale and composition based on **Module Complexity Tier** and **Risk Score (Risk = Impact x Probability)** following `references/risk-based-coverage-matrix.md`:
 * **Identify Module Complexity Tier:**
   * **Tier S (Simple — 5 to 8 test cases):** 1-step forms, simple password changes, read-only directory lookup, basic profile edits. *Strictly prohibit padding with useless tests.*
-  * **Tier M (Standard — 10 to 18 test cases):** Multi-channel Auth, Leave/Attendance requests, Shift scheduling, Meeting room booking, Form throttling and anti-spam.
-  * **Tier L (Complex / Core — 18 to 30+ test cases):** Payment gateways, Payroll and tax engines, Multi-tier approvals, Session security, Concurrency, and distributed sync.
+  * **Tier M (Standard — 10 to 18 test cases):** Multi-channel Auth, Multi-step Checkout, Profile & Security settings, Search & filtering, Resource booking, Form throttling and rate-limiting.
+  * **Tier L (Complex / Core — 18 to 30+ test cases):** Payment gateways, Billing & invoice engines, Multi-tier hierarchical approvals, Session security, Concurrency, and distributed sync.
 * **Strict Role of Defect Severity (Column H):**
   * `Severity` reflects the **inherent damage of a bug if it occurs** (`Critical/Blocker` = Crash/Data Loss/Total Blockage; `Major` = Calculation/State Error/Validation Breach; `Minor` = Cosmetic/Typo/Minor UI Flaw), **NOT a production quota**.
 * **Risk Priority (Execution Order):**

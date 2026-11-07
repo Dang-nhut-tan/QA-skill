@@ -241,25 +241,25 @@ class TestMultiModuleStateIsolation:
     """Tests for multi-module state file isolation and smart auto-detection."""
 
     def test_multi_module_creates_isolated_state_files(self, tmp_path):
-        mgr_chamcong = WorkflowStateManager(workspace_root=str(tmp_path), module_name="cham-cong")
-        mgr_dangnhap = WorkflowStateManager(workspace_root=str(tmp_path), module_name="dang-nhap")
+        mgr_orders = WorkflowStateManager(workspace_root=str(tmp_path), module_name="orders")
+        mgr_billing = WorkflowStateManager(workspace_root=str(tmp_path), module_name="billing")
 
-        assert mgr_chamcong.state_file.name == ".qa-state-cham-cong.json"
-        assert mgr_dangnhap.state_file.name == ".qa-state-dang-nhap.json"
+        assert mgr_orders.state_file.name == ".qa-state-orders.json"
+        assert mgr_billing.state_file.name == ".qa-state-billing.json"
 
         # Initialize both modules
-        mgr_chamcong.init_state("cham-cong", {"repo": "viva"})
-        mgr_dangnhap.init_state("dang-nhap", {"repo": "viva"})
+        mgr_orders.init_state("orders", {"repo": "enterprise_saas"})
+        mgr_billing.init_state("billing", {"repo": "enterprise_saas"})
 
         # Verify both files co-exist without clobbering
-        assert (tmp_path / ".qa-state-cham-cong.json").exists()
-        assert (tmp_path / ".qa-state-dang-nhap.json").exists()
+        assert (tmp_path / ".qa-state-orders.json").exists()
+        assert (tmp_path / ".qa-state-billing.json").exists()
 
-        state_cc = mgr_chamcong.load()
-        state_dn = mgr_dangnhap.load()
+        state_orders = mgr_orders.load()
+        state_billing = mgr_billing.load()
 
-        assert state_cc["module_name"] == "cham-cong"
-        assert state_dn["module_name"] == "dang-nhap"
+        assert state_orders["module_name"] == "orders"
+        assert state_billing["module_name"] == "billing"
 
     def test_smart_autodetect_when_single_custom_state_file_exists(self, tmp_path):
         # Create a single custom state file

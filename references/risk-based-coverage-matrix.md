@@ -14,8 +14,8 @@ Test suite scale is calibrated against codebase architectural complexity (number
 | Module Complexity Tier | Structural & Business Characteristics | Recommended Test Case Volume | Inherent Severity Allocation Guideline |
 | :--- | :--- | :---: | :--- |
 | **Tier S — Simple** *(Cosmetic / 1-Step Form / Lookup)* | Static displays, simple password reset, basic profile edit, 1-step contact forms, read-only directory lookup. | **5 - 8 Test Cases** | • Critical: 2 - 3 cases (Happy path, crash, empty submit)<br>• Major: 2 - 4 cases (Validation, format error)<br>• Minor: 1 - 2 cases (UI, placeholder) |
-| **Tier M — Standard** *(Standard Functional Module)* | Multi-channel Auth, Leave/Attendance requests, Shift scheduling, Meeting room reservation, Feedback forms. | **10 - 18 Test Cases** | • Critical: 5 - 8 cases (Core path, lockout, double click, RBAC)<br>• Major: 4 - 7 cases (Time calculation, overlap, validation)<br>• Minor: 2 - 3 cases |
-| **Tier L — Complex / Core** *(Financial / Security / Data Engine)* | Payment gateways, Payroll & tax calculation, Multi-tier hierarchical approvals, Session security, Distributed database sync. | **18 - 30+ Test Cases** | • Critical: 10 - 16 cases (Financial loss, balance discrepancy, race condition, auth bypass, webhook retry)<br>• Major: 7 - 12 cases (Calculation formulas, status transitions)<br>• Minor: 2 - 4 cases |
+| **Tier M — Standard** *(Standard Functional Module)* | Multi-step Checkout, Profile & Security settings, Search & filtering, Resource booking, Rate-limiting forms. | **10 - 18 Test Cases** | • Critical: 5 - 8 cases (Core path, lockout, double click, RBAC)<br>• Major: 4 - 7 cases (Time calculation, overlap, validation)<br>• Minor: 2 - 3 cases |
+| **Tier L — Complex / Core** *(Financial / Security / Data Engine)* | Payment gateways, Billing & invoice engines, Multi-tier hierarchical approvals, Session security, Distributed database sync. | **18 - 30+ Test Cases** | • Critical: 10 - 16 cases (Financial loss, balance discrepancy, race condition, auth bypass, webhook retry)<br>• Major: 7 - 12 cases (Calculation formulas, status transitions)<br>• Minor: 2 - 4 cases |
 
 ---
 

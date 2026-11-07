@@ -12,7 +12,7 @@ description: >-
 ## 1. Description & Trigger Conditions
 * **Purpose:** Intake the user's testing request, assess repository context, inspect existing documentation, verify environment configuration safely without storing plaintext secrets, and initialize workflow tracking in `.qa-state.json`.
 * **Triggers:**
-  * User requests testing for a feature or module (e.g., *"Test the Login module"*, *"Analyze and test Checkout"*, *"Create test cases for Attendance"*).
+  * User requests testing for a feature or module (e.g., *"Test the Login module"*, *"Analyze and test Checkout"*, *"Create test cases for User Settings"*).
   * Direct invocation by `workflow-orchestrator`.
 
 ## 2. Inputs

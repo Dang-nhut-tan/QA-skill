@@ -62,7 +62,7 @@
 #### 3. Future Technical Risks & Potential Defects
 * **Data Inconsistency & Corruption:** [How will database records become corrupted, orphaned, or desynchronized across tables?]
 * **Concurrency & Race Conditions:** [How will this edge case behave under peak concurrent traffic or parallel background workers?]
-* **Cascading Downstream Failures:** [How will future reporting, payroll, financial ledger, or third-party webhooks break due to dirty data?]
+* **Cascading Downstream Failures:** [How will future reporting, billing, financial ledger, or third-party webhooks break due to dirty data?]
 * **Compliance & Security Liabilities:** [Risk of privilege escalation, unauthorized operations, or missing audit trails?]
 
 #### 4. Live UI Verification (Playwright MCP)

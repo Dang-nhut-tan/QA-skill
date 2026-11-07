@@ -51,11 +51,11 @@
 * **Title:** `Throttling check 2: Silent drop when account exceeds 3 requests in 24h`
 * **Steps:** `1. Shoot 4th request with employeeId`  
   `2. Check UI response and password_reset_request table`
-* **Expected Result:** `UI returns generic success VBO-QM-03... DB does not insert row due to >3/24h limit.`
+* **Expected Result:** `UI returns generic success SEC-RL-03... DB does not insert row due to >3/24h limit.`
 
 ### ✅ Example 1 (Standard Business-Friendly Phrasing):
 * **Title:** `Verify submission rate limiting: Prevent duplicate requests when account exceeds 3 attempts within 24 hours (security protection)`
-* **Preconditions:** `Employee account has already submitted 3 password reset requests in the past 24 hours.`
+* **Preconditions:** `User account has already submitted 3 password reset requests in the past 24 hours.`
 * **Test Data:** `Account ID: USER-102 (reached 3 attempts/24h threshold)`
 * **Steps (Actionable by Anyone):**  
   `1. Open the Password Reset screen.`  

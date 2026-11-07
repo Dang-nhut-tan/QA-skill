@@ -19,7 +19,7 @@ Severity **does not reflect** whether a bug currently exists in production; rath
 ## 2. Major
 * **Definition:** The business workflow can proceed or complete, but **produces incorrect business results, inaccurate calculations, corrupted data, or invalid state transitions**.
 * **Key Characteristics:**
-  * Calculation errors: Payroll formula discrepancies, VAT tax errors, loyalty point mismatches, cart subtotal errors.
+  * Calculation errors: Invoice & tax computation errors, discount promotion discrepancies, loyalty point mismatches, cart subtotal errors.
   * Database state corruption: Updating employee status displays wrong flags, erroneous activation emails sent.
   * Incorrect routing or branching: Successful login redirects to wrong destination ignoring `redirectUrl`.
   * Workaround exists but introduces significant user friction or risk of downstream data errors.

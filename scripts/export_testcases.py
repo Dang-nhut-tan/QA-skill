@@ -378,9 +378,9 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
     ws_sum["A1"].alignment = Alignment(horizontal="left", vertical="center", indent=1)
 
     summary_info = data.get("summary", {})
-    chan_count = sum(1 for t in testcases if "chặn" in str(t.get("severity", "")).lower())
-    sai_count = sum(1 for t in testcases if "sai" in str(t.get("severity", "")).lower())
-    nho_count = sum(1 for t in testcases if "nhỏ" in str(t.get("severity", "")).lower())
+    critical_count = sum(1 for t in testcases if any(x in str(t.get("severity", "")).lower() for x in ["critical", "blocker", "chặn"]))
+    major_count = sum(1 for t in testcases if any(x in str(t.get("severity", "")).lower() for x in ["major", "sai"]))
+    minor_count = sum(1 for t in testcases if any(x in str(t.get("severity", "")).lower() for x in ["minor", "nhỏ"]))
     ready_count = sum(1 for t in testcases if str(t.get("automation_ready", "")).strip().lower() == "yes")
     not_ready_count = len(testcases) - ready_count
 
@@ -390,23 +390,23 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
         t_audit = {"metrics": {}, "orphan_requirements": [], "orphan_testcases": [], "duplicate_groups": []}
     t_metrics = t_audit.get("metrics", {})
 
-    orphan_req_str = "Không có (0) - Đạt 100% bao phủ" if t_metrics.get("orphan_requirements_count", 0) == 0 else f"{t_metrics.get('orphan_requirements_count')} yêu cầu: " + ", ".join(o.get('requirement', '') for o in t_audit.get('orphan_requirements', []))
-    orphan_tc_str = "Không có (0) - 100% test case có căn cứ thực tế" if t_metrics.get("orphan_testcases_count", 0) == 0 else f"{t_metrics.get('orphan_testcases_count')} test case: " + ", ".join(o.get('id', '') for o in t_audit.get('orphan_testcases', []))
-    dup_str = "Không có (0) - Bộ test case độc lập tối giản" if t_metrics.get("duplicate_groups_count", 0) == 0 else f"{t_metrics.get('duplicate_groups_count')} cặp trùng: " + ", ".join(f"{d['pair'][0]}={d['pair'][1]}" for d in t_audit.get('duplicate_groups', []))
+    orphan_req_str = "None (0) - 100% Full Coverage" if t_metrics.get("orphan_requirements_count", 0) == 0 else f"{t_metrics.get('orphan_requirements_count')} requirements: " + ", ".join(o.get('requirement', '') for o in t_audit.get('orphan_requirements', []))
+    orphan_tc_str = "None (0) - 100% Grounded Test Cases" if t_metrics.get("orphan_testcases_count", 0) == 0 else f"{t_metrics.get('orphan_testcases_count')} test cases: " + ", ".join(o.get('id', '') for o in t_audit.get('orphan_testcases', []))
+    dup_str = "None (0) - Clean Minimal Test Suite" if t_metrics.get("duplicate_groups_count", 0) == 0 else f"{t_metrics.get('duplicate_groups_count')} duplicate pairs: " + ", ".join(f"{d['pair'][0]}={d['pair'][1]}" for d in t_audit.get('duplicate_groups', []))
 
     summary_rows = [
-        ("Tên Phân hệ / Module:", summary_info.get("module_name", "")),
-        ("Tổng số Test Cases Thiết kế:", f"{len(testcases)} ca (Phân bổ theo Risk-Based Coverage)"),
-        ("Số ca Sẵn sàng Tự động hoá (Yes):", f"{ready_count} ({ready_count/max(1, len(testcases))*100:.0f}%)"),
-        ("Số ca Cần can thiệp Thủ công (No):", str(not_ready_count)),
-        ("Phân bổ Mức độ Nghiêm trọng:", f"Chặn (Nặng): {chan_count} | Sai: {sai_count} | Nhỏ: {nho_count}"),
-        ("Tỷ lệ Truy vết Yêu cầu (Traceability Rate):", f"{t_metrics.get('coverage_percentage', 100)}% ({t_metrics.get('covered_requirements_count', 0)}/{t_metrics.get('total_requirements', 0)} yêu cầu đã có test case)"),
-        ("Yêu cầu Trọng yếu Chưa có Test Case (Orphan):", orphan_req_str),
-        ("Test Case Ảo Không có Căn cứ Code/Spec:", orphan_tc_str),
-        ("Test Case Trùng lặp Mục tiêu (Duplicates):", dup_str),
-        ("Các Luồng Nghiệp vụ Đã Bao Phủ:", summary_info.get("covered_flows", "")),
-        ("Vùng Rủi ro Chưa Bao Phủ / Tồn đọng:", summary_info.get("uncovered_risks", "")),
-        ("Giả định Môi trường & Dữ liệu:", summary_info.get("environment_assumptions", ""))
+        ("Module Name:", summary_info.get("module_name", "")),
+        ("Total Designed Test Cases:", f"{len(testcases)} cases (Dynamic Risk-Based Coverage)"),
+        ("Automation Ready (Yes):", f"{ready_count} ({ready_count/max(1, len(testcases))*100:.0f}%)"),
+        ("Manual Intervention Required (No):", str(not_ready_count)),
+        ("Severity Distribution:", f"Critical: {critical_count} | Major: {major_count} | Minor: {minor_count}"),
+        ("Requirement Traceability Rate:", f"{t_metrics.get('coverage_percentage', 100)}% ({t_metrics.get('covered_requirements_count', 0)}/{t_metrics.get('total_requirements', 0)} verified requirements)"),
+        ("Uncovered Critical Requirements (Orphan):", orphan_req_str),
+        ("Ungrounded / Hallucinated Test Cases:", orphan_tc_str),
+        ("Duplicate Test Cases:", dup_str),
+        ("Covered Business Flows:", summary_info.get("covered_flows", "")),
+        ("Uncovered Risk Areas / Backlog:", summary_info.get("uncovered_risks", "")),
+        ("Environment & Data Assumptions:", summary_info.get("environment_assumptions", ""))
     ]
 
     for label, val in summary_rows:
@@ -447,82 +447,76 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
     except PermissionError:
         actual_path = output_path.with_name(f"{output_path.stem} (auto-scale){output_path.suffix}")
         wb.save(actual_path)
-        try:
-            print(f"[NOTE] Tệp '{output_path.name}' đang được mở trong WPS Office (đang bị khoá ghi). Đã tự động xuất bản co giãn tại: '{actual_path.name}'")
-        except UnicodeEncodeError:
-            print(f"[NOTE] File is locked in WPS Office. Saved auto-scaled copy to: '{actual_path.name}'")
+        print(f"[NOTE] File '{output_path.name}' is currently locked. Saved auto-scaled copy to: '{actual_path.name}'")
 
-    try:
-        print(f"[OK] Exported: {actual_path} (Total: {len(testcases)} | Chặn: {chan_count} | Sai: {sai_count} | Nhỏ: {nho_count} | Ready: {ready_count})")
-    except UnicodeEncodeError:
-        print(f"[OK] Exported: {actual_path} (Total: {len(testcases)} | Chan: {chan_count} | Sai: {sai_count} | Nho: {nho_count} | Ready: {ready_count})")
+    print(f"[OK] Exported: {actual_path} (Total: {len(testcases)} | Critical: {critical_count} | Major: {major_count} | Minor: {minor_count} | Ready: {ready_count})")
 
 def build_template(output_path: Path):
     sample_payload = {
         "summary": {
-            "module_name": "Authentication / Đăng nhập",
-            "covered_flows": "• Luồng Đăng nhập hợp lệ chính thống (Happy Path)\n• Cơ chế phòng thủ chống spam click submit liên tục (useSubmitOnce)\n• Chuyển đổi qua lại giữa Tab Mã NV và Số điện thoại",
-            "uncovered_risks": "• Luồng xác thực đăng nhập một lần (SSO OAuth2 qua Google/Microsoft)\n• Luồng mở khoá bằng mã PIN vật lý bảo mật phần cứng",
-            "environment_assumptions": "• Môi trường Staging không bật Google reCAPTCHA v3\n• Database có sẵn tài khoản mẫu đã kích hoạt và không bị khoá"
+            "module_name": "Authentication & Access Control",
+            "covered_flows": "• Standard credentials sign-in (Happy Path)\n• Submission rate-limiting and anti-automation throttling\n• Toggle between Username and Work Email identification methods",
+            "uncovered_risks": "• SSO OAuth2 identity federation via corporate IdP (Google / Microsoft Azure AD)\n• Hardware FIDO2 / WebAuthn biometric security keys",
+            "environment_assumptions": "• Staging environment with rate-limiter enabled\n• Pre-seeded active test accounts without administrative lockout"
         },
         "testcases": [
             {
                 "id": "TC-AUTH-001",
                 "module": "Authentication",
-                "name": "Đăng nhập thành công với thông tin hợp lệ (Happy Path)",
-                "preconditions": "Tài khoản đã kích hoạt, không có cảnh báo máy lạ",
-                "test_data": "Tên đăng nhập: user01, Mật khẩu: Pass@123",
-                "steps": "1. Mở màn hình Đăng nhập (/dang-nhap)\n2. Nhập tên đăng nhập và mật khẩu hợp lệ\n3. Bấm nút 'Đăng nhập'",
-                "expected_result": "Hệ thống xác thực thành công, màn hình tự động chuyển hướng vào Trang chủ Dashboard",
-                "severity": "Chặn",
+                "name": "Successful sign-in with valid credentials (Happy Path)",
+                "preconditions": "Active user account with verified email and no existing security locks",
+                "test_data": "Username: qa_standard_user, Password: ValidPassword@2026",
+                "steps": "1. Open Sign-In screen (/login)\n2. Enter valid username and password\n3. Click 'Sign In' button",
+                "expected_result": "System validates credentials successfully and automatically redirects user to Main Dashboard",
+                "severity": "Critical",
                 "automation_ready": "Yes",
                 "automation_blocker": "",
-                "requirement_ref": "SPEC-AU-01 / BR§2.1",
-                "notes": "Luồng đăng nhập cốt lõi sống còn",
+                "requirement_ref": "SPEC-AUTH-01 / BR§2.1",
+                "notes": "Core business authentication flow",
                 "status": "Pass"
             },
             {
                 "id": "TC-AUTH-002",
                 "module": "Authentication",
-                "name": "Kiểm tra giới hạn số lần gửi: Chặn gửi liên tục khi tài khoản yêu cầu quá giới hạn 3 lần trong 24 giờ",
-                "preconditions": "Tài khoản nhân viên đã gửi 3 yêu cầu cấp lại trong 24 giờ qua",
-                "test_data": "Mã nhân viên: NV-102 (đã đạt giới hạn 3 lần/24h)",
-                "steps": "1. Mở màn hình Quên Mật Khẩu\n2. Nhập Mã nhân viên NV-102 vào ô nhập liệu\n3. Bấm nút 'Gửi Yêu Cầu' lần thứ 4",
-                "expected_result": "- Trên màn hình: Hiển thị thông báo thành công chung (Mã: VBO-QM-03) nhằm bảo mật an toàn tài khoản.\n- Trong hệ thống: Không phát sinh thêm bản ghi yêu cầu mới do đã vượt quá 3 lần/24h.",
-                "severity": "Chặn",
+                "name": "Rate-limiting enforcement: Block repeated requests exceeding 3 attempts within 15 minutes",
+                "preconditions": "Account has already submitted 3 unsuccessful requests in the last 15 minutes",
+                "test_data": "User identifier: test_locked_account@example.com",
+                "steps": "1. Open Password Recovery screen\n2. Enter identifier into input field\n3. Click 'Send Reset Link' button on 4th attempt",
+                "expected_result": "System displays standard rate-limit feedback message (Code: SEC-RL-03) without revealing account existence; rejects dispatch of additional reset tokens.",
+                "severity": "Critical",
                 "automation_ready": "Yes",
                 "automation_blocker": "",
-                "requirement_ref": "SPEC-HT-26 (RateLimiting)",
-                "notes": "Bảo vệ chống spam liên tục và tránh lộ trạng thái tài khoản",
+                "requirement_ref": "SPEC-SEC-26 (RateLimiting)",
+                "notes": "Anti-enumeration and brute-force mitigation",
                 "status": "Pass"
             },
             {
                 "id": "TC-AUTH-003",
                 "module": "Authentication",
-                "name": "Chuyển đổi hình thức đăng nhập (Mã nhân viên sang Số điện thoại) tự động xoá ô nhập liệu",
-                "preconditions": "Đang ở màn hình đăng nhập mặc định chọn tab Mã nhân viên",
-                "test_data": "Dữ liệu gõ dở dang: NV009988",
-                "steps": "1. Nhập 'NV009988' vào ô Mã nhân viên\n2. Bấm chọn tab 'Số điện thoại'",
-                "expected_result": "Giao diện chuyển sang tab Số điện thoại, ô nhập liệu tự động được xoá trắng nội dung cũ, gợi ý đổi sang định dạng Số điện thoại",
-                "severity": "Sai",
+                "name": "Form state sanitation: Switching sign-in method automatically resets input buffer",
+                "preconditions": "User is on the sign-in modal with Username tab active by default",
+                "test_data": "Draft input: user_temp_entry",
+                "steps": "1. Type 'user_temp_entry' into Username input\n2. Click 'Work Email' tab",
+                "expected_result": "Active view switches to Email mode, input field is cleared, and placeholder updates to email format.",
+                "severity": "Major",
                 "automation_ready": "Yes",
                 "automation_blocker": "",
-                "requirement_ref": "SPEC-AU-02 / BR§2.3",
-                "notes": "UX form chuyển tab mượt mà",
+                "requirement_ref": "SPEC-AUTH-02 / BR§2.3",
+                "notes": "Clean input mode transition",
                 "status": "Pending"
             }
         ],
         "gaps": [
             {
                 "id": "GAP-01",
-                "related_flow": "Authentication Flow",
+                "related_flow": "Session Lifecycle Management",
                 "current_evidence": "src/auth/jwt.config.ts:42",
-                "uncertainty": "Tài liệu spec mô tả timeout session 15 phút, nhưng mã nguồn cấu hình JWT refresh token 24h",
-                "ux_impact": "Người dùng không nhận được cảnh báo phiên hết hạn, có thể bị ngắt kết nối đột ngột giữa chừng hoặc tưởng nhầm phiên an toàn trên máy công cộng",
-                "future_risk": "Rủi ro an ninh khi quên đăng xuất trên thiết bị chung; xung đột đồng bộ token khi mở rộng sang kiến trúc multi-device",
-                "question_for_ba": "Hệ thống áp dụng 15 phút idle timeout hay 24h JWT lifetime?",
-                "suggested_options": "A) 15 phút idle timeout (Bảo mật cao)\nB) 24h session (Tiện lợi người dùng)",
-                "status": "Đã làm rõ"
+                "uncertainty": "Specification states a 15-minute idle session timeout, but codebase configures a 24-hour JWT refresh token without active sliding revocation",
+                "ux_impact": "Users receive no idle timeout warning dialog; sessions may abruptly terminate mid-transaction or remain unexpectedly active on shared workstations",
+                "future_risk": "Unauthorized access risk on shared enterprise terminals; token invalidation race conditions during multi-device sign-out",
+                "question_for_ba": "Should the system enforce strict 15-minute idle expiration or maintain extended 24-hour persistent sessions?",
+                "suggested_options": "A) 15-minute idle timeout with 60-second warning modal (Enterprise High Security)\nB) 24-hour persistent session with sliding refresh (Standard SaaS Convenience)",
+                "status": "Clarified"
             }
         ]
     }

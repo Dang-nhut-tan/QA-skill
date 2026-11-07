@@ -57,7 +57,7 @@ description: >-
 
 > [!IMPORTANT]
 > **Negative Testing & Security Guard Verification:**
-> When verifying restricted access scenarios (e.g., Deputy Manager cannot approve requests, Employee cannot edit approved timesheets):
+> When verifying restricted access scenarios (e.g., Standard user cannot approve administrative orders, Non-owner cannot modify finalized records, Unauthorized role cannot export sensitive financial reports):
 > - If the UI correctly displays the disabled state (`disabled`) with appropriate explanatory warning banner -> Record result: `[PASS - GUARD ACTIVE: Security guard functioning correctly]`.
 > - Strictly prohibit reporting disabled or restricted buttons as a system defect (Defect/Blocker).
 
