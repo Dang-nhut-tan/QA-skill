@@ -835,5 +835,55 @@ class TestQASkillsRegression(unittest.TestCase):
         finally:
             tmp_p.unlink(missing_ok=True)
 
+    def test_requirement_gap_skill_and_template_dual_impact(self):
+        """V8: requirement-gap-analysis skill and template mandate UX impact and future risk prediction."""
+        skill_file = PROJECT_ROOT / "skills" / "requirement-gap-analysis" / "SKILL.md"
+        skill_content = skill_file.read_text(encoding="utf-8")
+        self.assertIn("Mandatory Dual-Dimension Impact Assessment", skill_content)
+        self.assertIn("UX Impact", skill_content)
+        self.assertIn("Future Technical Risk", skill_content)
+
+        template_file = PROJECT_ROOT / "references" / "requirement-gaps-template.md"
+        tpl_content = template_file.read_text(encoding="utf-8")
+        self.assertIn("Ảnh Hưởng Trải Nghiệm (UX Impact)", tpl_content)
+        self.assertIn("Lỗi Tiềm Tàng & Rủi Ro Kỹ Thuật Tương Lai", tpl_content)
+
+    def test_export_testcases_gaps_sheet_has_dual_impact_columns(self):
+        """V8: export_testcases creates 9-column Requirement Gaps sheet with UX impact and future risk."""
+        import openpyxl
+        from scripts.export_testcases import export_to_excel
+        sample_data = {
+            "testcases": [],
+            "gaps": [
+                {
+                    "id": "GAP-01",
+                    "related_flow": "Order Flow",
+                    "current_evidence": "order.service.ts:15",
+                    "uncertainty": "Timeout handling missing",
+                    "ux_impact": "User gets stuck on spinner with no feedback",
+                    "future_risk": "Orphaned pending payments in DB",
+                    "question": "What is the timeout threshold?",
+                    "suggested_options": "A) 10s B) 30s",
+                    "status": "Pending"
+                }
+            ]
+        }
+        with tempfile.NamedTemporaryFile(suffix='.xlsx', delete=False) as f:
+            tmp_p = Path(f.name)
+        try:
+            export_to_excel(sample_data, tmp_p)
+            wb = openpyxl.load_workbook(tmp_p)
+            ws_gaps = wb["Requirement Gaps"]
+            self.assertEqual(ws_gaps.max_column, 9)
+            headers = [cell.value for cell in ws_gaps[1]]
+            self.assertIn("UX Impact", headers)
+            self.assertIn("Future Technical Risk", headers)
+            # Verify data row
+            row2 = [cell.value for cell in ws_gaps[2]]
+            self.assertEqual(row2[4], "User gets stuck on spinner with no feedback")
+            self.assertEqual(row2[5], "Orphaned pending payments in DB")
+        finally:
+            tmp_p.unlink(missing_ok=True)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

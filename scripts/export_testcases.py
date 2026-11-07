@@ -292,7 +292,7 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
 
     gap_headers = [
         "Issue ID", "Related Flow", "Current Evidence", "Uncertainty",
-        "Business Impact", "Question for BA/PO", "Suggested Options", "Status"
+        "UX Impact", "Future Technical Risk", "Question for BA/PO", "Suggested Options", "Status"
     ]
     ws_gaps.append(gap_headers)
 
@@ -301,15 +301,20 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
 
     dv_gap_status = DataValidation(type="list", formula1='"Pending,Answered,Skipped"', allow_blank=True)
     ws_gaps.add_data_validation(dv_gap_status)
-    dv_gap_status.add(f"H2:H{max_val_gap}")
+    status_col_letter = get_column_letter(len(gap_headers))
+    dv_gap_status.add(f"{status_col_letter}2:{status_col_letter}{max_val_gap}")
     for gap in gaps:
+        ux_impact = gap.get("ux_impact") or gap.get("business_impact", "")
+        future_risk = gap.get("future_risk") or gap.get("potential_defect") or gap.get("future_technical_risk", "")
+        question = gap.get("question") or gap.get("question_for_ba", "")
         row = [
             gap.get("id", ""),
             gap.get("related_flow", ""),
             gap.get("current_evidence", ""),
             gap.get("uncertainty", ""),
-            gap.get("business_impact", ""),
-            gap.get("question", ""),
+            ux_impact,
+            future_risk,
+            question,
             gap.get("suggested_options", ""),
             gap.get("status", "Pending")
         ]
@@ -336,12 +341,12 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
             if cell.column == 1:
                 cell.font = BOLD_DATA_FONT
                 cell.alignment = ALIGN_DATA_CENTER
-            elif cell.column == 8:
+            elif cell.column == len(gap_headers):
                 st = str(cell.value or "").strip().lower()
-                if st == "answered":
+                if st in ["answered", "đã làm rõ"]:
                     cell.fill = FILL_READY_YES
                     cell.font = FONT_READY_YES
-                elif st == "pending":
+                elif st in ["pending", "chờ làm rõ"]:
                     cell.fill = FILL_SAI
                     cell.font = FONT_SAI
                 else:
@@ -352,7 +357,7 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
                 cell.alignment = ALIGN_DATA_LEFT
 
     col_widths_gap = {
-        "A": 13, "B": 22, "C": 26, "D": 30, "E": 26, "F": 34, "G": 30, "H": 14
+        "A": 13, "B": 20, "C": 24, "D": 26, "E": 28, "F": 28, "G": 30, "H": 26, "I": 14
     }
     for col_letter, width in col_widths_gap.items():
         ws_gaps.column_dimensions[col_letter].width = width
@@ -513,7 +518,8 @@ def build_template(output_path: Path):
                 "related_flow": "Authentication Flow",
                 "current_evidence": "src/auth/jwt.config.ts:42",
                 "uncertainty": "Tài liệu spec mô tả timeout session 15 phút, nhưng mã nguồn cấu hình JWT refresh token 24h",
-                "business_impact": "Rủi ro an ninh khi người dùng không đăng xuất chủ động",
+                "ux_impact": "Người dùng không nhận được cảnh báo phiên hết hạn, có thể bị ngắt kết nối đột ngột giữa chừng hoặc tưởng nhầm phiên an toàn trên máy công cộng",
+                "future_risk": "Rủi ro an ninh khi quên đăng xuất trên thiết bị chung; xung đột đồng bộ token khi mở rộng sang kiến trúc multi-device",
                 "question_for_ba": "Hệ thống áp dụng 15 phút idle timeout hay 24h JWT lifetime?",
                 "suggested_options": "A) 15 phút idle timeout (Bảo mật cao)\nB) 24h session (Tiện lợi người dùng)",
                 "status": "Đã làm rõ"

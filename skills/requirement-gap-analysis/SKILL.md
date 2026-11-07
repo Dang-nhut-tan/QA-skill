@@ -2,14 +2,15 @@
 name: requirement-gap-analysis
 description: >-
   Audits inconsistencies, missing business rules, and contradictions between code and specifications.
-  Collaborates with Playwright MCP to verify observable UI issues with screenshots, compiles the BA
+  Analyzes dual-dimension impact: User Experience (UX) degradation and future technical bug prediction.
+  Collaborates with Playwright MCP to verify observable UI issues with screenshots, compiles the visual BA
   clarification ticket (<module>-gaps.md in Vietnamese), and halts at Human Gate 1 until the user commands to proceed.
 ---
 
 # Skill: Requirement Gap Analysis (Step 2)
 
 ## 1. Description & Trigger Conditions
-* **Purpose:** Audit the reconstructed context against available requirements, identify ambiguities and potential defects, trigger live UI verification with screenshot capture via Playwright MCP, compile a visual BA/PO clarification report (`<module>-gaps.md`), and **halt execution for mandatory human confirmation**.
+* **Purpose:** Audit the reconstructed context against available requirements, identify ambiguities and potential defects, assess dual-dimension impact (User Experience damage and future technical bug prediction), trigger live UI verification with screenshot capture via Playwright MCP, compile a visual BA/PO clarification report (`<module>-gaps.md`), and **halt execution for mandatory human confirmation**.
 * **Triggers:**
   * Completed `codegraph-context-discovery` in full workflow orchestrator (`GAP_ANALYSIS`).
   * **Standalone Invocation:** Direct user request to investigate gaps for a module (e.g., *"Điều tra bất cập phân hệ Đăng Nhập"*, *"Phân tích gap module <Module>"*).
@@ -62,6 +63,18 @@ description: >-
          * Đặc tả không quy định dẫn đến giao diện xử lý mơ hồ, gây nghẽn luồng người dùng (Requirement Ambiguity).
          * Thao tác trên UI dẫn đến crash, văng lỗi 500, mất dữ liệu (Implementation Bug).
 
+1.7. **Mandatory Dual-Dimension Impact Assessment (Phân Tích Tác Động Kép: UX & Rủi Ro Kỹ Thuật Tương Lai):**
+   * For every genuine ambiguity, discrepancy, or defect (`GAP-xxx`), the AI agent MUST conduct a rigorous dual-dimension impact analysis. Never settle for superficial or generic remarks (e.g. "may affect users"). Specifically evaluate:
+     - **Dimension 1: User Experience (UX) Impact (Ảnh Hưởng Trải Nghiệm Người Dùng):**
+       + **Operational Friction:** What does the user see, feel, or struggle with right now? Are error messages missing, misleading, or technical jargon?
+       + **Misleading Feedback:** Does the UI lead the user to believe an action succeeded (e.g. check-in recorded, order submitted, form saved) when it was silently dropped, queued, or rejected?
+       + **Behavioral Traps:** Does the ambiguity cause accidental double submissions, incorrect data entry, confusion between tabs/roles, or abandonment of critical workflows?
+       + **Trust Erosion:** How does this flaw degrade user confidence in the application's reliability?
+     - **Dimension 2: Future Technical Risk & Potential Bug Prediction (Lỗi Tiềm Tàng & Rủi Ro Kỹ Thuật Tương Lai):**
+       + **Data Inconsistency & Corruption:** Orphaned foreign keys, desynchronized records between database tables or distributed caches, partial state persistence.
+       + **Concurrency & Race Conditions:** What happens when multiple users or parallel background workers execute this edge case simultaneously under peak traffic (`workers > 1`)?
+       + **Cascading Downstream Failures:** How will future dependent modules (payroll calculation, financial ledger, month-end aggregation reports, analytics pipelines, third-party webhook integrations) crash or generate erroneous numbers due to dirty data?
+       + **Compliance, Security & Audit Liabilities:** Risk of unauthorized actions, privilege escalation, lack of legally required audit trails, or performance bottlenecks as database volume scales.
 
 2. **Formulate BA/PO Clarification Table:**
    * Create prioritized table with columns:
@@ -69,10 +82,12 @@ description: >-
      * `Related Flow`
      * `Current Evidence` (Code references & lines)
      * `Uncertainty`
-     * `Business Impact`
+     * `UX Impact` (Direct consequences on end-user experience and behavior)
+     * `Future Technical Risk` (Downstream bugs, data corruption, concurrency failures, or scaling liabilities)
      * `Question for BA/PO`
      * `Suggested Options` (Hypotheses A, B, C)
      * `Status` (`Pending`)
+
 3. **Trigger Playwright MCP UI Verification & Screenshot Capture (Step 3 Collaboration):**
    * **Mandatory UI Verification Before BA Ticket Delivery:**
      - For every gap observable on the web UI:
@@ -81,25 +96,33 @@ description: >-
      - **Capture visual progression screenshots (.png)** saved into screenshots/<IssueID>-01-input.png and screenshots/<IssueID>-02-result.png for easy reproduction (stored in project root screenshots/).
      - Record step-by-step reproduction instructions from the end-user perspective (1. Mở... 2. Nhập... 3. Bấm... và quan sát...).
      - For backend-only logic lacking UI: explicitly tag `[Verified via AST - No UI Rendering]`.
+
 4. **Generate Standalone Deliverable (`<module-name>-gaps.md`):**
    * **Deliverable Language Rule:** The generated deliverable `<module-name>-gaps.md` MUST be produced in **Vietnamese** following `references/requirement-gaps-template.md` so that local BA, PO, and business users can understand and act on it immediately.
    * Structure:
      - Investigation overview and 5-category summary table.
-     - Detailed issue cards for each `GAP-xxx` with AST code evidence, UI reproduction steps, and **embedded Playwright MCP screenshots**.
-     - Direct questions for BA/PO and concrete options (Option A, Option B).
+     - Table of Verified Security Guards (`GUARD-xxx`, PASS).
+     - Prioritized table of True GAPs with dedicated `UX Impact` and `Future Technical Risk` columns.
+     - Detailed issue cards for each `GAP-xxx` containing:
+       1. AST code evidence and specification discrepancy.
+       2. **Ảnh hưởng Trải nghiệm Người dùng (UX Impact):** Bối rối, thông báo sai lệch, tắc nghẽn thao tác.
+       3. **Lỗi Tiềm tàng & Rủi ro Kỹ thuật Tương lai (Future Technical Risks):** Sai lệch dữ liệu, concurrency race conditions, vỡ logic báo cáo sau này.
+       4. UI reproduction steps and **embedded Playwright MCP screenshots**.
+       5. Direct questions for BA/PO and concrete options (Option A, Option B).
+
 5. **Persist State Checkpoint & Register Artifact:**
    * Save questions into `.qa-state.json` under `clarification_issues`.
    * Register the generated report artifact:
      `python scripts/state_manager.py set-artifact gap_analysis <module-name>-gaps.md`
    * Update workflow state:
-     `python scripts/state_manager.py transition WAITING_FOR_REQUIREMENT_CLARIFICATION "Gaps verified via Playwright MCP with screenshots. Awaiting user confirmation to proceed"`
+     `python scripts/state_manager.py transition WAITING_FOR_REQUIREMENT_CLARIFICATION "Gaps verified via Playwright MCP with screenshots and dual-dimension impact analysis. Awaiting user confirmation to proceed"`
 
 ## 5. Mandatory Human Checkpoint 1 (CRITICAL STOP)
 > [!IMPORTANT]
 > **THE AGENT MUST HALT EXECUTION COMPLETELY HERE.**
 > Before pausing, the agent MUST:
 > 1. Deliver the clickable markdown link to the generated report file: `[<module-name>-gaps.md](file:///path/to/<module-name>-gaps.md)`.
-> 2. Present an executive summary table directly in chat showing Issue ID, Category, Flow, Screenshot Evidence, and BA Question (in polite Vietnamese).
+> 2. Present an executive summary table directly in chat showing Issue ID, Category, Flow, Screenshot Evidence, UX Impact, Future Risk, and BA Question (in polite Vietnamese).
 > 3. **WAIT FOR EXPLICIT USER INSTRUCTION:**
 >    - **User commands "tiếp tục" (or "proceed"):** Advance to Step 4 (`testcase-design`) if running full workflow.
 >    - **User provides answers from BA/PO:** Update `module-context.md` with resolved business rules, mark issues as `Answered`.
@@ -108,7 +131,7 @@ description: >-
 > **STRICT PROHIBITION: DO NOT PROCEED TO STEP 4 WITHOUT USER COMMAND "TIẾP TỤC" OR BA ANSWERS.**
 
 ## 6. Expected Outputs
-* Dedicated Markdown report: `<module-name>-gaps.md` (in Vietnamese) exported into workspace root with embedded screenshot links.
+* Dedicated Markdown report: `<module-name>-gaps.md` (in Vietnamese) exported into workspace root with embedded screenshot links and dual-dimension impact analysis (UX + Future Risk).
 * State file updated to `WAITING_FOR_REQUIREMENT_CLARIFICATION` with `artifacts.gap_analysis` registered.
 * Executive table and clickable file link presented directly to the user in chat.
 
@@ -116,6 +139,6 @@ description: >-
 * If zero gaps are found: double-check edge cases (boundary values, throttling, role permissions). If genuinely clean, document verification criteria in `<module-name>-gaps.md` and request confirmation to proceed.
 
 ## 8. Completion Criteria
-* Standalone `<module-name>-gaps.md` report is created with visual screenshots and reproduction steps.
+* Standalone `<module-name>-gaps.md` report is created with visual screenshots, reproduction steps, and dual-dimension impact analysis (UX Impact + Future Technical Risk) for every identified gap.
 * State is persisted as `WAITING_FOR_REQUIREMENT_CLARIFICATION`.
 * Workflow is paused waiting for user input.
