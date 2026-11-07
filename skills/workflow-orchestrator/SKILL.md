@@ -32,7 +32,7 @@ stateDiagram-v2
     GAP_ANALYSIS --> RUNTIME_INVESTIGATION: Step 3 (playwright-investigation: UI verification & screenshots)
     RUNTIME_INVESTIGATION --> WAITING_FOR_REQUIREMENT_CLARIFICATION: [MANDATORY STOP 1: Deliver BA ticket with screenshots & HALT]
     
-    WAITING_FOR_REQUIREMENT_CLARIFICATION --> TESTCASE_GENERATION: User commands "tiếp tục" / BA clarification received
+    WAITING_FOR_REQUIREMENT_CLARIFICATION --> TESTCASE_GENERATION: User commands "proceed" / BA clarification received
     
     TESTCASE_GENERATION --> TESTCASE_REVIEW: Step 4 (testcase-design)
     TESTCASE_REVIEW --> WAITING_FOR_APPROVED_TESTCASES: Step 5 [MANDATORY STOP 2: Deliver Excel workbook & HALT]
@@ -56,11 +56,11 @@ stateDiagram-v2
 * **When:** Right after Step 3 (`playwright-investigation` verifies UI gaps and captures screenshots).
 * **State:** `WAITING_FOR_REQUIREMENT_CLARIFICATION`.
 * **Behavior:**
-  1. Generate standalone Markdown report `<module-name>-gaps.md` (in Vietnamese) embedding concrete end-user reproduction steps and Playwright MCP screenshot evidence.
+  1. Generate standalone Markdown report `<module-name>-gaps.md` embedding concrete end-user reproduction steps and Playwright MCP screenshot evidence.
   2. Deliver clickable file link and executive summary table directly in chat.
   3. **HALT EXECUTION COMPLETELY.**
   4. **MANDATORY RESUMPTION CONDITION:** The agent is STRICTLY FORBIDDEN from automatically proceeding to `testcase-design`. The agent proceeds if and only if:
-     - User explicitly types: **`tiếp tục`** (or `proceed`, `ok tiếp tục`), OR
+     - User explicitly types: **`proceed`** (or `continue`), OR
      - User provides clarification feedback / BA decisions.
 
 ### Gate 2: Approved Test Cases Workbook Checkpoint

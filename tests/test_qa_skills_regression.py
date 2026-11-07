@@ -692,22 +692,22 @@ class TestQASkillsRegression(unittest.TestCase):
         skill_file = PROJECT_ROOT / "skills" / "requirement-gap-analysis" / "SKILL.md"
         content = skill_file.read_text(encoding="utf-8")
         self.assertIn("Strict Falsification & Negative Testing Rule", content)
-        self.assertIn("CHỐNG BÁO ĐỘNG GIẢ", content)
-        self.assertIn("Hàng Rào An Toàn Đã Kiểm Chứng", content)
+        self.assertIn("ANTI-FALSE-ALARM PROTOCOL", content)
+        self.assertIn("VERIFIED SECURITY GUARDS", content)
 
     def test_playwright_negative_testing_guideline_present(self):
         """V5: playwright-investigation skill distinguishes disabled buttons from defects."""
         pw_file = PROJECT_ROOT / "skills" / "playwright-investigation" / "SKILL.md"
         content = pw_file.read_text(encoding="utf-8")
-        self.assertIn("Xác Nhận Kịch Bản Hạn Chế Quyền", content)
+        self.assertIn("Negative Testing & Security Guard Verification", content)
         self.assertIn("PASS - GUARD ACTIVE", content)
 
     def test_requirement_gaps_template_contains_verified_guards_section(self):
         """V5: requirement-gaps-template.md has separate tables for Verified Guards and True GAPs."""
         tpl_file = PROJECT_ROOT / "references" / "requirement-gaps-template.md"
         content = tpl_file.read_text(encoding="utf-8")
-        self.assertIn("HÀNG RÀO AN TOÀN ĐÃ KIỂM CHỨNG (VERIFIED GUARDS", content)
-        self.assertIn("BẢNG PHÂN LOẠI ĐIỂM BẤT CẬP THỰC TẾ (TRUE GAPs", content)
+        self.assertIn("VERIFIED SECURITY GUARDS", content)
+        self.assertIn("TRUE GAPs", content)
 
     def test_linter_detects_prohibited_sleep(self):
         """V6: lint_test_code flags arbitrary sleeps (waitForTimeout, sleep)."""
@@ -845,8 +845,8 @@ class TestQASkillsRegression(unittest.TestCase):
 
         template_file = PROJECT_ROOT / "references" / "requirement-gaps-template.md"
         tpl_content = template_file.read_text(encoding="utf-8")
-        self.assertIn("Ảnh Hưởng Trải Nghiệm (UX Impact)", tpl_content)
-        self.assertIn("Lỗi Tiềm Tàng & Rủi Ro Kỹ Thuật Tương Lai", tpl_content)
+        self.assertIn("UX Impact", tpl_content)
+        self.assertIn("Future Technical Risk", tpl_content)
 
     def test_export_testcases_gaps_sheet_has_dual_impact_columns(self):
         """V8: export_testcases creates 9-column Requirement Gaps sheet with UX impact and future risk."""

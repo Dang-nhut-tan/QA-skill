@@ -13,7 +13,7 @@ description: >-
 * **Triggers:**
   * An automation test fails $\ge 2$ times with the same root cause (e.g., locator instability, animation delay).
   * A complex authentication/mocking quirk is successfully diagnosed and resolved.
-  * User gives feedback or requests learning (e.g., *"Lưu lại kinh nghiệm xử lý lỗi này"*, `/learn`).
+  * User gives feedback or requests learning (e.g., *"Save this troubleshooting lesson"*, `/learn`).
   * Concluding Phase 6.4 (`test-execution-debugging`) with notable fixes.
 
 ## 2. Inputs
@@ -30,25 +30,25 @@ description: >-
    * Scan execution logs and debugging history for:
      * *Flaky Locators:* Elements requiring special attributes (`data-section`, accessibility labels).
      * *Timing/Race Conditions:* Complex transitions needing specific web-first waiting instead of blind retries.
-     * *Domain Quirks:* Special headers, auth token caching, or device state traps (e.g. `coPin`, `MayLaNotice`).
+     * *Domain Quirks:* Special headers, auth token caching, or device state traps.
 2. **Synthesize Proposal:**
    * Invoke `scripts/learn_manager.py`:
-     `python scripts/learn_manager.py propose "<Tiêu đề ngắn>" "<Lỗi/Khó khăn lặp lại>" "<Nguyên nhân gốc rễ>" "<Giải pháp tối ưu>" "<target_skill>"`
+     `python scripts/learn_manager.py propose "<Short Title>" "<Recurring Error / Obstacle>" "<Root Cause>" "<Optimal Fix>" "<target_skill>"`
    * Proposal is assigned a unique ID (e.g., `LRN-001`) with status `PENDING_APPROVAL`.
 3. **Present Proposal to User for Explicit Approval:**
    * Display a clean, actionable prompt to the user:
      ```text
-     [AI PHÁT HIỆN BÀI HỌC KINH NGHIỆM DỰ ÁN CẦN NẠP VÀO SKILL]
-     - Mã đề xuất: LRN-001
-     - Vấn đề gặp phải: Nút Đăng nhập bị click trùng do lag mạng làm khoá tài khoản
-     - Nguyên nhân: Dự án có hook useSubmitOnce xử lý bất đồng bộ
-     - Giải pháp: Sử dụng locator disable check hoặc wait response trước khi click lần hai
-     - Skill tiếp nhận: automation-implementation
+     [AI PROJECT LESSON-LEARNED PROPOSAL DETECTED]
+     - Proposal ID: LRN-001
+     - Issue Encountered: Submit button double-clicked due to network lag causing account lock
+     - Root Cause: Project implements asynchronous useSubmitOnce hook
+     - Optimal Fix: Assert disabled state or await response before secondary click
+     - Target Skill: automation-implementation
 
-     Bạn có đồng ý duyệt để AI tự động nạp kinh nghiệm này vào Skill không? (Đồng ý / Từ chối / Chỉnh sửa)
+     Do you approve injecting this lesson into the target skill? (Approve / Reject / Edit)
      ```
 4. **Execute Structured Learning Upon Approval:**
-   * When user confirms *"Đồng ý"* or confirms proposal:
+   * When user confirms *"Approve"* or confirms proposal:
      Run: `python scripts/learn_manager.py approve <PROPOSAL_ID>`
    * The script activates and stores the verified learning in `references/project-learnings.json` (STATUS: APPROVED).
    * **Zero Token Bloat Guarantee:** `SKILL.md` core files remain immutable and clean. Instead, active skills dynamically retrieve relevant learnings at runtime using:

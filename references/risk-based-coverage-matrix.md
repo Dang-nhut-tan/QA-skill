@@ -1,62 +1,62 @@
-# MA TRẬN ĐỘ PHỦ THEO RỦI RO ĐỘNG (DYNAMIC RISK-BASED COVERAGE MATRIX)
-## Tiêu Chuẩn Phân Bổ Test Case Theo Mức Độ Trọng Yếu & Độ Phức Tạp Thay Thế Quota Cứng
+# DYNAMIC RISK-BASED COVERAGE (RBC) MATRIX
+## Test Suite Scaling Framework Based on Complexity Tiers & Business Risk
 
-> **Mục tiêu kiến trúc:**  
-> Xoá bỏ hoàn toàn quota số lượng cứng nhắc (trước đây là 7–10 Chặn, 5–7 Sai).  
-> Thay thế bằng **Mô hình Độ phủ Theo Rủi ro Thực tế (Risk-Based Coverage - RBC)**: Số lượng và cơ cấu test case được xác định linh hoạt dựa trên **Quy mô Phân hệ (Module Tier)**, **Điểm số Rủi ro (Risk Score)** và **Mức độ Tác động (Severity)**.
+> **Architectural Objective:**  
+> Eliminate rigid, arbitrary quotas (e.g. forcing 15 or 20 cases on every module).  
+> Replace with a **Dynamic Risk-Based Coverage (RBC) Model**: Test suite volume and composition are determined dynamically by **Module Complexity Tier**, **Risk Score (Impact x Likelihood)**, and **Inherent Defect Severity**.
 
 ---
 
-## 1. PHÂN CẤP QUY MÔ PHÂN HỆ (MODULE COMPLEXITY TIERS)
+## 1. MODULE COMPLEXITY TIERS
 
-Số lượng test case được điều chỉnh theo độ phức tạp cấu trúc mã nguồn (số lượng route, bảng CSDL, API liên quan) và tác động tài chính/bảo mật của phân hệ:
+Test suite scale is calibrated against codebase architectural complexity (number of routes, database entities, external dependencies) and business/security criticality:
 
-| Cấp Độ Phân Hệ (Tier) | Đặc Điểm Cấu Trúc & Nghiệp Vụ | Định Lượng Test Case Hợp Lý | Phân Bổ Mức Độ Nghiêm Trọng (Severity) Dự Kiến |
+| Module Complexity Tier | Structural & Business Characteristics | Recommended Test Case Volume | Inherent Severity Allocation Guideline |
 | :--- | :--- | :---: | :--- |
-| **Tier S — Đơn Giản** *(Simple / Cosmetic / Form đơn)* | Màn hình tĩnh, đổi mật khẩu đơn giản, cập nhật hồ sơ cơ bản, form liên hệ 1 bước, tra cứu danh mục. | **5 – 8 Test Cases** | • Chặn: 2 – 3 ca (Happy path, crash, rỗng)<br>• Sai: 2 – 4 ca (Validation, sai định dạng)<br>• Nhỏ: 1 – 2 ca (UI, placeholder) |
-| **Tier M — Tiêu Chuẩn** *(Standard Functional Module)* | Đăng nhập/Đăng ký đa kênh, Đơn từ chấm công, Xếp ca làm việc, Quản lý phòng họp, Phản ánh khiếu nại. | **10 – 18 Test Cases** | • Chặn: 5 – 8 ca (Luồng chính, khoá TK, spam click, phân quyền)<br>• Sai: 4 – 7 ca (Tính toán thời gian, trùng ca, validation)<br>• Nhỏ: 2 – 3 ca |
-| **Tier L — Phức Tạp / Trọng Yếu** *(Complex / Financial / Security Core)* | Cổng thanh toán, Quyết toán lương & thuế, Luồng duyệt đơn đa cấp, Mã hoá & Bảo mật phiên làm việc, Đồng bộ CSDL phân tán. | **18 – 30+ Test Cases** | • Chặn: 10 – 16 ca (Mất tiền, sai lệch số dư, race condition, thủng quyền, retry webhook)<br>• Sai: 7 – 12 ca (Công thức tính toán, trạng thái giao dịch)<br>• Nhỏ: 2 – 4 ca |
+| **Tier S — Simple** *(Cosmetic / 1-Step Form / Lookup)* | Static displays, simple password reset, basic profile edit, 1-step contact forms, read-only directory lookup. | **5 - 8 Test Cases** | • Critical: 2 - 3 cases (Happy path, crash, empty submit)<br>• Major: 2 - 4 cases (Validation, format error)<br>• Minor: 1 - 2 cases (UI, placeholder) |
+| **Tier M — Standard** *(Standard Functional Module)* | Multi-channel Auth, Leave/Attendance requests, Shift scheduling, Meeting room reservation, Feedback forms. | **10 - 18 Test Cases** | • Critical: 5 - 8 cases (Core path, lockout, double click, RBAC)<br>• Major: 4 - 7 cases (Time calculation, overlap, validation)<br>• Minor: 2 - 3 cases |
+| **Tier L — Complex / Core** *(Financial / Security / Data Engine)* | Payment gateways, Payroll & tax calculation, Multi-tier hierarchical approvals, Session security, Distributed database sync. | **18 - 30+ Test Cases** | • Critical: 10 - 16 cases (Financial loss, balance discrepancy, race condition, auth bypass, webhook retry)<br>• Major: 7 - 12 cases (Calculation formulas, status transitions)<br>• Minor: 2 - 4 cases |
 
 ---
 
-## 2. MA TRẬN ĐÁNH GIÁ RỦI RO (RISK ASSESSMENT FORMULA)
+## 2. RISK ASSESSMENT FORMULA
 
-Mỗi kịch bản kiểm thử được chấm điểm theo công thức:
+Every test scenario is evaluated using the standard quantitative risk formula:
 
-$$\text{Điểm Rủi Ro (Risk Score)} = \text{Mức Độ Tác Động (Impact: 1–3)} \times \text{Xác Suất Lỗi (Probability: 1–3)}$$
+$$\text{Risk Score} = \text{Impact (1-3)} \times \text{Likelihood (1-3)}$$
 
-### 2.1. Thang Đo Mức Độ Tác Động (Impact):
-* **Mức 3 (Cao - Critical):** Mất tiền, rò rỉ dữ liệu nhạy cảm (PII), sập hệ thống (500), gián đoạn hoàn toàn luồng nghiệp vụ chính, tài khoản bị chiếm đoạt.
-* **Mức 2 (Trung bình - Moderate):** Sai lệch số liệu tính toán (ngày phép, công), điều hướng nhầm trang, lưu sai trạng thái bản ghi, vi phạm quy tắc ràng buộc dữ liệu.
-* **Mức 1 (Thấp - Minor):** Lệch giao diện, lỗi chính tả, thông báo chưa tối ưu, không ảnh hưởng đến luồng dữ liệu.
+### 2.1. Impact Scale (1 to 3):
+* **Level 3 (Critical Impact):** Financial loss, sensitive data leak (PII), application crash (HTTP 500), complete business process blockage, account takeover.
+* **Level 2 (Moderate Impact):** Calculation discrepancies (leave days, allowances), incorrect redirection, invalid record state persistence, business constraint breach.
+* **Level 1 (Minor Impact):** Cosmetic layout shift, minor typo, sub-optimal informational feedback without affecting data flow.
 
-### 2.2. Thang Đo Xác Suất Lỗi (Probability / Likelihood):
-* **Mức 3 (Dễ xảy ra):** Luồng xử lý bất đồng bộ phức tạp, nhiều điều kiện rẽ nhánh (nested if), nhiều bên thứ 3 (SMS, cổng thanh toán, webhook), xử lý đồng thời (concurrency).
-* **Mức 2 (Trung bình):** Form nhập liệu nhiều trường có ràng buộc chéo (cross-field validation), truy vấn CSDL có JOIN phức tạp.
-* **Mức 1 (Hiếm gặp):** Thành phần UI tĩnh, dữ liệu chỉ đọc (read-only), logic tuần tự đơn giản.
-
----
-
-## 3. PHÂN ĐỊNH RẠCH RÒI: SEVERITY VS RISK PRIORITY
-
-* **Mức Độ Nghiêm Trọng (Severity - Cột H):**  
-  Phản ánh **tác động kỹ thuật / nghiệp vụ khi lỗi xảy ra**:
-  - `Chặn`: Lỗi làm tê liệt luồng, crash, mất dữ liệu, thủng bảo mật.
-  - `Sai`: Lỗi làm sai kết quả tính toán, hiển thị sai trạng thái, vi phạm validation.
-  - `Nhỏ`: Lỗi giao diện, câu chữ, pixel.
-  *(Tuyệt đối không dùng Severity để ép số lượng test case!)*
-
-* **Độ Ưu Tiên Thực Thi (Risk Priority):**
-  - **P0 (Critical / Blocker):** Điểm rủi ro = 6–9. Bắt buộc kiểm thử đầu tiên, bao phủ 100% trong mọi đợt phát hành.
-  - **P1 (High):** Điểm rủi ro = 4–5. Phải kiểm thử trước khi release tính năng.
-  - **P2 (Normal / Low):** Điểm rủi ro = 1–3. Kiểm thử khi có đủ thời gian hoặc kiểm thử hồi quy định kỳ.
+### 2.2. Likelihood / Probability Scale (1 to 3):
+* **Level 3 (High Likelihood):** Complex asynchronous transitions, deeply nested conditionals, multi-party integrations (SMS, payment gateways, webhooks), high concurrent traffic.
+* **Level 2 (Moderate Likelihood):** Multi-field forms with cross-field validation rules, multi-table JOIN queries.
+* **Level 1 (Low Likelihood):** Static UI components, read-only data rendering, simple linear sequential flows.
 
 ---
 
-## 4. QUY TRÌNH QUYẾT ĐỊNH ĐỘ PHỦ TỰ ĐỘNG CỦA AGENT
+## 3. STRICT SEPARATION: SEVERITY VS. RISK PRIORITY
 
-1. **Bước 1 (Nhận diện Tier):** Dựa vào kết quả bóc tách AST của CodeGraph (số lượng files, số endpoints, cấu trúc DB) để xác định phân hệ thuộc Tier S, Tier M hay Tier L.
-2. **Bước 2 (Lập danh mục rủi ro):** Liệt kê các mối đe doạ thực tế (Security, Data Integrity, Concurrency, Throttling, Happy Path).
-3. **Bước 3 (Thiết kế test case tương ứng với rủi ro thực):**
-   * Nếu phân hệ Tier S chỉ có 6 luồng thực sự cần kiểm thử $\rightarrow$ Tạo đúng 6 test cases sắc bén, **nghiêm cấm bịa thêm case rác chỉ để đạt số lượng**.
-   * Nếu phân hệ Tier L có 24 trường hợp rủi ro cao $\rightarrow$ Thiết kế đủ 24 test cases chuyên sâu, **không bị giới hạn bởi quota cũ**.
+* **Defect Severity (Column H in Workbook):**  
+  Reflects the **technical and business damage if the scenario fails**:
+  - `Critical` / `Blocker`: Paralyzes business workflow, crashes system, causes data loss or security breach.
+  - `Major`: Produces incorrect calculations, saves invalid state, breaks validation rules.
+  - `Minor`: Cosmetic, typographical, or pixel alignment flaws.
+  *(Strictly prohibit using Severity as a production test quota!)*
+
+* **Execution Priority (Risk Priority):**
+  - **P0 (Critical / Blocker):** Risk Score = 6-9. Mandatory first-run in every CI/CD deployment and release gate.
+  - **P1 (High):** Risk Score = 4-5. Must pass before feature release.
+  - **P2 (Normal / Low):** Risk Score = 1-3. Executed during periodic regression cycles or when time permits.
+
+---
+
+## 4. AGENT DECISION WORKFLOW
+
+1. **Step 1 (Tier Identification):** Analyze CodeGraph AST metrics (file count, endpoint count, database models) to classify the target module into Tier S, Tier M, or Tier L.
+2. **Step 2 (Risk Enumeration):** Identify concrete threats (Security, Data Integrity, Concurrency, Throttling, Happy Path).
+3. **Step 3 (Targeted Test Suite Design):**
+   * If a Tier S module requires only 6 tests $\rightarrow$ generate exactly 6 high-value tests. **Padding with useless trivial tests is strictly prohibited**.
+   * If a Tier L module has 24 high-risk branches $\rightarrow$ design all 24 comprehensive tests without artificial quota constraints.

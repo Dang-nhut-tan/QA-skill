@@ -33,10 +33,10 @@ description: >-
      1. **Requirement Coverage (Forward Check):** 100% of critical requirements in `module-context.md` have at least 1 covering test case (`orphan_requirements_count == 0`).
      2. **Code/Spec Grounding (Backward Check):** 100% of test cases have a valid `Requirement Reference` pointing to an explicit spec code or source code symbol/endpoint (`orphan_testcases_count == 0`). Strictly eliminate hallucinated test cases.
      3. **Deduplication Check:** Zero duplicate test cases in terms of test objectives or concrete actions (`duplicate_groups_count == 0`).
-   * **Non-IT Business Accessibility Audit:**
+   * **Business-Friendly Accessibility Audit:**
      - Audit the entire test suite against `references/business-terminology-guide.md`.
-     - Strictly eliminate clumsy machine translations and technical jargon (e.g., replace internal DB/RPC/code flags with natural user-observable terms).
-     - Ensure 100% of Test Steps are articulated sequentially from the end-user screen perspective (`1. Mở màn hình... 2. Nhập vào ô... 3. Bấm nút...`).
+     - Strictly eliminate raw technical jargon (replace internal DB/RPC/code flags with natural user-observable terms).
+     - Ensure 100% of Test Steps are articulated sequentially from the end-user screen perspective (`1. Open screen... 2. Enter into field... 3. Click button...`).
      - Preserve dynamic Risk-Based Coverage depth (comprehensive boundary, negative, and permission cases based on business impact).
    * Check quality criteria according to `references/testcase-quality-checklist.md`.
 2. **Export to Standardized Excel Workbook:**
@@ -44,7 +44,7 @@ description: >-
    * Run: `python scripts/export_testcases.py <payload.json> <module-name>-testcases.xlsx`.
    * Verify workbook contains 3 sheets:
      * `Sheet 1 — Test Cases`: 13 columns (including rightmost column `Status` with dropdown `Pass, Fail, Pending, Skip`, default `Pending`), dropdown validations, frozen header, autofilter, and pastel priority badges.
-     * `Sheet 2 — Requirement Gaps`: Open and resolved issues.
+     * `Sheet 2 — Requirement Gaps`: Open and resolved issues with dual-dimension impact (`UX Impact` and `Future Technical Risk`).
      * `Sheet 3 — Coverage Summary`: High-level metrics, Requirements Traceability Matrix (RTM) cross-check table, covered flows, and residual risks.
 3. **Persist State Checkpoint:**
    * Record exported file path in `.qa-state.json` under `artifacts.excel_testcases`.
@@ -55,7 +55,7 @@ description: >-
 > [!IMPORTANT]
 > **YOU MUST STOP THE WORKFLOW HERE.**
 > Present the generated Excel file link to the user and state clearly:
-> *"File test case đã được tạo tại `<module-name>-testcases.xlsx`. Xin vui lòng mở file, kiểm tra, chỉnh sửa (nếu cần), đánh dấu các ca muốn tự động hoá (`Automation Ready = Yes`), và phản hồi lại để tiếp tục bước Automation."*
+> *"Test cases workbook generated at `<module-name>-testcases.xlsx`. Please review, edit if necessary, mark test cases you wish to automate (`Automation Ready = Yes`), and reply to proceed with automation."*
 >
 > **DO NOT PROCEED TO STEP 6 (AUTOMATION) UNTIL THE USER SUBMITS / CONFIRMS THE EXCEL FILE.**
 

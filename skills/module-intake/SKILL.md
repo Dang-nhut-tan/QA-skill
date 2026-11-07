@@ -12,7 +12,7 @@ description: >-
 ## 1. Description & Trigger Conditions
 * **Purpose:** Intake the user's testing request, assess repository context, inspect existing documentation, verify environment configuration safely without storing plaintext secrets, and initialize workflow tracking in `.qa-state.json`.
 * **Triggers:**
-  * User requests testing for a feature or module (e.g., *"Test the Login module"*, *"Analyze and test Checkout"*, *"Tạo test case cho phân hệ Điểm danh"*).
+  * User requests testing for a feature or module (e.g., *"Test the Login module"*, *"Analyze and test Checkout"*, *"Create test cases for Attendance"*).
   * Direct invocation by `workflow-orchestrator`.
 
 ## 2. Inputs
@@ -63,12 +63,12 @@ description: >-
      - Never persist plaintext passwords, tokens, or sensitive API keys into `.qa-state.json`.
      - Instruct the user to place test secrets in `.env.local` (already gitignored) or provide them as runtime environment variables for Playwright MCP:
        ```text
-       Để phục vụ việc kiểm chứng giao diện thực tế (Playwright MCP) và kiểm tra luồng phân quyền trang quản trị:
-       Vui lòng thiết lập thông tin xác thực trong file .env.local (hoặc biến môi trường tạm thời):
-       1. STAGING_URL=<URL web kiểm thử>
-       2. TEST_USER=<Email/Tài khoản test>
-       3. TEST_PASSWORD=<Mật khẩu test>
-       (Lưu ý bảo mật: Hệ thống tuyệt đối không lưu mật khẩu thô vào file trạng thái .qa-state.json).
+       To support live browser UI verification (Playwright MCP) and role-based access testing:
+       Please configure test credentials in .env.local (or temporary environment variables):
+       1. STAGING_URL=<Target Web Application URL>
+       2. TEST_USER=<Test Username / Email>
+       3. TEST_PASSWORD=<Test Password>
+       (Security Note: The system will never store plaintext passwords in .qa-state.json).
        ```
      - Only record non-sensitive environment metadata (e.g., `environment.base_url`, `environment.auth_method`, `environment.has_admin_portal`) in `.qa-state.json`.
 5. **Initialize Workflow State:**
@@ -78,7 +78,7 @@ description: >-
 ## 5. Expected Outputs
 * Initialized `.qa-state.json` with status `INITIALIZED`.
 * Intake summary report presented in chat:
-  * **Language Rule:** Chat communications and intake summary presented to the user must be in clear, polite Vietnamese.
+  * **Language Rule:** Chat communications and intake summary presented to the user must be in clear, professional English.
   * Details: Target module name, discovered documentation, available testing tools, environment/credentials status, next action transition.
 
 ## 6. Failure Handling

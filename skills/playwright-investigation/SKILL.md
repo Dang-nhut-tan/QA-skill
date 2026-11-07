@@ -9,7 +9,7 @@ description: >-
 # Skill: Playwright UI Verification & Gap Evidence Capture (Step 3)
 
 ## 1. Description & Trigger Conditions
-* **Purpose:** Proactively verify on the actual web interface whether the requirement gaps and potential defects identified in Step 2 (`requirement-gap-analysis`) actually occur. Execute step-by-step reproduction, capture high-resolution visual progression screenshots (2–3 milestone frames: Before/Input $\rightarrow$ After/Result), and embed them into the BA Clarification Ticket (`<module-name>-gaps.md`) so that stakeholders can effortlessly understand and reproduce the issues.
+* **Purpose:** Proactively verify on the actual web interface whether the requirement gaps and potential defects identified in Step 2 (`requirement-gap-analysis`) actually occur. Execute step-by-step reproduction, capture high-resolution visual progression screenshots (2-3 milestone frames: Before/Input $\rightarrow$ After/Result), and embed them into the BA Clarification Ticket (`<module-name>-gaps.md`) so that stakeholders can effortlessly understand and reproduce the issues.
 * **Triggers:**
   * Identified discrepancy points (gaps) from `requirement-gap-analysis`.
   * State transitions from `GAP_ANALYSIS` $\rightarrow$ `RUNTIME_INVESTIGATION`.
@@ -31,7 +31,7 @@ description: >-
 * Filter the list of identified gap items from Step 2 to isolate issues that can be observed on the UI (e.g., form validation, error messages, disabled buttons, warning modals, tab transitions, redirects).
 * For backend-only issues (e.g., database triggers without UI feedback, external gateway dependencies): Record `[Verified via AST - No UI Rendering]`.
 
-### 4.2. Execute Live UI Reproduction & Capture Visual Progression (2–3 Milestone Frames)
+### 4.2. Execute Live UI Reproduction & Capture Visual Progression (2-3 Milestone Frames)
 * To make bug reproduction effortless for BA, PO, and developers, capture **2 to 3 chronological milestone frames** for each observable UI gap:
   1. **Frame 1 (Input / Setup State):**
      - Navigate via `browser_navigate`. Fill in the test data or setup conditions via `browser_type` / `browser_fill_form`.
@@ -47,20 +47,19 @@ description: >-
 * **Single-Frame Fallback:** For simple static layout issues or page load anomalies (e.g., misaligned button, missing header), capturing a single frame `screenshots/<IssueID>-evidence.png` is fully acceptable.
 * **Local Project Storage:** All screenshot files are saved directly inside the project's root `screenshots/` directory. Zero Base64 bytes are injected into LLM chat context. Users can freely view, share with BA, or delete them when done.
 * **Record Reproduction Steps:** Detail sequential steps from the end-user perspective:
-  - `1. Mở trang...`
-  - `2. Nhập vào ô...`
-  - `3. Bấm nút... và quan sát kết quả...`
+  - `1. Open page...`
+  - `2. Enter into field...`
+  - `3. Click button... and observe result...`
 
-### 4.3. Epistemic Restriction (Cảnh Báo Nhận Thức)
+### 4.3. Epistemic Restriction
 > [!WARNING]
 > Playwright MCP observes **WHAT THE APPLICATION CURRENTLY DOES**, not whether that behavior is **CORRECT BUSINESS LOGIC**. All observed behaviors remain subject to BA/PO review and confirmation.
 
 > [!IMPORTANT]
-> **Xác Nhận Kịch Bản Hạn Chế Quyền (Negative Testing / Security Guards):**
-> Khi kiểm chứng hành động hạn chế quyền (ví dụ: Phó quản lý không được duyệt đơn, Nhân viên không được tự sửa công):
-> - Nếu UI hiển thị đúng trạng thái bị khóa (`disabled`), có cảnh báo ngăn chặn phù hợp -> Ghi nhận kết quả: `[PASS - GUARD ACTIVE: Hàng rào bảo vệ hoạt động chính xác]`.
-> - Tuyệt đối không báo cáo trạng thái nút bị khóa như một lỗi hệ thống (Defect/Blocker).
-
+> **Negative Testing & Security Guard Verification:**
+> When verifying restricted access scenarios (e.g., Deputy Manager cannot approve requests, Employee cannot edit approved timesheets):
+> - If the UI correctly displays the disabled state (`disabled`) with appropriate explanatory warning banner -> Record result: `[PASS - GUARD ACTIVE: Security guard functioning correctly]`.
+> - Strictly prohibit reporting disabled or restricted buttons as a system defect (Defect/Blocker).
 
 ### 4.4. Embed Visual Proof & Enforce Image Existence (`<module-name>-gaps.md`)
 * Embed screenshot paths and reproduction steps directly into each `GAP-xxx` card within `<module-name>-gaps.md`.
@@ -77,8 +76,8 @@ description: >-
 * **HALT EXECUTION COMPLETELY HERE.**
 
 ### 4.6. Resumption Protocol (When User Responds)
-* **Scenario 1 — User Commands "tiếp tục":**
-  - When the user sends `"tiếp tục"`, `"proceed"`, or `"ok tiếp tục"`:
+* **Scenario 1 — User Commands "proceed":**
+  - When the user sends `"proceed"` or `"continue"`:
   - Record approval, transition state to `TESTCASE_GENERATION`, and initiate Step 4 (`testcase-design`).
 * **Scenario 2 — User Provides BA/PO Answers:**
   - Incorporate clarified business rules into `module-context.md`.
@@ -89,7 +88,7 @@ description: >-
 * Directory `screenshots/` containing visual evidence files:
   - `screenshots/<IssueID>-01-input.png` (Setup / Input state)
   - `screenshots/<IssueID>-02-result.png` (Observed anomaly state)
-* Comprehensive clarification ticket `<module-name>-gaps.md` (in Vietnamese) containing:
+* Comprehensive clarification ticket `<module-name>-gaps.md` containing:
   - AST code evidence.
   - Step-by-step reproduction instructions.
   - Embedded visual progression screenshots.

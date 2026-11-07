@@ -1,58 +1,57 @@
-# Checklist Đánh giá Chất lượng Test Case (Test Case Quality Checklist)
+# Test Case Quality Checklist
 
-Tất cả các ca kiểm thử do Agent thiết kế phải vượt qua bảng tiêu chí kiểm định chất lượng nội bộ trước khi xuất file Excel cho người dùng.
+All test cases designed by the agent must pass this internal quality checklist before being exported into the user-facing Excel workbook.
 
 ---
 
-## 1. Tính Định danh và Rõ ràng (Identification & Clarity)
-- [ ] **Mã Test Case (Test Case ID):** Có cấu trúc duy nhất, ổn định (Ví dụ: `TC-AUTH-001`), không trùng lặp.
-- [ ] **Tên Test Case (Name):** Mô tả rõ ràng hành động và mục đích kiểm thử từ góc độ người dùng, không viết chung chung kiểu *"Kiểm tra màn hình"*.
-- [ ] **Ngôn ngữ nghiệp vụ trong sáng (Non-IT Accessible):** Tuyệt đối KHÔNG dùng từ dịch máy thô thiển ("phanh chống ngập", "chặn âm thầm") hoặc biệt ngữ IT nội bộ ("web_anon", "gọi RPC", "UI trả về", "DB chèn dòng").
-- [ ] **Mục đích độc lập:** Mỗi ca kiểm thử chỉ tập trung vào đúng MỘT mục tiêu kiểm chứng chính, tránh dồn nhiều luồng phức tạp vào một ca.
+## 1. Identification & Clarity
+- [ ] **Test Case ID:** Unique, stable identifier (e.g. `TC-AUTH-001`), zero collisions.
+- [ ] **Test Case Name:** Clear, action-oriented description from the end-user perspective, avoiding generic titles like *"Check screen"*.
+- [ ] **Accessible Business Phrasing:** Strictly avoid raw internal technical jargon (`web_anon`, `call RPC`, `UI returns`, `DB row inserted`).
+- [ ] **Single Test Objective:** Each test case focuses on exactly ONE primary verification objective, avoiding bloated multi-flow scenarios.
 
-## 2. Dữ liệu và Tiền điều kiện (Preconditions & Test Data)
-- [ ] **Tiền điều kiện (Preconditions):** Ghi rõ trạng thái hệ thống cần có trước khi bắt đầu (tài khoản đã kích hoạt, quyền hạn role, cờ cấu hình...).
-- [ ] **Dữ liệu kiểm thử (Test Data):** Định lượng rõ ràng các tham số đầu vào (chuỗi ký tự, độ dài, giá trị biên, tài khoản mẫu).
+## 2. Preconditions & Test Data
+- [ ] **Preconditions:** Clearly specifies required starting state (activated account, role privileges, feature flags).
+- [ ] **Test Data:** Explicitly quantifies inputs (character length, boundary values, mock account IDs).
 
-## 3. Các bước thực hiện (Test Steps)
-- [ ] **Có đánh số thứ tự:** Từng bước được đánh số `1., 2., 3.` rõ ràng, tuần tự.
-- [ ] **Có tính làm theo được (Actionable for Non-IT):** Người không chuyên IT đọc vào có thể tự thao tác được trên màn hình (Ví dụ: `1. Mở màn hình...`, `2. Nhập vào ô [Tên ô]...`, `3. Bấm nút [Tên nút]...`).
-- [ ] **Tách biệt hành động và kiểm chứng:** Bước thực hiện chỉ nêu hành động (gõ, bấm, chọn); phần kỳ vọng kết quả để riêng ở cột Expected Result.
+## 3. Test Steps
+- [ ] **Sequentially Numbered:** Numbered `1., 2., 3.` in clear chronological order.
+- [ ] **Actionable for Non-Technical Users:** Followable directly on screen (e.g. `1. Open screen...`, `2. Enter into [Field Name]...`, `3. Click [Button Name]...`).
+- [ ] **Separation of Action and Assertion:** Steps contain only actions (type, click, select); expected outcomes belong strictly in Expected Result.
 
-## 4. Kết quả Kỳ vọng (Expected Result)
-- [ ] **Khả kiểm và đo lường được (Verifiable & Measurable):** Không dùng các câu mơ hồ như *"hoạt động bình thường"*, *"chạy đúng"*. Phải nêu rõ thông điệp hiển thị, mã lỗi HTTP, URL đích, hoặc bản ghi được lưu.
-- [ ] **Cấu trúc 2 tầng (Giao diện & Dữ liệu):** Nêu rõ người dùng nhìn thấy gì trên màn hình (thông báo gì, nút đổi trạng thái gì) và hệ thống xử lý thế nào ở phía sau (không phát sinh bản ghi mới, lưu thành công với trạng thái gì).
-- [ ] **Tách biệt Thực tế và Nghiệp vụ:** Phản ánh đúng nghiệp vụ đã được thống nhất, không nhầm lẫn giữa *"code đang chạy như thế này"* với *"nghiệp vụ mong muốn"*.
+## 4. Expected Result
+- [ ] **Verifiable & Measurable:** Avoid ambiguous terms like *"works normally"*, *"runs fine"*. Must specify on-screen messages, HTTP status, redirect URL, or state changes.
+- [ ] **Two-Tier Outcome Verification:** State what the user observes on screen (Tier 1) and what the system updates in persistence/state (Tier 2).
+- [ ] **Separation of Observed vs. Desired:** Accurately reflects agreed business specifications, not confusing *"what code currently does"* with *"correct business logic"*.
 
-## 5. Mức độ Nghiêm trọng (Severity)
-- [ ] **Phân loại chuẩn xác:** Chỉ sử dụng 3 mức độ: `Chặn`, `Sai`, `Nhỏ`.
-- [ ] **Nhất quán:** Các kịch bản crash/bế tắc phải là `Chặn`; sai số liệu là `Sai`; lệch UI là `Nhỏ`.
+## 5. Defect Severity
+- [ ] **Standard Classification:** Uses standard tiers: `Critical` (or `Blocker`), `Major`, `Minor`.
+- [ ] **Consistency:** Crash and blockage scenarios must be `Critical`; calculation and state errors must be `Major`; cosmetic UI flaws must be `Minor`.
 
-## 6. Tính Sẵn sàng Tự động hoá (Automation Readiness)
-- [ ] **Tiêu chí `Automation Ready = Yes`:**
-  - Kết quả kỳ vọng đã sáng tỏ, không còn tranh chấp.
-  - Có thể assert khách quan bằng code (DOM element, API status, URL, DB).
-  - Không phụ thuộc vào các rào cản bất khả thi (CAPTCHA bên thứ 3, OTP SMS thật không mock được, thiết bị quét thẻ phần cứng).
-  - Dữ liệu test có thể khởi tạo độc lập hoặc dọn dẹp sạch sẽ sau khi test.
-- [ ] **Nếu `Automation Ready = No`:** Bắt buộc phải điền lý do cụ thể vào cột `Automation Blocker`.
+## 6. Automation Readiness
+- [ ] **Criteria for `Automation Ready = Yes`:**
+  - Expected results are unambiguous and finalized.
+  - Can be objectively asserted via code (DOM locators, API status, URL, DB state).
+  - Free from insurmountable automation blockers (third-party CAPTCHA, unmockable physical SMS OTP, biometric hardware).
+  - Test data can be independently set up and cleaned up.
+- [ ] **If `Automation Ready = No`:** Mandatory explicit explanation in the `Automation Blocker` column.
 
-## 7. Độ Phủ Theo Ma Trận Rủi Ro Động (Dynamic Risk-Based Coverage)
-- [ ] **Định lượng theo Cấp độ Phân hệ (Module Tier):** Phân hệ đơn giản (Tier S) đạt 5–8 ca; tiêu chuẩn (Tier M) đạt 10–18 ca; phức tạp/tài chính/bảo mật (Tier L) đạt 18–30+ ca theo `references/risk-based-coverage-matrix.md`. Tuyệt đối không sinh test case rác/thừa chỉ để đạt quota.
-- [ ] **Phân định rạch ròi Severity vs Priority:** Mức độ nghiêm trọng (`Chặn`, `Sai`, `Nhỏ`) phản ánh đúng tác động kỹ thuật/nghiệp vụ của lỗi khi xảy ra, không dùng để ép số lượng test case.
-- [ ] **Ưu tiên rủi ro (Risk Priority):** Các ca P0 (Critical Path / Happy path / Bảo mật / Tính toàn vẹn dữ liệu) được bao phủ đầy đủ.
+## 7. Dynamic Risk-Based Coverage (RBC)
+- [ ] **Scaled by Complexity Tier:** Simple (Tier S: 5-8 cases), Standard (Tier M: 10-18 cases), Complex (Tier L: 18-30+ cases) per `references/risk-based-coverage-matrix.md`. Prohibits padding with useless tests.
+- [ ] **Strict Separation of Severity vs. Priority:** Severity reflects defect damage, not a quota.
+- [ ] **Risk Priority:** P0 (Critical path, security, data integrity) cases are thoroughly covered.
 
-## 8. Cột Trạng thái Thực thi (Execution Status - Column M)
-- [ ] **Vị trí & Giá trị hợp lệ:** Nằm ở cột ngoài cùng (Cột M / Cột 13) với dropdown gồm 4 giá trị: `Pass`, `Fail`, `Pending`, `Skip`.
-- [ ] **Giá trị mặc định:** Khi mới xuất bản từ bước thiết kế test case, toàn bộ các ca kiểm thử đều phải có trạng thái mặc định là `Pending` (Pill badge màu hổ phách pastel).
-- [ ] **Cập nhật kết quả:** Sau khi kiểm thử thủ công hoặc tự động hoá thực thi, trạng thái được cập nhật thành `Pass` (Xanh mint pastel), `Fail` (Hồng pastel), hoặc `Skip` (Xám nhạt). Nghiêm cấm đánh dấu `Pass` nếu chưa chạy kiểm thử thực tế.
+## 8. Execution Status (Column M)
+- [ ] **Location & Valid Values:** Column M (Column 13) dropdown with 4 values: `Pass`, `Fail`, `Pending`, `Skip`.
+- [ ] **Default State:** Newly exported test cases must always default to `Pending` (amber pastel badge).
+- [ ] **Result Updates:** Updated to `Pass` (mint green), `Fail` (rose pink), or `Skip` (gray) only after real execution. Marking `Pass` without live execution is strictly prohibited.
 
-## 9. Kiểm Soát Truy Vết Yêu Cầu 2 Chiều & Chống Trùng Lặp (Traceability & Deduplication)
-- [ ] **Bao phủ Yêu cầu Trọng yếu (Forward Coverage):** 100% các quy tắc nghiệp vụ, validation rules, và flow trọng yếu trong `module-context.md` đều có ít nhất một test case tương ứng. Số lượng yêu cầu mồ côi (Orphan Requirements) = 0.
-- [ ] **Căn cứ Thực tế Không Ảo tưởng (Backward Grounding):** 100% test case đều có giá trị cột `Requirement Reference` chỉ rõ mã đặc tả spec (ví dụ: `SPEC-AU-01`) hoặc symbol/hàm/endpoint cụ thể từ mã nguồn do CodeGraph phát hiện (ví dụ: `useSubmitOnce`, `POST /api/login`). Nghiêm cấm hoàn toàn test case mồ côi (Orphan Test Cases) không có cơ sở thực tế.
-- [ ] **Chống Trùng lặp Mục tiêu (Deduplication):** Không có 2 test case nào trùng lặp về mục tiêu kiểm thử, thao tác giống nhau trên cùng tập tiền điều kiện và kỳ vọng cùng kết quả. Mỗi ca kiểm thử phải đại diện cho một rủi ro hoặc một kịch bản biên riêng biệt.
+## 9. Bidirectional Traceability & Deduplication
+- [ ] **Forward Coverage:** 100% of critical requirements in `module-context.md` have $\ge 1$ covering test case (`orphan_requirements_count == 0`).
+- [ ] **Backward Grounding:** 100% of test cases cite explicit spec tags or AST code symbols in `Requirement Reference` (`orphan_testcases_count == 0`). Zero fabricated tests.
+- [ ] **Deduplication:** Zero duplicate test cases with identical objectives and actions (`duplicate_groups_count == 0`).
 
-## 10. Tiếp Cận Cho Người Non-IT Không Giảm Thiểu Định Mức (Non-IT Friendly Without Reducing Depth)
-- [ ] **Người Non-IT có thể hiểu & thực hiện được:** Bất kỳ nhân viên nghiệp vụ, BA, PO, hoặc Tester mới vào nghề nào khi đọc test case cũng hiểu ngay mục đích và tự thao tác làm theo được từng bước trên màn hình.
-- [ ] **Bảo toàn 100% độ sâu kiểm thử:** Không cắt giảm độ sâu phân tích hay độ phức tạp của kịch bản kiểm thử (đáp ứng định mức theo Risk-Based Coverage Tier S/M/L, đầy đủ các kịch bản spam, rate limiting, bảo mật phân quyền, kiểm tra dữ liệu ngầm, concurrency và state transition).
-- [ ] **Tuân thủ Cẩm nang thuật ngữ nghiệp vụ:** Áp dụng đầy đủ quy chuẩn chuyển đổi thuật ngữ theo `references/business-terminology-guide.md`, loại bỏ hoàn toàn các từ dịch thô ("phanh chống ngập", "chặn âm thầm", "DB chèn dòng", "web_anon").
-
+## 10. Non-Technical Accessibility Without Compromising Depth
+- [ ] **Accessible to Non-Technical Stakeholders:** Clear business wording allows BAs, POs, and manual testers to understand and verify.
+- [ ] **Preserves 100% Analytical Depth:** Retains boundary testing, security permissions, rate limiting, and concurrency checks.
+- [ ] **Terminology Compliance:** Complies with `references/business-terminology-guide.md`.
