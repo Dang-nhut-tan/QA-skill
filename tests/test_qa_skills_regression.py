@@ -885,5 +885,25 @@ class TestQASkillsRegression(unittest.TestCase):
         finally:
             tmp_p.unlink(missing_ok=True)
 
+    def test_devtools_diagnostics_and_operational_flowchart_rules(self):
+        """Verify DevTools diagnostics harvesting protocol and Mermaid flowchart requirements."""
+        playwright_skill = PROJECT_ROOT / "skills" / "playwright-investigation" / "SKILL.md"
+        pw_content = playwright_skill.read_text(encoding="utf-8")
+        self.assertIn("Mandatory DevTools Diagnostics Protocol", pw_content)
+        self.assertIn("browser_console_messages", pw_content)
+        self.assertIn("browser_network_requests", pw_content)
+        self.assertIn("Anti-Loading-Screen", pw_content)
+
+        gaps_template = PROJECT_ROOT / "references" / "requirement-gaps-template.md"
+        tpl_content = gaps_template.read_text(encoding="utf-8")
+        self.assertIn("DevTools Diagnostics (Console & Network Logs)", tpl_content)
+        self.assertIn("browser_console_messages", tpl_content)
+        self.assertIn("browser_network_requests", tpl_content)
+
+        codegraph_skill = PROJECT_ROOT / "skills" / "codegraph-context-discovery" / "SKILL.md"
+        cg_content = codegraph_skill.read_text(encoding="utf-8")
+        self.assertIn("Mandatory Operational Business & Technical Flowchart Specification (Mermaid)", cg_content)
+        self.assertIn("flowchart TD", cg_content)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

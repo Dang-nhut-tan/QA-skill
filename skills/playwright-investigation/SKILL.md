@@ -72,7 +72,35 @@ Before executing ANY `browser_take_screenshot`:
   - `2. Enter into field...`
   - `3. Click button... and observe result...`
 
-### 4.4. Epistemic Restriction
+### 4.4. Mandatory DevTools Diagnostics Protocol (Console & Network Error Harvesting)
+> [!IMPORTANT]
+> **TRI-LAYER DEFECT GROUNDING (Visual UI + DevTools Runtime + AST Code):**
+> A UI screenshot proves what the user sees, but DevTools diagnostics prove WHY it happened. Every investigated UI gap MUST harvest browser console messages and network failure logs to eliminate guesswork.
+
+1. **Harvest Console Messages (`browser_console_messages`):**
+   - After executing reproduction actions on the page, invoke `browser_console_messages` to extract browser logs.
+   - **Filter specifically for:**
+     * `level: "error"` messages.
+     * Uncaught runtime exceptions (`TypeError`, `ReferenceError`, `SyntaxError`).
+     * Unhandled Promise rejections.
+     * React/Vue/framework component error boundaries or hydration mismatches.
+   - If errors exist: Extract the top 1-3 distinct error messages and stack traces.
+   - If clean: Explicitly record `[CLEAN - Zero Console Errors]`.
+
+2. **Harvest Network Request Failures (`browser_network_requests`):**
+   - Invoke `browser_network_requests` to inspect HTTP interactions triggered by the reproduction flow.
+   - **Filter specifically for:**
+     * HTTP Status `>= 400` (e.g. 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found, 422 Unprocessable Entity, 500 Internal Server Error, 502/504 Bad Gateway).
+     * Network aborts, connection timeouts, or CORS policy blocks.
+   - If failed requests exist: Record Method, Endpoint URL, Status Code, Duration, and Error Response Body.
+   - If clean: Explicitly record `[CLEAN - All Network Requests 2xx/3xx]`.
+
+3. **Diagnose Silent Failures (Crucial QA Capability):**
+   - If user interaction produces NO visible UI change (button appears dead, click is ignored), but DevTools reveals an unhandled console error or a 500 API response:
+     * Flag as **CRITICAL SILENT FAILURE (Unhandled Exception)** in `<module-name>-gaps.md`.
+     * Explain clearly: *"UI remains static and gives no user feedback, but DevTools captures fatal runtime error: `<error>`"*.
+
+### 4.5. Epistemic Restriction
 > [!WARNING]
 > Playwright MCP observes **WHAT THE APPLICATION CURRENTLY DOES**, not whether that behavior is **CORRECT BUSINESS LOGIC**. All observed behaviors remain subject to BA/PO review and confirmation.
 
@@ -82,8 +110,8 @@ Before executing ANY `browser_take_screenshot`:
 > - If the UI correctly displays the disabled state (`disabled`) with appropriate explanatory warning banner -> Record result: `[PASS - GUARD ACTIVE: Security guard functioning correctly]`.
 > - Strictly prohibit reporting disabled or restricted buttons as a system defect (Defect/Blocker).
 
-### 4.5. Embed Visual Proof & Enforce Image Existence (`<module-name>-gaps.md`)
-* Embed screenshot paths and reproduction steps directly into each `GAP-xxx` card within `<module-name>-gaps.md`.
+### 4.6. Embed Visual Proof & DevTools Diagnostics into `<module-name>-gaps.md`
+* Embed screenshot paths, reproduction steps, and DevTools console/network snippets directly into each `GAP-xxx` card within `<module-name>-gaps.md`.
 * **Mandatory Physical Verification & Dual-Mode Links:**
   Run the image validator to guarantee 100% of referenced screenshots physically exist on disk and inject clickable absolute fallback links:
   `python scripts/verify_and_embed_images.py <module-name>-gaps.md`
@@ -91,10 +119,10 @@ Before executing ANY `browser_take_screenshot`:
 * Export the completed report and register the state artifact:
   `python scripts/state_manager.py set-artifact gap_analysis <module-name>-gaps.md`
 
-### 4.6. Seamless Progression to Test Case Design
+### 4.7. Seamless Progression to Test Case Design
 * To streamline the pipeline and eliminate redundant blocking gates, the workflow automatically transitions from UI investigation directly into Step 4 (`testcase-design`):
-  `python scripts/state_manager.py transition TESTCASE_GENERATION "Verified gaps on live UI with settled screenshots. Proceeding directly to dynamic risk-based testcase design."`
-* All discovered gaps, AST evidence, and visual proofs are embedded into `<module-name>-gaps.md` and synthesized directly into the test suite design.
+  `python scripts/state_manager.py transition TESTCASE_GENERATION "Verified gaps on live UI with settled screenshots and DevTools diagnostics. Proceeding directly to dynamic risk-based testcase design."`
+* All discovered gaps, AST evidence, visual proofs, and DevTools logs are embedded into `<module-name>-gaps.md` and synthesized directly into the test suite design.
 * The single mandatory human decision gate occurs at **Gate 2 (Test Case Satisfaction & Approval)**, where the user reviews the complete test suite and decides whether to test or request revisions.
 
 ## 5. Expected Outputs
@@ -106,6 +134,7 @@ Before executing ANY `browser_take_screenshot`:
   - Step-by-step reproduction instructions.
   - Dual-dimension impact analysis (UX degradation + future technical risks).
   - Embedded visual progression screenshots (verified free of loading spinners).
+  - Harvested DevTools diagnostics (console errors & failed network API responses).
 * Workflow state transitioned to `TESTCASE_GENERATION`.
 
 ## 6. Failure Handling

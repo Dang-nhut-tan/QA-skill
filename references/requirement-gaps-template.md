@@ -74,7 +74,22 @@
   - *Setup / Input State:* `![Input State](screenshots/GAP-001-01-input.png)`
   - *Observed Result / Anomaly:* `![Observed Anomaly](screenshots/GAP-001-02-result.png)`
 
-#### 5. Targeted Clarification Questions & Suggested Options
+#### 5. DevTools Diagnostics (Console & Network Logs)
+* **Console Messages & Runtime Exceptions (`browser_console_messages`):**
+  - *Status:* `[ERRORS_DETECTED]` or `[CLEAN - Zero Console Errors]`
+  - *Log Trace:*
+    ```text
+    [error] Uncaught TypeError: Cannot read properties of undefined (reading 'status') at actionHandler.ts:54
+    ```
+* **Network Traffic & API Diagnostics (`browser_network_requests`):**
+  - *Status:* `[FAILED_REQUESTS_DETECTED]` or `[CLEAN - All Requests 2xx/3xx]`
+  - *Failed Endpoints:*
+    ```text
+    POST /api/v1/module/action -> 500 Internal Server Error (Duration: 320ms)
+    Response: {"error": "Internal Server Error", "code": "ERR_DB_LOCK_TIMEOUT"}
+    ```
+
+#### 6. Targeted Clarification Questions & Suggested Options
 * **Core Question:** *"[Clear, neutral clarification question for BA/PO]"*
 * **Option A (Recommended):** [Industry-standard, safe, and UX-friendly approach]
 * **Option B:** [Keep existing code behavior and add clear user messaging]
