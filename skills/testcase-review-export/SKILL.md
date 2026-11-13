@@ -51,13 +51,22 @@ description: >-
    * Update workflow state:
      `python scripts/state_manager.py transition WAITING_FOR_APPROVED_TESTCASES "Delivered Excel file to user. Waiting for review and approval"`
 
-## 5. Mandatory Human Checkpoint (CRITICAL)
+## 5. Mandatory Human Satisfaction & Review Checkpoint (Core Human Gate)
 > [!IMPORTANT]
-> **YOU MUST STOP THE WORKFLOW HERE.**
-> Present the generated Excel file link to the user and state clearly:
-> *"Test cases workbook generated at `<module-name>-testcases.xlsx`. Please review, edit if necessary, mark test cases you wish to automate (`Automation Ready = Yes`), and reply to proceed with automation."*
+> **YOU MUST STOP THE WORKFLOW HERE AND PRESENT THE SATISFACTION QUESTION:**
+> 1. Deliver the clickable file link to `<module-name>-testcases.xlsx` and the executive test summary table in chat.
+> 2. Present the direct, unambiguous review question to the user:
+>    **"Bạn có hài lòng với bộ testcase hiện tại không?"** *(Are you satisfied with the current test cases?)*
 >
-> **DO NOT PROCEED TO STEP 6 (AUTOMATION) UNTIL THE USER SUBMITS / CONFIRMS THE EXCEL FILE.**
+> 3. **Handle User Response Branches:**
+>    * **Branch A — User is Satisfied ("Có" / "Hài lòng" / "OK" / "Được rồi"):**
+>      - **Stop & Wait for Manual Testing:** The AI agent stops cleanly and preserves the verified test suite so the QA engineer or tester can execute manual testing.
+>      - **Automation Transition (Optional):** If the user additionally requests automated script execution, they confirm or set `Automation Ready = Yes` in the Excel file and instruct to proceed with automation $\rightarrow$ Transition to `AUTOMATION_IMPLEMENTATION`.
+>    * **Branch B — User is NOT Satisfied / Requests Revisions ("Không" / "Chưa hài lòng" / "Cần sửa..."):**
+>      - The AI agent actively gathers the user's specific feedback, edge cases, or adjustments.
+>      - Transition state backward:
+>        `python scripts/state_manager.py transition TESTCASE_GENERATION "User requested test case revisions: <feedback>"`
+>      - Regenerate, refine, and re-export the updated Excel workbook until the user is 100% satisfied.
 
 ## 6. Expected Outputs
 * Real `.xlsx` workbook: `<module-name>-testcases.xlsx`.

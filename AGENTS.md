@@ -94,7 +94,8 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
 
 ## 4. Strict Guardrails & Prohibitions
 
-* **PROHIBITED:** Proceeding from Checkpoint 1 (`WAITING_FOR_REQUIREMENT_CLARIFICATION`) to test case design without user commanding "proceed" or "continue" or providing BA clarification answers.
+* **PROHIBITED:** Capturing screenshots while a page is still loading, spinning, or rendering skeleton placeholders (must wait for full DOM and network settlement).
+* **PROHIBITED:** Proceeding to automation without user satisfaction and explicit approval on test cases.
 * **PROHIBITED:** Writing automation code before the user approves and submits the Excel test cases.
 * **PROHIBITED:** Modifying user-approved expected results during test debugging.
 * **PROHIBITED:** Using hardcoded waits (`sleep`, `waitForTimeout`). Use web-first assertions only.

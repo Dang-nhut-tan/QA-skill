@@ -35,8 +35,8 @@
 
 Hệ thống cung cấp một quy trình kiểm thử tự động khép kín, hướng chứng cứ, giải quyết triệt để hiện tượng AI tự suy đoán (hallucination) và cắt xén quy trình trong kiểm thử phần mềm doanh nghiệp thông qua 5 trụ cột kỹ thuật:
 
-1. **Khám phá mã nguồn AST tất định (CodeGraph JIT AST):** Duyệt cây đồ thị BFS an toàn chu trình với ngưỡng độ sâu và số node cấu hình được; báo cáo minh bạch khi bị cắt ngắn (`TRUNCATED`). Trích xuất interfaces, types, schemas và chữ ký phương thức để nạp vào LLM với lượng token tối thiểu.
-2. **Phân tích kẽ hở 2 chiều & Thám thính UI (Playwright MCP):** Đối soát đặc tả kỹ thuật với mã nguồn thực tế; bắt buộc đánh giá theo **2 trục tác động: Trải nghiệm người dùng (UX Degradation)** và **Dự báo rủi ro lỗi kỹ thuật trong tương lai (Future Technical Liabilities)**; tự động điều khiển trình duyệt thật chụp ảnh thực chứng giao diện (`screenshots/`) để chứng minh vấn đề.
+1. **Khám phá mã nguồn AST & Sơ đồ Luồng Nghiệp vụ (CodeGraph JIT AST):** Duyệt cây đồ thị BFS an toàn chu trình; trích xuất chữ ký, giao diện và tự động phác thảo **Sơ đồ luồng hoạt động chuẩn mực (Mermaid Flowchart)** với hình thoi `{}` (điểm rẽ nhánh / điều kiện kiểm tra) và hình chữ nhật `[]` (bước thao tác / xử lý) vào `module-context.md` giúp con người đọc hiểu kiến trúc tức thì.
+2. **Phân tích kẽ hở kép & Thám thính UI Ổn định (Playwright MCP):** Đánh giá 2 trục tác động: **Trải nghiệm người dùng (UX)** và **Rủi ro kỹ thuật tương lai**; tuân thủ **Quy chuẩn chống chụp màn hình đang tải (Anti-Loading-Screen Protocol)** — bắt buộc chờ mạng và DOM lắng xuống, spinner/skeleton biến mất hoàn toàn mới chụp ảnh thực chứng (`screenshots/`).
 3. **Xuất bản Test Case chuẩn doanh nghiệp:** Sinh file Excel (`.xlsx`) 13 cột với phong cách thiết kế Pastel Pill Badges, bộ lọc tự động, căn chỉnh độ co giãn dòng và Data Validation dropdown list.
 4. **Kiểm soát Truy vết Hai chiều & Khử trùng lặp $O(N)$:** Cơ chế Bidirectional Traceability đảm bảo 100% yêu cầu trọng yếu có test case bao phủ (Forward Coverage), 100% test case có căn cứ mã nguồn/spec thực tế (Backward Grounding - không có test case ảo) và thuật toán bảng băm khử trùng lặp nội dung đơn lượt.
 5. **Cỗ máy trạng thái FSM Tự phục hồi (Atomic & Self-Healing):** Ghi file nguyên tử (`.tmp` + `.bak` + `os.replace`), chống sập hỏng JSON, tự động giải phóng deadlock với cơ chế kiểm tra tính sống của tiến trình theo PID (TTL 60 giây) và tích hợp bộ quét bảo mật ngăn chặn rò rỉ Plaintext Secret.
@@ -60,48 +60,54 @@ $env:PYTHONIOENCODING="utf-8"; pytest -s tests/
 ### Bước 3: Ra lệnh cho AI Agent
 > *"Hãy tiến hành quy trình kiểm thử QA toàn diện cho phân hệ Xác Thực & Phân Quyền (Authentication & Access Control)."*
 
-### Bước 4: Phê duyệt tại 2 điểm dừng bắt buộc (Human Gates)
-1. **Duyệt Cổng 1 (`WAITING_FOR_REQUIREMENT_CLARIFICATION`):** Xem báo cáo điểm bất cập `<module>-gaps.md` (kèm phân tích tác động kép UX / Future Risk và ảnh thực chứng Playwright) $\rightarrow$ Gõ lệnh *"proceed"* (hoặc gửi câu trả lời làm rõ của BA).
-2. **Duyệt Cổng 2 (`WAITING_FOR_APPROVED_TESTCASES`):** Mở file `<module>-testcases.xlsx`, kiểm tra nghiệp vụ và đánh dấu `Yes` tại cột *Automation Ready* $\rightarrow$ Gõ lệnh *"proceed with automation"*.
+### Bước 4: Kiểm duyệt tại Chốt Chặn Hài Lòng Test Case (Core Human Gate)
+Sau khi thiết kế và xuất bản file Excel `<module>-testcases.xlsx`, AI sẽ bàn giao và trực tiếp hỏi bạn:
+> **"Bạn có hài lòng với bộ testcase hiện tại không?"**
+* **Nếu CÓ (Hài lòng):** AI dừng lại để bạn hoặc đội ngũ kiểm thử thủ công tiến hành test (hoặc nếu muốn AI tự động hoá thì đánh dấu `Automation Ready = Yes` để viết mã).
+* **Nếu KHÔNG (Chưa hài lòng / cần sửa):** Bạn chỉ cần đưa ra yêu cầu góp ý, AI sẽ quay lại sửa đổi, bổ sung test case đúng theo ý bạn cho đến khi hoàn toàn hài lòng.
 
 ---
 
-## 3. Quy Trình Vận Hành & 2 Chốt Chặn Kiểm Soát (Human Gates)
+## 3. Quy Trình Vận Hành & Chốt Chặn Kiểm Soát Hài Lòng (Core Human Gate)
 
 ```mermaid
 flowchart TD
     Start(["Bắt đầu: Yêu cầu kiểm thử phân hệ"]) --> S0["Bước 0: Tiền xử lý tài liệu & Đặc tả (MarkItDown)"]
-    S0 --> S1["Bước 1: Khám phá cây AST mã nguồn (CodeGraph JIT)"]
+    S0 --> S1["Bước 1: Quét AST & Vẽ Sơ đồ luồng hình thoi/chữ nhật (CodeGraph JIT)"]
     S1 --> S2["Bước 2: Phân tích kẽ hở kép UX & Rủi ro kỹ thuật (Gap Analysis)"]
-    S2 --> S3["Bước 3: Thám thính UI & Chụp ảnh minh chứng (Playwright MCP)"]
+    S2 --> S3["Bước 3: Thám thính UI & Chụp ảnh đã lắng đọng (Playwright MCP Anti-Loading)"]
     
-    S3 --> Gate1{{"CỔNG 1: DỪNG BẮT BUỘC\nBàn giao <module>-gaps.md kèm ảnh trực diện\nChờ người dùng gõ 'proceed' hoặc câu trả lời BA"}}
-    
-    Gate1 -- "Người dùng duyệt / Làm rõ" --> S4["Bước 4: Thiết kế Test Case theo Rủi ro Động (RBC Matrix)"]
+    S3 --> S4["Bước 4: Thiết kế Test Case theo Rủi ro Động (RBC Matrix)"]
     S4 -. "Phát hiện bất định kiến trúc lớn" .-> S2
     S4 --> S5["Bước 5: Xuất bản file Excel doanh nghiệp (.xlsx)"]
     
-    S5 --> Gate2{{"CỔNG 2: DỪNG BẮT BUỘC\nBàn giao file Excel cho người dùng thẩm định\nChờ duyệt 'Automation Ready = Yes'"}}
+    S5 --> GateReview{{"CHỐT CHẶN TRỌNG YẾU: HÀI LÒNG TEST CASE?
+Bàn giao Excel và hỏi: 'Bạn có hài lòng với testcase hiện tại không?'"}}
     
-    Gate2 -- "Người dùng phê duyệt" --> S61["Pha 6.1: Thẩm định sẵn sàng tự động hoá (Filter Yes)"]
+    GateReview -- "KHÔNG (Cần sửa)" --> FixLoop["Thu nhận góp ý & Rollback về Bước 4 sửa theo ý người dùng"]
+    FixLoop --> S4
+    
+    GateReview -- "CÓ (Hài lòng - Test tay)" --> WaitManual(["Dừng lại: Bàn giao để người dùng / QA tiến hành kiểm thử thủ công"])
+    
+    GateReview -- "CÓ + Duyệt viết Automation" --> S61["Pha 6.1: Lọc ca kiểm thử sẵn sàng (Automation Ready = Yes)"]
     S61 --> S62["Pha 6.2 - 6.3: Viết mã Playwright (C1-C5 Standards, Zero Sleeps)"]
     S62 --> S64["Pha 6.4: Chạy Playwright CLI & Tự sửa lỗi (Ghi nhận Artifact)"]
     S64 --> S7["Bước 7: Đúc kết kinh nghiệm (Continuous Learning: Propose/Approve)"]
-    S7 --> EndNode(["Hoàn tất: Bàn giao báo cáo nghiệm thu & Mã kiểm thử đã xác minh"])
+    S7 --> EndNode(["Hoàn tất: Bàn giao mã kiểm thử tự động đã xác minh"])
 
     classDef stop fill:#FEE2E2,stroke:#DC2626,stroke-width:2px,color:#991B1B,font-weight:bold;
     classDef step fill:#EFF6FF,stroke:#3B82F6,stroke-width:1px,color:#1E3A8A;
     classDef done fill:#DCFCE7,stroke:#16A34A,stroke-width:1.5px,color:#166534;
-    class Gate1,Gate2 stop;
-    class S0,S1,S2,S3,S4,S5,S61,S62,S64,S7 step;
-    class Start,EndNode done;
+    class GateReview stop;
+    class S0,S1,S2,S3,S4,S5,FixLoop,S61,S62,S64,S7 step;
+    class Start,WaitManual,EndNode done;
 ```
 
 > [!IMPORTANT]
-> **2 Chốt Chặn Bắt Buộc Do Con Người Kiểm Soát (Human Gates):**  
-> • **Cổng 1 (`WAITING_FOR_REQUIREMENT_CLARIFICATION`):** AI agent bắt buộc dừng lại hoàn toàn sau khi xuất phiếu bất cập kèm ảnh thực chứng, tuyệt đối không được tự ý thiết kế test case khi người dùng chưa xác nhận lệnh *"proceed"*.  
-> • **Cổng 2 (`WAITING_FOR_APPROVED_TESTCASES`):** AI agent bắt buộc dừng lại sau khi xuất file Excel, tuyệt đối cấm tự ý viết mã tự động hoá nếu người dùng chưa rà soát và đánh dấu phê duyệt tại cột `Automation Ready`.  
-> • **Cơ chế Hồi lui Hợp lệ (Rollback):** Cỗ máy trạng thái FSM cho phép chuyển trạng thái ngược từ `TESTCASE_GENERATION` quay về `GAP_ANALYSIS` nếu phát hiện tài liệu phát sinh mâu thuẫn lớn trong quá trình thiết kế kịch bản.
+> **Quy Tắc Vận Hành Tại Chốt Chặn Hài Lòng:**  
+> • **Quyền quyết định tối cao của người dùng:** AI không bao giờ tự ý chốt kịch bản. Sau khi xuất Excel, AI bắt buộc hỏi bạn có hài lòng không.  
+> • **Vòng lặp sửa đổi tức thì (Instant Feedback Loop):** Nếu bạn chưa hài lòng, AI lập tức tiếp thu phản hồi, quay ngược về bước thiết kế để sửa đổi kịch bản mà không bắt bạn phải thao tác phức tạp.  
+> • **An toàn tuyệt đối cho Automation:** AI tuyệt đối cấm tự ý viết mã Playwright nếu chưa có sự xác nhận của người dùng.
 
 ---
 

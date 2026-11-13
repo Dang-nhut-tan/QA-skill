@@ -25,19 +25,21 @@ description: >-
 stateDiagram-v2
     [*] --> INITIALIZED: Step 0 (module-intake)
     INITIALIZED --> CONTEXT_DISCOVERY: Step 1 (codegraph-context-discovery)
-    CONTEXT_DISCOVERY --> GAP_ANALYSIS: Unrestricted CodeGraph Success
+    CONTEXT_DISCOVERY --> GAP_ANALYSIS: CodeGraph AST & Operational Flowchart Mapped
     CONTEXT_DISCOVERY --> DISCOVERY_INCOMPLETE: Technical Blocker / Parser Failure / Timeout
     DISCOVERY_INCOMPLETE --> CONTEXT_DISCOVERY: Retry / Resolve Technical Blocker
     
-    GAP_ANALYSIS --> RUNTIME_INVESTIGATION: Step 3 (playwright-investigation: UI verification & screenshots)
-    RUNTIME_INVESTIGATION --> WAITING_FOR_REQUIREMENT_CLARIFICATION: [MANDATORY STOP 1: Deliver BA ticket with screenshots & HALT]
+    GAP_ANALYSIS --> RUNTIME_INVESTIGATION: Step 2 & 3 (Audit gaps & verify settled UI screenshots)
+    RUNTIME_INVESTIGATION --> TESTCASE_GENERATION: Automatic Streamlined Progression (Embed gaps in design)
+    GAP_ANALYSIS --> TESTCASE_GENERATION: Direct Progression (When no observable UI gaps)
     
-    WAITING_FOR_REQUIREMENT_CLARIFICATION --> TESTCASE_GENERATION: User commands "proceed" / BA clarification received
+    TESTCASE_GENERATION --> TESTCASE_REVIEW: Step 4 (testcase-design: Dynamic RBC matrix)
+    TESTCASE_REVIEW --> WAITING_FOR_APPROVED_TESTCASES: Step 5 [CORE HUMAN GATE: Deliver Excel & Ask Satisfaction]
     
-    TESTCASE_GENERATION --> TESTCASE_REVIEW: Step 4 (testcase-design)
-    TESTCASE_REVIEW --> WAITING_FOR_APPROVED_TESTCASES: Step 5 [MANDATORY STOP 2: Deliver Excel workbook & HALT]
+    WAITING_FOR_APPROVED_TESTCASES --> TESTCASE_GENERATION: User not satisfied -> Revise per feedback
+    WAITING_FOR_APPROVED_TESTCASES --> COMPLETED: User satisfied -> Stop & wait for manual testing
+    WAITING_FOR_APPROVED_TESTCASES --> AUTOMATION_IMPLEMENTATION: User requests automation (Filter Automation Ready = Yes)
     
-    WAITING_FOR_APPROVED_TESTCASES --> AUTOMATION_IMPLEMENTATION: Phase 6.1 (Filter Automation Ready = Yes)
     AUTOMATION_IMPLEMENTATION --> AUTOMATION_EXECUTION: Phase 6.2 & 6.3 (automation-implementation)
     AUTOMATION_EXECUTION --> COMPLETED: Phase 6.4 (test-execution-debugging)
     AUTOMATION_EXECUTION --> BLOCKED: Unresolvable Environment Blocker
@@ -50,23 +52,22 @@ stateDiagram-v2
 * Analysis must never be truncated or culled purely to conserve token budgets.
 * **Incomplete Discovery Protocol:** In the event of parser crashes, execution timeouts, or exhausted physical system resources, the system MUST transition to `DISCOVERY_INCOMPLETE` and report the exact technical bottleneck to the user. Reporting completion for incomplete analyses is strictly prohibited.
 
-## 5. Mandatory Human Approval Gates (Non-Negotiable)
+## 5. Core Human Review Gate (Test Case Satisfaction & Approval)
 
-### Gate 1: Requirement Clarification & Visual Evidence Checkpoint
-* **When:** Right after Step 3 (`playwright-investigation` verifies UI gaps and captures screenshots).
-* **State:** `WAITING_FOR_REQUIREMENT_CLARIFICATION`.
-* **Behavior:**
-  1. Generate standalone Markdown report `<module-name>-gaps.md` embedding concrete end-user reproduction steps and Playwright MCP screenshot evidence.
-  2. Deliver clickable file link and executive summary table directly in chat.
-  3. **HALT EXECUTION COMPLETELY.**
-  4. **MANDATORY RESUMPTION CONDITION:** The agent is STRICTLY FORBIDDEN from automatically proceeding to `testcase-design`. The agent proceeds if and only if:
-     - User explicitly types: **`proceed`** (or `continue`), OR
-     - User provides clarification feedback / BA decisions.
-
-### Gate 2: Approved Test Cases Workbook Checkpoint
-* **When:** Right after Step 5 (`testcase-review-export`).
+### Core Checkpoint: Test Case Satisfaction Review
+* **When:** Right after Step 5 (`testcase-review-export` generates and audits `<module-name>-testcases.xlsx`).
 * **State:** `WAITING_FOR_APPROVED_TESTCASES`.
-* **Behavior:** The agent MUST PAUSE and deliver `<module-name>-testcases.xlsx`. The agent must NEVER start writing automation test scripts until the user reviews, marks `Automation Ready = Yes`, and uploads/confirms the file.
+* **Behavior:**
+  1. Deliver `<module-name>-testcases.xlsx` and the executive test summary table in chat.
+  2. Ask the user the central review question:
+     **"Bạn có hài lòng với bộ testcase hiện tại không?"** *(Are you satisfied with the current test cases?)*
+  3. **Handle User Responses:**
+     * **If Satisfied ("Có" / "Hài lòng" / "OK"):**
+       - **Stop and wait for manual testing:** The workflow halts and remains ready for manual QA execution.
+       - **(Optional Automation):** If the user instructs to automate (or sets `Automation Ready = Yes`), transition to `AUTOMATION_IMPLEMENTATION`.
+     * **If Not Satisfied / Revisions Requested ("Không" / "Chưa hài lòng" / "Cần sửa"):**
+       - Gather user feedback and transition state back to `TESTCASE_GENERATION`.
+       - Update, add, or refine test cases until the user is 100% satisfied.
 
 ## 6. Checkpoint Resumption Protocol
 When starting a session or resuming:

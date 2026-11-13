@@ -108,15 +108,60 @@ description: >-
      - `[INFERRED]`: Deduced by pattern but lacking direct assertion.
      - `[UNKNOWN]`: Missing, contradictory, or unverified implementation.
 
-7. **Generate Deliverable & State Transition:**
-   * Export `module-context.md` at workspace root detailing entry points, dependency trees, validation rules, and identified risks.
+7. **Generate Deliverable with Operational Flowchart & State Transition:**
+   * Export `module-context.md` at workspace root detailing entry points, dependency trees, validation rules, identified risks, and a **Mandatory Mermaid Operational Flowchart** (`flowchart TD`) with standard process rectangles `[...]` and decision diamonds `{...}`.
    * **State Transition:**
      - If discovery completes without blockers: Transition state to `GAP_ANALYSIS` via `python scripts/state_manager.py transition GAP_ANALYSIS "Completed full CodeGraph context discovery"`.
      - If discovery cannot complete due to real technical obstacles (parser crash, timeout, resource exhaustion): Transition state to `DISCOVERY_INCOMPLETE` with detailed notes on untraversed files and technical causes. Never falsely report completion.
 
 ## 6. Expected Outputs
+
+### 6.1. Mandatory Operational Business & Technical Flowchart Specification (Mermaid)
+Every `module-context.md` MUST include a prominent, verified Mermaid flowchart (`flowchart TD`) visualizing the operational architecture, user journey, and decision logic of the module:
+* **Standard Geometric Notation Requirements:**
+  1. **Rectangles `[Step / Operation / Action]`:** For all sequential actions, user gestures, API calls, and DB mutations.
+     * *Examples:* `[User inputs username & password]`, `[Client sends POST /api/v1/auth]`, `[Update last_login timestamp]`.
+  2. **Diamonds `{Decision / Condition / Branch}`:** For every conditional check, input validation, role-based authorization check, or error threshold.
+     * *Examples:* `{Is form input valid?}`, `{Failed attempts >= 5?}`, `{Password matches hash?}`, `{Token valid & not expired?}`.
+  3. **Stadiums / Rounded Boxes `([Start / End / Outcome])`:** For entry points and terminal completion states.
+     * *Examples:* `([Start: User opens /login])`, `([Redirect to Dashboard])`, `([Display Account Lockout Banner])`.
+  4. **Subgraphs (`subgraph ... end`):** Visually separate layers:
+     * `subgraph UI ["Frontend / Presentation Layer"]`
+     * `subgraph API ["Backend Domain Services & Middleware"]`
+     * `subgraph DB ["Database & External Identity Providers"]`
+  5. **Explicit Branch Labels on Connectors:** Every arrow departing from a decision diamond MUST be explicitly labeled (e.g., `-->|Valid / Yes|`, `-->|Invalid / No|`, `-->|Timeout / Error|`).
+
+* **Reference Mermaid Template:**
+```mermaid
+flowchart TD
+    Start(["Start: User triggers module action"]) --> StepInput["[UI] User fills input form & submits"]
+    StepInput --> CheckClientValid{"Client-side validation passed?"}
+
+    CheckClientValid -->|No / Invalid| ShowClientError["[UI] Display inline field validation message"]
+    ShowClientError --> EndFail(["End: User corrects input"])
+
+    CheckClientValid -->|Yes / Valid| CallAPI["[API] Dispatch POST /api/v1/endpoint"]
+    CallAPI --> CheckAuth{"Authorization & Role Check: Has permission?"}
+
+    CheckAuth -->|No / 403| ShowForbidden["[UI] Render 403 Forbidden alert banner"]
+    ShowForbidden --> EndForbidden(["End: Action rejected"])
+
+    CheckAuth -->|Yes / 200| CheckBusinessLogic{"Business rule check: State eligible?"}
+    CheckBusinessLogic -->|Violated| ShowConflict["[UI] Display specific business error modal"]
+    CheckBusinessLogic -->|Satisfied| MutateDB["[DB] Execute database mutation & state update"]
+
+    MutateDB --> CheckDBSuccess{"Database transaction committed?"}
+    CheckDBSuccess -->|Error / Rollback| Show500["[UI] Display technical retry notification"]
+    CheckDBSuccess -->|Success| Return200["[API] Return 200/201 response payload"]
+
+    Return200 --> UpdateUIState["[UI] Update interface & trigger success feedback"]
+    UpdateUIState --> EndSuccess(["End: Flow successfully completed"])
+```
+
+### 6.2. Document Structure (`module-context.md`)
 * `module-context.md` containing:
   * Module Overview & Entry Points.
+  * Operational Business & Technical Flowchart (Mermaid with diamonds `{}` and rectangles `[]`).
   * Dependency Call Tree (Upstream / Downstream & Cross-Module) plus traversal status, configured ceilings, and any unvisited nodes.
   * Business Flow Reconstruction & State Transitions.
   * Data Models, Validations & Database Schemas.
