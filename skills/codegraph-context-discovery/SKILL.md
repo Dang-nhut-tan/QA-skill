@@ -159,14 +159,21 @@ flowchart TD
 ```
 
 ### 6.2. Document Structure (`module-context.md`)
-* `module-context.md` containing:
-  * Module Overview & Entry Points.
-  * Operational Business & Technical Flowchart (Mermaid with diamonds `{}` and rectangles `[]`).
-  * Dependency Call Tree (Upstream / Downstream & Cross-Module) plus traversal status, configured ceilings, and any unvisited nodes.
-  * Business Flow Reconstruction & State Transitions.
-  * Data Models, Validations & Database Schemas.
-  * Security, Concurrency, Error Handling & Throttling Mechanisms.
-  * Evidence References (File paths, symbol names, exact line numbers).
+Every `module-context.md` MUST adhere to `references/module-context-template.md` and prominently answer the **Three Golden Questions** upfront:
+1. **Module Purpose (Module này dùng để làm gì?):** Business purpose, problems solved, and core capabilities in clear non-IT business language.
+2. **Target Actors & Roles (Ai dùng?):** End-user personas, authorization roles (Guest, Authenticated, Admin), and machine/system actors.
+3. **Operational Flow (Luồng hoạt động ra sao?):** Verified Mermaid flowchart (`flowchart TD`) employing strict geometric notation:
+   - Rectangles `[...]` for sequential operations, UI inputs, API calls, and DB mutations.
+   - Diamonds `{...}` for conditional decisions, validations, and role checks.
+   - Stadiums `([...])` for start and terminal outcome states.
+   - Explicit path labels on all outgoing branches (`|Valid|`, `|Invalid|`, `|Error|`).
+
+Following the Three Golden Questions, include the technical deep-dive sections:
+* Dependency Call Tree (Upstream / Downstream & Cross-Module) plus traversal status, configured ceilings, and any unvisited nodes.
+* Business Flow Reconstruction & State Transitions.
+* Data Models, Validations & Database Schemas.
+* Security, Concurrency, Error Handling & Throttling Mechanisms.
+* Evidence References (File paths, symbol names, exact line numbers).
 * Updated `.qa-state.json` (`GAP_ANALYSIS` or `DISCOVERY_INCOMPLETE`).
 
 ## 7. Failure Handling & Incomplete Discovery Protocol

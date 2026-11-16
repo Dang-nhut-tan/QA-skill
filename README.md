@@ -6,7 +6,7 @@
 ![Automation: Playwright](https://img.shields.io/badge/Execution-Playwright_CLI_&_MCP-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
 ![Document: MarkItDown](https://img.shields.io/badge/Ingestion-Microsoft_MarkItDown-0284C7?style=for-the-badge&logo=microsoft)
 ![Optimization: Ground Truth](https://img.shields.io/badge/Telemetry-Ground_Truth_API-EA580C?style=for-the-badge)
-![Status: 94/94 Tests PASS](https://img.shields.io/badge/Test_Suite-94%2F94_PASS_(100%25)-16A34A?style=for-the-badge)
+![Status: 97/97 Tests PASS](https://img.shields.io/badge/Test_Suite-97%2F97_PASS_(100%25)-16A34A?style=for-the-badge)
 ![Architecture: 9/9 Validated](https://img.shields.io/badge/Architecture-9%2F9_VALIDATED-0D9488?style=for-the-badge)
 
 **Hệ Thống Trợ Lý Kiểm Thử Phần Mềm Thông Minh Đẳng Cấp Doanh Nghiệp (Enterprise QA Agent System)**  
@@ -53,8 +53,8 @@ python scripts/validate_system.py
 
 ### Bước 2: Chạy bộ kiểm thử tự động toàn diện
 ```powershell
-$env:PYTHONIOENCODING="utf-8"; pytest -s tests/
-# Kết quả mong đợi: 94 passed (100% PASS)
+$env:PYTHONIOENCODING="utf-8"; python -m pytest -s tests/
+# Kết quả mong đợi: 97 passed (100% PASS)
 ```
 
 ### Bước 3: Ra lệnh cho AI Agent
@@ -233,8 +233,8 @@ qa-agent-system/
 │   ├── lint_test_code.py          # Linter tĩnh kiểm soát chuẩn C1-C5 trước khi hoàn tất automation
 │   └── validate_system.py         # Bộ kiểm thử xác thực 9 bước kiến trúc toàn hệ thống
 ├── tests/
-│   ├── test_qa_skills_regression.py # 53 bài test hồi quy FSM, bảo mật, RTM, Excel & Learning
-│   ├── test_codegraph_upgrades.py   # 28 bài test AST discovery, classification & token benchmark
+│   ├── test_qa_skills_regression.py # 54 bài test hồi quy FSM, bảo mật, RTM, Excel & Learning
+│   ├── test_codegraph_upgrades.py   # 30 bài test AST discovery, classification & token benchmark
 │   ├── test_adaptive_level4.py      # 11 bài test cô lập trạng thái đa phân hệ và JIT AST Level 4
 │   └── test_golden_e2e_pipeline.py  # 2 bài test mô phỏng khép kín quy trình E2E trên dự án mẫu
 ├── templates/                     # File Excel mẫu chuẩn (testcase-template.xlsx)
@@ -248,7 +248,7 @@ qa-agent-system/
 ### Cài đặt công cụ phụ trợ (Chỉ cần chạy 1 lần):
 ```powershell
 pip install -r requirements-dev.txt
-npm install -g codegraph playwright
+npm install -g @colbymchenry/codegraph playwright
 npx playwright install chromium
 ```
 

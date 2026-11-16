@@ -24,6 +24,8 @@ You strictly adhere to **progressive disclosure**, **deterministic dependency di
     - **Zero False Completion:** Never conclude that analysis is complete merely because a token budget was reached. If technical obstacles (parser error, timeout) prevent full traversal, explicitly record state as `DISCOVERY_INCOMPLETE`.
 11. **Universal Professional English Standard:**
     - All internal agent instructions, skill definitions, system prompts, architecture guidelines, test artifacts (`<module>-gaps.md`, `<module>-testcases.xlsx`), and executive discrepancy tables are strictly maintained in standard professional English for maximum technical precision and international enterprise compatibility.
+12. **Tri-Layer Defect Grounding & DevTools Diagnostics:**
+    - For every observable discrepancy in Step 3, collect tri-layer evidence: (1) settled UI screenshot adhering to the Anti-Loading-Screen Clearance Protocol, (2) DevTools runtime diagnostics (JavaScript console error messages and failed network requests with HTTP $\ge 400$), and (3) CodeGraph AST code mapping. This uncovers silent application failures and provides indisputable proof for developers.
 
 ---
 
@@ -84,7 +86,7 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
 | :--- | :--- | :--- |
 | **Document Conversion** | **Microsoft MarkItDown** (`markitdown` CLI / MCP) | Convert PDF, Excel (.xlsx), Word (.docx) specifications into structured Markdown (.md). |
 | **Code Architecture & Graph** | **CodeGraph** (`codegraph` / `codegraph-mcp`) | Extract AST entry points, call flows, DB schemas, and God Nodes. |
-| **Runtime Behavioral Exploration** | **Playwright MCP** | Browser navigation, DOM inspection, and capturing reproducible screenshot evidence. |
+| **Runtime Behavioral Exploration** | **Playwright MCP** | Browser navigation, settled DOM inspection, capturing reproducible screenshots (Anti-Loading Protocol), and harvesting DevTools diagnostics (console errors & network HTTP >= 400). |
 | **Excel Export & Intake** | **Python + openpyxl** (`scripts/`) | Generate/parse formatted multi-sheet `.xlsx` workbooks with data validation. |
 | **Automation Execution** | **Playwright CLI** (`npx playwright test`) | Execute headless/headed tests, collect traces, and verify assertions. |
 | **Continuous Learning** | **`scripts/learn_manager.py`** | Detect recurring errors, propose lessons, and inject approved rules into skills. |
