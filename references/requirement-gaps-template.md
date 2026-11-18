@@ -44,6 +44,21 @@
 
 ---
 
+## 3.5. SIDE-BY-SIDE BENCHMARK & USER FRICTION AUDIT
+### (ĐỐI CHIẾU LUỒNG CHUẨN NGÀNH & ĐIỂM GÂY ỨC CHẾ NGƯỜI DÙNG)
+
+*(Bắt buộc đối chiếu trực tiếp giữa luồng chuẩn mực ngành từ `industry-benchmark-flows.md` với luồng thực tế của phân hệ dự án công ty mình)*
+
+| Giai Đoạn Thao Tác (Operational Phase) | Chuẩn Mực Hệ Thống Dẫn Đầu (Industry Leader Flow) | Luồng Thực Tế Dự Án Công Ty Mình (Our Company Project Flow) | Điểm Bất Cập Kỹ Thuật (Technical / Logic Inadequacy) | Điểm Gây Khó Chịu / Ức Chế Cho Người Dùng (User Friction & Frustration Point) |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Nhập liệu & Khởi tạo (Data Entry & Initiation)** | Xác thực ngay tại ô (inline validation), tự động lưu nháp (auto-save draft), gợi ý dữ liệu thông minh. | [Mô tả luồng khởi tạo thực tế của dự án] | [Ví dụ: Không validate phía client, reload trang toàn phần] | **Ức chế 1: Mất dữ liệu vừa điền.** Báo lỗi 1 ô là xóa sạch cả form, bắt người dùng nhập lại từ đầu. |
+| **2. Gửi yêu cầu & Chuyển trạng thái (Submission & Transit)** | Disable nút submit ngay khi click, gửi kèm Idempotency Key, hiển thị icon loading mượt mà tại nút. | [Mô tả cách xử lý khi bấm nút gửi] | [Ví dụ: Nút vẫn click được bình thường, không debounce] | **Ức chế 2: Bẫy bấm đúp (Double-Click Trap).** Người dùng tưởng nút chưa ăn nên click nhiều lần, sinh đơn trùng lặp hoặc trừ tiền nhiều lần. |
+| **3. Chờ xử lý bất đồng bộ (Async Processing / Wait)** | Có thanh tiến trình / bộ đếm thời gian rõ ràng, có timeout tối đa (ví dụ 10s) và nút hủy/thử lại. | [Mô tả cách hệ thống phản hồi khi xử lý lâu] | [Ví dụ: Không bắt Promise reject, không đặt timeout trần] | **Ức chế 3: Treo màn hình / Spinner vô tận.** Màn hình đơ, spinner quay mãi không dừng, không dám F5 vì sợ mất đơn. |
+| **4. Thông báo lỗi & Khắc phục (Error Feedback & Recovery)** | Thông báo rõ ràng lý do lỗi và chỉ đích danh thao tác cần sửa để tiếp tục (actionable guidance). | [Mô tả cách ứng dụng hiển thị lỗi] | [Ví dụ: Banner thông báo chung chung 'Có lỗi xảy ra' hoặc văng mã lỗi kỹ thuật 500] | **Ức chế 4: Thông báo mơ hồ hoặc im lặng.** Người dùng không biết tại sao lỗi (do thẻ, do mạng, hay do máy chủ) và không biết phải làm gì tiếp theo. |
+| **5. Kết thúc & Hoàn tất (Completion & Control)** | Hiển thị mã biên nhận rõ ràng, có thời gian ân hạn (grace period) cho phép Hủy / Sửa (Undo). | [Mô tả màn hình hoàn tất giao dịch] | [Ví dụ: Điều hướng thẳng về trang chủ mà không có mã xác nhận] | **Ức chế 5: Mất dấu vết & Thiếu quyền kiểm soát.** Không biết đơn đã lưu ở đâu, lỡ bấm nhầm không có nút Undo hoặc hủy. |
+
+---
+
 ## 4. DETAILED CLARIFICATION CARDS FOR BA / PO (WITH SCREENSHOT PROOF & DUAL IMPACT)
 
 ### [GAP-001]: [Concise Issue Title]

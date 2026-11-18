@@ -970,6 +970,8 @@ class TestQASkillsRegression(unittest.TestCase):
         gap_template = PROJECT_ROOT / "references" / "requirement-gaps-template.md"
         gap_tmpl_text = gap_template.read_text(encoding="utf-8")
         self.assertIn("Industry Benchmark Discrepancy & Domain Blindspot", gap_tmpl_text)
+        self.assertIn("SIDE-BY-SIDE BENCHMARK & USER FRICTION AUDIT", gap_tmpl_text)
+        self.assertIn("User Friction & Frustration Point", tmpl_text)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

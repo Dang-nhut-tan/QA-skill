@@ -81,15 +81,22 @@ description: >-
        + **Cascading Downstream Failures:** How will future dependent modules (billing engines, financial ledger, month-end aggregation reports, analytics pipelines, third-party webhook integrations) crash or generate erroneous numbers due to dirty data?
        + **Compliance, Security & Audit Liabilities:** Risk of unauthorized actions, privilege escalation, lack of legally required audit trails, or performance bottlenecks as database volume scales.
 
-1.8. **Cross-System Architectural & Industry Benchmark Synthesis (Uncovering Inadequacies & Domain Blindspots):**
-   * Cross-reference `module-context.md` (local implementation) against `industry-benchmark-flows.md` (how leading mature external systems implement similar modules) and `system-architecture-flows.md` to systematically expose:
-     1. **Điểm bất cập (Architectural Inadequacies & Anti-Patterns):**
-        - Substandard workflows or fragile patterns compared to industry best practices.
-        - *Examples:* Synchronous blocking operations without circuit breaker/timeouts, premature state updates (marking 'Paid' before verified webhook), infinite loading spinners on unhandled Promise rejections, clearing user form fields on validation errors, lack of automated Saga compensation/rollback on downstream failures.
-     2. **Điểm mù (Domain Blindspots & Missing Business Rules):**
-        - Critical edge cases, fail-safes, or policies standard in mature industry systems that local documentation and code completely overlooked.
+1.8. **Cross-System Architectural & Industry Benchmark Synthesis (Uncovering Inadequacies, Domain Blindspots & User Friction):**
+   * **Mandatory Core Directive:** The primary objective of benchmarking against external systems with similar modules is to contrast our company project's module flow against mature industry leaders, systematically surfacing **Điểm bất cập (Inadequacies)**, **Điểm gây khó chịu / ức chế cho người dùng (User Friction & Frustration Points)**, and **Điểm mù (Domain Blindspots)**:
+     1. **Điểm bất cập kiến trúc & luồng (Architectural Inadequacies & Anti-Patterns):**
+        - Fragile or substandard technical flows compared to mature industry implementations.
+        - *Examples:* Synchronous blocking operations without timeout/circuit breaker, premature state mutation (marking 'Paid' before verified webhook), unhandled Promise rejections, lack of automated Saga compensation/rollback on downstream failures.
+     2. **Điểm gây khó chịu / ức chế cho người dùng (User Friction & Operational Frustration):**
+        - Flaws that inflict direct operational friction, confusion, or wasted effort on real users.
+        - *Lost Effort / State Loss:* Clearing all form fields when 1 validation fails, forcing user to type from scratch.
+        - *Double-Submission Pitfalls:* Keeping submit buttons clickable during transit, inducing users to click 2-3 times and triggering duplicate charges or duplicate records.
+        - *UI Freezes & Infinite Spinners:* Lack of progress indicators or timeout ceilings, leaving users stranded on loading spinners indefinitely without knowing whether the transaction completed.
+        - *Cryptic / Silent Feedback:* Generic banners like "Có lỗi xảy ra" or silent drops without clear actionable guidance on what to fix.
+        - *Lack of Reversibility & Control:* No confirmation prompt before irreversible actions, no Undo/Edit grace window.
+     3. **Điểm mù (Domain Blindspots & Missing Business Rules):**
+        - Critical industry edge cases or policies standard in mature platforms that local documentation and code completely omitted.
         - *Examples:* Missing idempotency keys on double submissions, absence of temporary resource reservation TTL (e.g. cart/seat hold countdown), lack of rate limiting / exponential backoff on brute-force attempts, failure to distinguish user-actionable errors from transient infrastructure errors.
-     3. **Cross-System & Distributed Liabilities:**
+     4. **Cross-System & Distributed Liabilities:**
         - Unbounded remote timeouts, webhook retry storms, distributed state desynchronization (split-brain), and orphaned side-effects on database rollback.
 
 2. **Formulate BA/PO Clarification Table:**
@@ -121,6 +128,7 @@ description: >-
      - Investigation overview and 5-category summary table.
      - Table of Verified Security Guards (`GUARD-xxx`, PASS).
      - Prioritized table of True GAPs with dedicated `UX Impact` and `Future Technical Risk` columns.
+     - **Mandatory Side-by-Side Benchmark & User Friction Audit Table:** Direct comparison between Industry Leader Flow vs Our Company Project Flow across 5 operational phases, highlighting Điểm bất cập and Điểm gây ức chế cho người dùng.
      - Detailed issue cards for each `GAP-xxx` containing:
        1. AST code evidence and specification discrepancy.
        2. **User Experience Impact (UX Impact):** User confusion, misleading feedback, workflow interruption.
