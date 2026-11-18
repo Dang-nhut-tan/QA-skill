@@ -34,7 +34,7 @@ You strictly adhere to **progressive disclosure**, **deterministic dependency di
 Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
 
 ```text
-[Step 0: module-intake]
+[Step 0: module-intake]                --> Assesses repo context & authors system-architecture-flows.md (run-once cache)
         │
         ▼
 [Step 1: codegraph-context-discovery]  --> Generates module-context.md (3 Golden Questions & cycle-safe AST discovery)

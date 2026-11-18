@@ -71,12 +71,22 @@ description: >-
        (Security Note: The system will never store plaintext passwords in .qa-state.json).
        ```
      - Only record non-sensitive environment metadata (e.g., `environment.base_url`, `environment.auth_method`, `environment.has_admin_portal`) in `.qa-state.json`.
-5. **Initialize Workflow State:**
+5. **Global System Landscape & Cross-System Flow Discovery (Run-Once Cache Protocol):**
+   * **Purpose:** Prevent local module tunnel vision by mapping the global system architecture, inter-service dependencies, and cross-system interaction flows into a dedicated persistent document.
+   * **Idempotent Cache Check (Run ONLY if not already present):**
+     - Check if `system-architecture-flows.md` exists in the project root or workspace root.
+     - **CACHE HIT:** If `system-architecture-flows.md` already exists: **SKIP execution completely** (0 token consumption, 0 execution latency). Reuse the existing global landscape.
+     - **CACHE MISS:** If `system-architecture-flows.md` is missing:
+       1. Inspect high-level project structure, inter-service routes, API gateway configs, and external 3rd-party dependencies (payment, auth, messaging queues, webhooks).
+       2. Author a standalone deliverable `system-architecture-flows.md` in workspace root adhering to `references/system-architecture-flows-template.md`.
+   * **Strict Isolation Rule:** Strictly do NOT place global system architecture into `module-context.md`. `system-architecture-flows.md` is a standalone project-wide artifact reused across all module testing cycles to expose cross-system blindspots and architectural inconsistencies.
+6. **Initialize Workflow State:**
    * Invoke `python scripts/state_manager.py init "<ModuleName>"` to create or reset `.qa-state.json`.
-   * Record discovered document paths, repository metadata, and environment details.
+   * Record discovered document paths, repository metadata, environment details, and `system-architecture-flows.md` path.
 
 ## 5. Expected Outputs
 * Initialized `.qa-state.json` with status `INITIALIZED`.
+* Standalone project-wide artifact `system-architecture-flows.md` (authored on first run, reused on subsequent runs).
 * Intake summary report presented in chat:
   * **Language Rule:** Chat communications and intake summary presented to the user must be in clear, professional English.
   * Details: Target module name, discovered documentation, available testing tools, environment/credentials status, next action transition.

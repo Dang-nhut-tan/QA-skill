@@ -23,7 +23,7 @@ description: >-
 
 ```mermaid
 stateDiagram-v2
-    [*] --> INITIALIZED: Step 0 (module-intake)
+    [*] --> INITIALIZED: Step 0 (module-intake: maps system-architecture-flows.md if missing)
     INITIALIZED --> CONTEXT_DISCOVERY: Step 1 (codegraph-context-discovery)
     CONTEXT_DISCOVERY --> GAP_ANALYSIS: CodeGraph AST & Operational Flowchart Mapped
     CONTEXT_DISCOVERY --> DISCOVERY_INCOMPLETE: Technical Blocker / Parser Failure / Timeout

@@ -37,6 +37,7 @@
 | :---: | :--- | :--- | :--- | :--- | :--- | :---: |
 | **GAP-001** | Requirement Ambiguity | [Affected Flow] | File: `path/to/file.ts#L45-L60` | Operational confusion, missing feedback | Concurrency race condition, DB desync | High / Medium |
 | **GAP-002** | Potential Implementation Defect | [Affected Flow] | File: `path/to/service.ts#L102` | Misleading submission status | Security vulnerability, data loss | High |
+| **GAP-003** | Architectural / Cross-System Inconsistency | [Cross-Service Flow] | File: `system-architecture-flows.md` & `client.ts` | Missing remote timeout & webhook retry handling | Downstream split-brain, hung workers | High |
 
 *(If zero gaps are found, state: `No requirement gaps or defects detected. All business flows comply with system specifications.`)*
 
@@ -45,7 +46,7 @@
 ## 4. DETAILED CLARIFICATION CARDS FOR BA / PO (WITH SCREENSHOT PROOF & DUAL IMPACT)
 
 ### [GAP-001]: [Concise Issue Title]
-* **Category:** [Requirement Ambiguity / Potential Defect / Missing Documentation / Confirmed Defect]
+* **Category:** [Requirement Ambiguity / Potential Defect / Missing Documentation / Confirmed Defect / Architectural Cross-System Inconsistency]
 * **Related Business Flow:** [Flow Name]
 * **Severity:** [Critical/Blocker / Major / Minor]
 

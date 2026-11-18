@@ -918,5 +918,25 @@ class TestQASkillsRegression(unittest.TestCase):
         self.assertIn("npm run", content)
         self.assertIn("npx playwright test", content)
 
+    def test_system_architecture_flows_protocol(self):
+        """Verify Step 0 system-architecture-flows protocol and template."""
+        sys_flow_template = PROJECT_ROOT / "references" / "system-architecture-flows-template.md"
+        self.assertTrue(sys_flow_template.exists())
+        template_text = sys_flow_template.read_text(encoding="utf-8")
+        self.assertIn("High-Level System Landscape", template_text)
+        self.assertIn("Cross-System & Inter-Module Interaction Flows", template_text)
+        self.assertIn("flowchart TD", template_text)
+
+        intake_skill = PROJECT_ROOT / "skills" / "module-intake" / "SKILL.md"
+        intake_text = intake_skill.read_text(encoding="utf-8")
+        self.assertIn("system-architecture-flows.md", intake_text)
+        self.assertIn("CACHE HIT", intake_text)
+        self.assertIn("CACHE MISS", intake_text)
+
+        gap_skill = PROJECT_ROOT / "skills" / "requirement-gap-analysis" / "SKILL.md"
+        gap_text = gap_skill.read_text(encoding="utf-8")
+        self.assertIn("system-architecture-flows.md", gap_text)
+        self.assertIn("Cross-System Architectural Synthesis", gap_text)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

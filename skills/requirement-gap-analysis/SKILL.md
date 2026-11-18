@@ -22,6 +22,8 @@ description: >-
   * Project documents or specifications (if available).
   * Target module name.
   * `.qa-state.json`.
+* **Optional / Recommended:**
+  * `system-architecture-flows.md` (generated in Step 0, mapping global system topology and cross-system interaction flows).
 
 ## 3. Prerequisites & Standalone Execution Architecture
 * **Full Workflow Mode:** Expects `module-context.md` from Step 1 (`codegraph-context-discovery`).
@@ -35,12 +37,13 @@ description: >-
 ## 4. Step-by-Step Execution Instructions
 1. **Discrepancy & Ambiguity Audit:**
    * Compare documented rules against code AST implementations.
-   * Categorize findings into 5 distinct categories:
+   * Categorize findings into 6 distinct categories:
      1. `Requirement Ambiguity`: Unspecified behavior (e.g., lockout duration not defined).
      2. `Potential Implementation Defect`: Code exhibits suspicious logic or unhandled edge cases.
      3. `Missing Documentation`: Feature exists in code but has zero written specification.
      4. `Environment / Test Data Limitation`: Feature requires external SMS/email gateway or hardware.
      5. `Confirmed Defect`: Clear breach of explicit documented business rule.
+     6. `Architectural / Cross-System Inconsistency`: Contradictions or blindspots between local module logic and global system integration flows (from `system-architecture-flows.md`).
 
 1.5. **Adaptive Level 4 JIT Inspection for Underspecified Requirements:**
    * Evaluate the available specification text using `evaluate_spec_completeness(spec_text)`.
@@ -76,6 +79,14 @@ description: >-
        + **Concurrency & Race Conditions:** What happens when multiple users or parallel background workers execute this edge case simultaneously under peak traffic (`workers > 1`)?
        + **Cascading Downstream Failures:** How will future dependent modules (billing engines, financial ledger, month-end aggregation reports, analytics pipelines, third-party webhook integrations) crash or generate erroneous numbers due to dirty data?
        + **Compliance, Security & Audit Liabilities:** Risk of unauthorized actions, privilege escalation, lack of legally required audit trails, or performance bottlenecks as database volume scales.
+
+1.8. **Cross-System Architectural Synthesis (Uncovering Global Blindspots & Inconsistencies):**
+   * If `system-architecture-flows.md` exists (authored in Step 0), cross-reference the target module against the broader system landscape to uncover:
+     1. **Unbounded Remote Timeouts / Hangs:** Does the target module block indefinitely if an external API, queue, or downstream service hangs?
+     2. **Distributed Idempotency & Webhook Retries:** Does the module handle duplicate webhook deliveries or retry storms safely?
+     3. **State Desynchronization (Split-Brain):** Is the target module's local status lifecycle consistent with the global system transaction state machine?
+     4. **Contract & Enum Drift:** Are payload shapes or status enums mismatched across service boundaries?
+     5. **Orphaned Side-Effects on Rollback:** If local database mutations fail, are triggered external API requests or queued notifications compensated?
 
 2. **Formulate BA/PO Clarification Table:**
    * Create prioritized table with columns:
