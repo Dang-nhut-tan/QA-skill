@@ -44,13 +44,14 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
         │
         ▼
 [Step 3: playwright-investigation]    --> Verifies UI behavior via Playwright MCP,
-                                          captures screenshot evidence, and embeds into <module>-gaps.md
+                                          authors reproduction scripts (tests/repro/), and embeds
+                                          1-click terminal commands (npm run) into <module>-gaps.md
         │
         ▼
 ═══════════════════════════════════════════════════════════════════════════
 🔴 MANDATORY CHECKPOINT 1: WAITING_FOR_REQUIREMENT_CLARIFICATION
    STOP COMPLETELY AND PRESENT DELIVERABLES TO USER:
-   1. Clickable file link to [<module>-gaps.md] (with embedded screenshots & reproduction steps)
+   1. Clickable file link to [<module>-gaps.md] (with Playwright reproduction scripts & CLI commands)
    2. Executive discrepancy table in chat
    3. WAIT FOR USER INSTRUCTION:
       - User commands "proceed" or "continue" (or provides BA answers) --> Proceed to Step 4
@@ -86,7 +87,7 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
 | :--- | :--- | :--- |
 | **Document Conversion** | **Microsoft MarkItDown** (`markitdown` CLI / MCP) | Convert PDF, Excel (.xlsx), Word (.docx) specifications into structured Markdown (.md). |
 | **Code Architecture & Graph** | **CodeGraph** (`codegraph` / `codegraph-mcp`) | Extract AST entry points, call flows, DB schemas, and God Nodes. |
-| **Runtime Behavioral Exploration** | **Playwright MCP** | Browser navigation, settled DOM inspection, capturing reproducible screenshots (Anti-Loading Protocol), and harvesting DevTools diagnostics (console errors & network HTTP >= 400). |
+| **Runtime Behavioral Exploration** | **Playwright MCP** | Browser navigation, live UI verification, authoring standalone reproduction scripts (`tests/repro/`), registering 1-click terminal commands (`npm run`), and harvesting DevTools diagnostics. |
 | **Excel Export & Intake** | **Python + openpyxl** (`scripts/`) | Generate/parse formatted multi-sheet `.xlsx` workbooks with data validation. |
 | **Automation Execution** | **Playwright CLI** (`npx playwright test`) | Execute headless/headed tests, collect traces, and verify assertions. |
 | **Continuous Learning** | **`scripts/learn_manager.py`** | Detect recurring errors, propose lessons, and inject approved rules into skills. |

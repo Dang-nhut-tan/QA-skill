@@ -893,17 +893,30 @@ class TestQASkillsRegression(unittest.TestCase):
         self.assertIn("browser_console_messages", pw_content)
         self.assertIn("browser_network_requests", pw_content)
         self.assertIn("Anti-Loading-Screen", pw_content)
+        self.assertIn("tests/repro/", pw_content)
+        self.assertIn("npm run", pw_content)
 
         gaps_template = PROJECT_ROOT / "references" / "requirement-gaps-template.md"
         tpl_content = gaps_template.read_text(encoding="utf-8")
         self.assertIn("DevTools Diagnostics (Console & Network Logs)", tpl_content)
         self.assertIn("browser_console_messages", tpl_content)
         self.assertIn("browser_network_requests", tpl_content)
+        self.assertIn("Playwright Bug Reproduction Script & CLI Execution", tpl_content)
+        self.assertIn("npm run", tpl_content)
+        self.assertIn("tests/repro/", tpl_content)
 
         codegraph_skill = PROJECT_ROOT / "skills" / "codegraph-context-discovery" / "SKILL.md"
         cg_content = codegraph_skill.read_text(encoding="utf-8")
         self.assertIn("Mandatory Operational Business & Technical Flowchart Specification (Mermaid)", cg_content)
         self.assertIn("flowchart TD", cg_content)
+
+    def test_gap_reproduction_script_standard(self):
+        """Verify gap tickets mandate Playwright reproduction script and terminal commands."""
+        req_gap_skill = PROJECT_ROOT / "skills" / "requirement-gap-analysis" / "SKILL.md"
+        content = req_gap_skill.read_text(encoding="utf-8")
+        self.assertIn("tests/repro/", content)
+        self.assertIn("npm run", content)
+        self.assertIn("npx playwright test", content)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

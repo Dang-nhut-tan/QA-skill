@@ -13,7 +13,7 @@
 * **Total True Gaps Identified:** `[N]` discrepancy items (Subject to BA/PO clarification). If the system is fully compliant, state `0`.
 * **Total Verified Security Guards:** `[M]` security / RBAC permission constraints functioning correctly (PASS).
 * **Live UI Verification Status (Playwright MCP):**
-  - `[X]` scenarios physically verified with before-and-after visual progression screenshots.
+  - `[X]` scenarios physically verified with standalone Playwright reproduction scripts (`tests/repro/`).
   - `[Y]` backend-only rules audited via source code AST.
 * **Risk Distribution:**
   - Only True GAPs contribute to risk assessment. Verified Security Guards are marked as **PASS** and must never be classified as defects or blockers.
@@ -65,14 +65,37 @@
 * **Cascading Downstream Failures:** [How will future reporting, billing, financial ledger, or third-party webhooks break due to dirty data?]
 * **Compliance & Security Liabilities:** [Risk of privilege escalation, unauthorized operations, or missing audit trails?]
 
-#### 4. Live UI Verification (Playwright MCP)
-* **End-User Reproduction Steps:**
-  1. *Step 1:* Open URL `[URL / Route]`.
-  2. *Step 2:* Perform user action `[Action]`.
-  3. *Step 3:* Observe unexpected behavior.
-* **Visual Evidence:**
-  - *Setup / Input State:* `![Input State](screenshots/GAP-001-01-input.png)`
-  - *Observed Result / Anomaly:* `![Observed Anomaly](screenshots/GAP-001-02-result.png)`
+#### 4. Playwright Bug Reproduction Script & CLI Execution
+* **Reproduction Script Path:** [`tests/repro/GAP-001.spec.ts`](file:///tests/repro/GAP-001.spec.ts)
+* **1-Click Terminal Reproduction Commands:**
+  ```bash
+  # Execute via registered npm shortcut:
+  npm run module:gap:1
+
+  # Or execute directly via Playwright CLI (headed with interactive debug):
+  npx playwright test tests/repro/GAP-001.spec.ts --headed
+  ```
+* **Executable Reproduction Code (`tests/repro/GAP-001.spec.ts`):**
+  ```typescript
+  import { test, expect } from '@playwright/test';
+
+  test('GAP-001: Reproduce [concise issue summary]', async ({ page }) => {
+    // 1. Navigate to target screen
+    await page.goto('/target-route');
+
+    // 2. Perform reproduction interactions
+    await page.fill('#field-id', 'test-input');
+    await page.click('button#action-id');
+
+    // 3. Assert expected state vs observed failure
+    // EXPECTED: Feedback message or state transition appears within timeout
+    // OBSERVED BUG: Action hangs silently or unhandled exception occurs
+    await expect(page.locator('.expected-feedback-selector')).toBeVisible({ timeout: 5000 });
+  });
+  ```
+* **Observed Execution Failure / Trace:**
+  - *Outcome:* `FAILED` — Timeout 5000ms exceeded waiting for locator `.expected-feedback-selector`.
+  - *Trace File:* `test-results/GAP-001/trace.zip` (Inspect with `npx playwright show-trace`).
 
 #### 5. DevTools Diagnostics (Console & Network Logs)
 * **Console Messages & Runtime Exceptions (`browser_console_messages`):**

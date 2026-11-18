@@ -88,12 +88,14 @@ description: >-
      * `Suggested Options` (Hypotheses A, B, C)
      * `Status` (`Pending`)
 
-3. **Trigger Playwright MCP UI Verification & Screenshot Capture (Step 3 Collaboration):**
-   * **Mandatory UI Verification Before BA Ticket Delivery:**
+3. **Trigger Playwright MCP UI Verification & Reproduction Script Generation (Step 3 Collaboration):**
+   * **Mandatory UI Verification & Script Authoring:**
      - For every gap observable on the web UI:
      - Activate `playwright-investigation` (Step 3) to navigate to the live screen.
      - Execute concrete interaction steps to verify if the discrepancy occurs.
-     - **Capture visual progression screenshots (.png)** saved into screenshots/<IssueID>-01-input.png and screenshots/<IssueID>-02-result.png for easy reproduction (stored in project root screenshots/).
+     - **Author a standalone Playwright bug reproduction script (`tests/repro/<module>-gap-<id>.spec.ts`)** with explicit assertions reproducing the failure, and provide 1-click terminal commands:
+       * `npm run <module>:gap:<id>`
+       * `npx playwright test tests/repro/<module>-gap-<id>.spec.ts --headed`
      - Record step-by-step reproduction instructions from the end-user perspective (1. Open... 2. Enter... 3. Click... and observe...).
      - For backend-only logic lacking UI: explicitly tag `[Verified via AST - No UI Rendering]`.
 
@@ -107,8 +109,9 @@ description: >-
        1. AST code evidence and specification discrepancy.
        2. **User Experience Impact (UX Impact):** User confusion, misleading feedback, workflow interruption.
        3. **Future Technical Risks & Potential Defects:** Data corruption, concurrency race conditions, broken reports.
-       4. UI reproduction steps and **embedded Playwright MCP screenshots**.
-       5. Direct questions for BA/PO and concrete options (Option A, Option B).
+       4. Standalone Playwright reproduction script (`tests/repro/`) and 1-click terminal command (`npm run <module>:gap:<id>`).
+       5. DevTools runtime diagnostics (console errors and network API failures).
+       6. Direct questions for BA/PO and concrete options (Option A, Option B).
 
 5. **Persist State Checkpoint & Register Artifact:**
    * Save questions into `.qa-state.json` under `clarification_issues`.

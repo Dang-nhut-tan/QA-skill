@@ -6,7 +6,7 @@
 ![Automation: Playwright](https://img.shields.io/badge/Execution-Playwright_CLI_&_MCP-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
 ![Document: MarkItDown](https://img.shields.io/badge/Ingestion-Microsoft_MarkItDown-0284C7?style=for-the-badge&logo=microsoft)
 ![Optimization: Ground Truth](https://img.shields.io/badge/Telemetry-Ground_Truth_API-EA580C?style=for-the-badge)
-![Status: 97/97 Tests PASS](https://img.shields.io/badge/Test_Suite-97%2F97_PASS_(100%25)-16A34A?style=for-the-badge)
+![Status: 98/98 Tests PASS](https://img.shields.io/badge/Test_Suite-98%2F98_PASS_(100%25)-16A34A?style=for-the-badge)
 ![Architecture: 9/9 Validated](https://img.shields.io/badge/Architecture-9%2F9_VALIDATED-0D9488?style=for-the-badge)
 
 **Hệ Thống Trợ Lý Kiểm Thử Phần Mềm Thông Minh Đẳng Cấp Doanh Nghiệp (Enterprise QA Agent System)**  
@@ -36,7 +36,7 @@
 Hệ thống cung cấp một quy trình kiểm thử tự động khép kín, hướng chứng cứ, giải quyết triệt để hiện tượng AI tự suy đoán (hallucination) và cắt xén quy trình trong kiểm thử phần mềm doanh nghiệp thông qua 5 trụ cột kỹ thuật:
 
 1. **Khám phá mã nguồn AST & Sơ đồ Luồng Nghiệp vụ (CodeGraph JIT AST):** Duyệt cây đồ thị BFS an toàn chu trình; trích xuất chữ ký, giao diện và tự động phác thảo **Sơ đồ luồng hoạt động chuẩn mực (Mermaid Flowchart)** với hình thoi `{}` (điểm rẽ nhánh / điều kiện kiểm tra) và hình chữ nhật `[]` (bước thao tác / xử lý) vào `module-context.md` giúp con người đọc hiểu kiến trúc tức thì.
-2. **Phân tích kẽ hở kép & Thám thính UI Ổn định (Playwright MCP):** Đánh giá 2 trục tác động: **Trải nghiệm người dùng (UX)** và **Rủi ro kỹ thuật tương lai**; tuân thủ **Quy chuẩn chống chụp màn hình đang tải (Anti-Loading-Screen Protocol)** — bắt buộc chờ mạng và DOM lắng xuống, spinner/skeleton biến mất hoàn toàn mới chụp ảnh thực chứng (`screenshots/`).
+2. **Phân tích kẽ hở kép & Kịch bản tái hiện lỗi Playwright (Playwright MCP):** Đánh giá 2 trục tác động: **Trải nghiệm người dùng (UX)** và **Rủi ro kỹ thuật tương lai**; thay thế hoàn toàn ảnh chụp tĩnh bằng việc **tự động sinh kịch bản Playwright tái hiện lỗi (`tests/repro/`)** kèm câu lệnh chạy 1-click ở Terminal (`npm run <module>:gap:<id>`), kết hợp thu thập chẩn đoán DevTools (Console errors & Network $\ge 400$) giúp kiểm chứng lỗi thực tế tức thì.
 3. **Xuất bản Test Case chuẩn doanh nghiệp:** Sinh file Excel (`.xlsx`) 13 cột với phong cách thiết kế Pastel Pill Badges, bộ lọc tự động, căn chỉnh độ co giãn dòng và Data Validation dropdown list.
 4. **Kiểm soát Truy vết Hai chiều & Khử trùng lặp $O(N)$:** Cơ chế Bidirectional Traceability đảm bảo 100% yêu cầu trọng yếu có test case bao phủ (Forward Coverage), 100% test case có căn cứ mã nguồn/spec thực tế (Backward Grounding - không có test case ảo) và thuật toán bảng băm khử trùng lặp nội dung đơn lượt.
 5. **Cỗ máy trạng thái FSM Tự phục hồi (Atomic & Self-Healing):** Ghi file nguyên tử (`.tmp` + `.bak` + `os.replace`), chống sập hỏng JSON, tự động giải phóng deadlock với cơ chế kiểm tra tính sống của tiến trình theo PID (TTL 60 giây) và tích hợp bộ quét bảo mật ngăn chặn rò rỉ Plaintext Secret.
@@ -54,7 +54,7 @@ python scripts/validate_system.py
 ### Bước 2: Chạy bộ kiểm thử tự động toàn diện
 ```powershell
 $env:PYTHONIOENCODING="utf-8"; python -m pytest -s tests/
-# Kết quả mong đợi: 97 passed (100% PASS)
+# Kết quả mong đợi: 98 passed (100% PASS)
 ```
 
 ### Bước 3: Ra lệnh cho AI Agent
@@ -233,7 +233,7 @@ qa-agent-system/
 │   ├── lint_test_code.py          # Linter tĩnh kiểm soát chuẩn C1-C5 trước khi hoàn tất automation
 │   └── validate_system.py         # Bộ kiểm thử xác thực 9 bước kiến trúc toàn hệ thống
 ├── tests/
-│   ├── test_qa_skills_regression.py # 54 bài test hồi quy FSM, bảo mật, RTM, Excel & Learning
+│   ├── test_qa_skills_regression.py # 55 bài test hồi quy FSM, bảo mật, RTM, Excel & Learning
 │   ├── test_codegraph_upgrades.py   # 30 bài test AST discovery, classification & token benchmark
 │   ├── test_adaptive_level4.py      # 11 bài test cô lập trạng thái đa phân hệ và JIT AST Level 4
 │   └── test_golden_e2e_pipeline.py  # 2 bài test mô phỏng khép kín quy trình E2E trên dự án mẫu
