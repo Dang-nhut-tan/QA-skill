@@ -37,13 +37,14 @@ description: >-
 ## 4. Step-by-Step Execution Instructions
 1. **Discrepancy & Ambiguity Audit:**
    * Compare documented rules against code AST implementations.
-   * Categorize findings into 6 distinct categories:
+   * Categorize findings into 7 distinct categories:
      1. `Requirement Ambiguity`: Unspecified behavior (e.g., lockout duration not defined).
      2. `Potential Implementation Defect`: Code exhibits suspicious logic or unhandled edge cases.
      3. `Missing Documentation`: Feature exists in code but has zero written specification.
      4. `Environment / Test Data Limitation`: Feature requires external SMS/email gateway or hardware.
      5. `Confirmed Defect`: Clear breach of explicit documented business rule.
      6. `Architectural / Cross-System Inconsistency`: Contradictions or blindspots between local module logic and global system integration flows (from `system-architecture-flows.md`).
+     7. `Industry Benchmark Discrepancy & Domain Blindspot`: Inadequacies (điểm bất cập), anti-patterns, or missing business rules (điểm mù) uncovered when cross-referencing our module against leading external systems with similar modules (from `industry-benchmark-flows.md`).
 
 1.5. **Adaptive Level 4 JIT Inspection for Underspecified Requirements:**
    * Evaluate the available specification text using `evaluate_spec_completeness(spec_text)`.
@@ -80,13 +81,16 @@ description: >-
        + **Cascading Downstream Failures:** How will future dependent modules (billing engines, financial ledger, month-end aggregation reports, analytics pipelines, third-party webhook integrations) crash or generate erroneous numbers due to dirty data?
        + **Compliance, Security & Audit Liabilities:** Risk of unauthorized actions, privilege escalation, lack of legally required audit trails, or performance bottlenecks as database volume scales.
 
-1.8. **Cross-System Architectural Synthesis (Uncovering Global Blindspots & Inconsistencies):**
-   * If `system-architecture-flows.md` exists (authored in Step 0), cross-reference the target module against the broader system landscape to uncover:
-     1. **Unbounded Remote Timeouts / Hangs:** Does the target module block indefinitely if an external API, queue, or downstream service hangs?
-     2. **Distributed Idempotency & Webhook Retries:** Does the module handle duplicate webhook deliveries or retry storms safely?
-     3. **State Desynchronization (Split-Brain):** Is the target module's local status lifecycle consistent with the global system transaction state machine?
-     4. **Contract & Enum Drift:** Are payload shapes or status enums mismatched across service boundaries?
-     5. **Orphaned Side-Effects on Rollback:** If local database mutations fail, are triggered external API requests or queued notifications compensated?
+1.8. **Cross-System Architectural & Industry Benchmark Synthesis (Uncovering Inadequacies & Domain Blindspots):**
+   * Cross-reference `module-context.md` (local implementation) against `industry-benchmark-flows.md` (how leading mature external systems implement similar modules) and `system-architecture-flows.md` to systematically expose:
+     1. **Điểm bất cập (Architectural Inadequacies & Anti-Patterns):**
+        - Substandard workflows or fragile patterns compared to industry best practices.
+        - *Examples:* Synchronous blocking operations without circuit breaker/timeouts, premature state updates (marking 'Paid' before verified webhook), infinite loading spinners on unhandled Promise rejections, clearing user form fields on validation errors, lack of automated Saga compensation/rollback on downstream failures.
+     2. **Điểm mù (Domain Blindspots & Missing Business Rules):**
+        - Critical edge cases, fail-safes, or policies standard in mature industry systems that local documentation and code completely overlooked.
+        - *Examples:* Missing idempotency keys on double submissions, absence of temporary resource reservation TTL (e.g. cart/seat hold countdown), lack of rate limiting / exponential backoff on brute-force attempts, failure to distinguish user-actionable errors from transient infrastructure errors.
+     3. **Cross-System & Distributed Liabilities:**
+        - Unbounded remote timeouts, webhook retry storms, distributed state desynchronization (split-brain), and orphaned side-effects on database rollback.
 
 2. **Formulate BA/PO Clarification Table:**
    * Create prioritized table with columns:

@@ -939,7 +939,37 @@ class TestQASkillsRegression(unittest.TestCase):
         gap_skill = PROJECT_ROOT / "skills" / "requirement-gap-analysis" / "SKILL.md"
         gap_text = gap_skill.read_text(encoding="utf-8")
         self.assertIn("system-architecture-flows.md", gap_text)
-        self.assertIn("Cross-System Architectural Synthesis", gap_text)
+        self.assertIn("Cross-System Architectural", gap_text)
+
+    def test_industry_benchmark_flows_protocol(self):
+        """Verify Step 0 external industry benchmark research & synthesis protocol."""
+        benchmark_template = PROJECT_ROOT / "references" / "industry-benchmark-flows-template.md"
+        self.assertTrue(benchmark_template.exists(), "industry-benchmark-flows-template.md must exist")
+        tmpl_text = benchmark_template.read_text(encoding="utf-8")
+        self.assertIn("Top Industry Reference Implementations", tmpl_text)
+        self.assertIn("Universal Industry Edge Cases", tmpl_text)
+        self.assertIn("Standard Industry Operational Flowchart", tmpl_text)
+        self.assertIn("flowchart TD", tmpl_text)
+
+        intake_skill = PROJECT_ROOT / "skills" / "module-intake" / "SKILL.md"
+        intake_text = intake_skill.read_text(encoding="utf-8")
+        self.assertIn("industry-benchmark-flows.md", intake_text)
+        self.assertIn("Industry Benchmark Scout", intake_text)
+        self.assertIn("CACHE HIT", intake_text)
+        self.assertIn("CACHE MISS", intake_text)
+        self.assertIn("invoke_subagent", intake_text)
+        self.assertIn("manage_subagents", intake_text)
+
+        gap_skill = PROJECT_ROOT / "skills" / "requirement-gap-analysis" / "SKILL.md"
+        gap_text = gap_skill.read_text(encoding="utf-8")
+        self.assertIn("industry-benchmark-flows.md", gap_text)
+        self.assertIn("Industry Benchmark Discrepancy & Domain Blindspot", gap_text)
+        self.assertIn("Điểm bất cập", gap_text)
+        self.assertIn("Điểm mù", gap_text)
+
+        gap_template = PROJECT_ROOT / "references" / "requirement-gaps-template.md"
+        gap_tmpl_text = gap_template.read_text(encoding="utf-8")
+        self.assertIn("Industry Benchmark Discrepancy & Domain Blindspot", gap_tmpl_text)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)

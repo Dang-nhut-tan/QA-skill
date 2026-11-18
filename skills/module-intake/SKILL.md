@@ -71,28 +71,28 @@ description: >-
        (Security Note: The system will never store plaintext passwords in .qa-state.json).
        ```
      - Only record non-sensitive environment metadata (e.g., `environment.base_url`, `environment.auth_method`, `environment.has_admin_portal`) in `.qa-state.json`.
-5. **Global System Landscape & Cross-System Flow Discovery (Run-Once Cache Protocol):**
-   * **Purpose:** Prevent local module tunnel vision by mapping the global system architecture, inter-service dependencies, and cross-system interaction flows into a dedicated persistent document.
+5. **External Industry Benchmark & Similar System Flow Discovery (Run-Once Cache Protocol):**
+   * **Purpose:** Prevent local module tunnel vision by researching leading external systems / competitors that implement a similar module or domain (e.g. how mature platforms like Stripe, Shopify, Auth0, Amazon handle similar workflows). Extract standard user journeys, best practices, universal fail-safes (idempotency, timeouts/TTL, auto-compensation, rate limiting), and common anti-patterns.
    * **Idempotent Cache Check (Run ONLY if not already present):**
-     - Check if `system-architecture-flows.md` exists in the project root or workspace root.
-     - **CACHE HIT:** If `system-architecture-flows.md` already exists: **SKIP execution completely** (0 token consumption, 0 execution latency). Reuse the existing global landscape.
+     - Check if `industry-benchmark-flows.md` (or `system-architecture-flows.md`) exists in the project root or workspace root.
+     - **CACHE HIT:** If `industry-benchmark-flows.md` (or `system-architecture-flows.md`) already exists: **SKIP execution completely** (0 token consumption, 0 execution latency). Reuse the existing benchmark flows.
      - **CACHE MISS (Ephemeral Subagent Acceleration & Immediate Teardown):**
-       If `system-architecture-flows.md` is missing, accelerate research and preserve the parent agent's context window by delegating to a dedicated, lightweight ephemeral subagent:
+       If missing, accelerate research and preserve the parent agent's context window by delegating to a dedicated, lightweight ephemeral subagent:
        1. **Spawn Ephemeral Subagent:** Invoke a background subagent via `invoke_subagent`:
-          - `Role`: `"System Architecture Scout"`
+          - `Role`: `"Industry Benchmark Scout"`
           - `TypeName`: `"research"` (or `"self"`)
           - `Model`: `"flash"` (fast, economical, low-latency)
-          - `Prompt`: Instruct the subagent to explore high-level project structure, inter-service routes, API gateways, external 3rd-party dependencies (payment, auth, messaging queues, webhooks), and author `system-architecture-flows.md` in workspace root adhering to `references/system-architecture-flows-template.md`.
-       2. **Mandatory Temporary File Cleanup:** The subagent MUST clean up and delete all temporary scratch scripts, AST cache dumps, or intermediate logs created during discovery before completing.
-       3. **Immediate Session Termination (Zero Lingering Subagents):** As soon as `system-architecture-flows.md` is generated and verified on disk, the parent agent MUST immediately terminate the subagent session via `manage_subagents(Action="kill", ConversationIds=[subagent_id])`. This releases memory, conserves tokens, and strictly prevents idle subagents from lingering in the background.
-   * **Strict Isolation Rule:** Strictly do NOT place global system architecture into `module-context.md`. `system-architecture-flows.md` is a standalone project-wide artifact reused across all module testing cycles to expose cross-system blindspots and architectural inconsistencies.
+          - `Prompt`: Instruct the subagent to research how mature external systems and industry leaders implement similar modules, extract standard Mermaid flowcharts, universal edge cases, and anti-patterns, and author `industry-benchmark-flows.md` in workspace root adhering to `references/industry-benchmark-flows-template.md`.
+       2. **Mandatory Temporary File Cleanup:** The subagent MUST clean up and delete all temporary scratch scripts, query dumps, or intermediate logs created during discovery before completing.
+       3. **Immediate Session Termination (Zero Lingering Subagents):** As soon as `industry-benchmark-flows.md` is generated and verified on disk, the parent agent MUST immediately terminate the subagent session via `manage_subagents(Action="kill", ConversationIds=[subagent_id])`. This releases memory, conserves tokens, and strictly prevents idle subagents from lingering in the background.
+   * **Strict Isolation Rule:** Strictly do NOT place industry benchmark flows or external architecture into `module-context.md`. `industry-benchmark-flows.md` is a standalone artifact reused across gap analysis and testcase design to expose domain blindspots and architectural inadequacies.
 6. **Initialize Workflow State:**
    * Invoke `python scripts/state_manager.py init "<ModuleName>"` to create or reset `.qa-state.json`.
-   * Record discovered document paths, repository metadata, environment details, and `system-architecture-flows.md` path.
+   * Record discovered document paths, repository metadata, environment details, and `industry-benchmark-flows.md` (or `system-architecture-flows.md`) path.
 
 ## 5. Expected Outputs
 * Initialized `.qa-state.json` with status `INITIALIZED`.
-* Standalone project-wide artifact `system-architecture-flows.md` (authored on first run, reused on subsequent runs).
+* Standalone reference artifact `industry-benchmark-flows.md` (or `system-architecture-flows.md`) (authored on first run, reused on subsequent runs).
 * Intake summary report presented in chat:
   * **Language Rule:** Chat communications and intake summary presented to the user must be in clear, professional English.
   * Details: Target module name, discovered documentation, available testing tools, environment/credentials status, next action transition.

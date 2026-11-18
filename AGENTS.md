@@ -34,15 +34,17 @@ You strictly adhere to **progressive disclosure**, **deterministic dependency di
 Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
 
 ```text
-[Step 0: module-intake]                --> Assesses repo context & delegates system-architecture-flows.md to
-                                           ephemeral subagent (run-once, deletes temp files, auto-kills session)
+[Step 0: module-intake]                --> Assesses repo context & delegates industry-benchmark-flows.md (or
+                                           system-architecture-flows.md) to ephemeral subagent (researches how
+                                           industry leaders implement similar modules, cleans temp files, auto-kills)
         │
         ▼
 [Step 1: codegraph-context-discovery]  --> Generates module-context.md (3 Golden Questions & cycle-safe AST discovery)
         │
         ▼
-[Step 2 & 3: gap-analysis-reproduction] --> Identifies discrepancies (GAP-xxx), authors standalone Playwright
-                                           reproduction scripts (tests/repro/), embeds 1-click terminal commands
+[Step 2 & 3: gap-analysis-reproduction] --> Cross-references module-context.md with industry benchmark flows to
+                                           expose inadequacies (điểm bất cập) & blindspots (điểm mù), authors standalone
+                                           Playwright reproduction scripts (tests/repro/), embeds 1-click terminal commands
                                            (npm run <module>:gap:<id>) into <module>-gaps.md, and advances automatically
         │
         ▼

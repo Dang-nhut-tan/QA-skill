@@ -6,7 +6,7 @@
 ![Automation: Playwright](https://img.shields.io/badge/Execution-Playwright_CLI_&_MCP-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
 ![Document: MarkItDown](https://img.shields.io/badge/Ingestion-Microsoft_MarkItDown-0284C7?style=for-the-badge&logo=microsoft)
 ![Optimization: Ground Truth](https://img.shields.io/badge/Telemetry-Ground_Truth_API-EA580C?style=for-the-badge)
-![Status: 99/99 Tests PASS](https://img.shields.io/badge/Test_Suite-99%2F99_PASS_(100%25)-16A34A?style=for-the-badge)
+![Status: 100/100 Tests PASS](https://img.shields.io/badge/Test_Suite-100%2F100_PASS_(100%25)-16A34A?style=for-the-badge)
 ![Architecture: 9/9 Validated](https://img.shields.io/badge/Architecture-9%2F9_VALIDATED-0D9488?style=for-the-badge)
 
 **Hệ Thống Trợ Lý Kiểm Thử Phần Mềm Thông Minh Đẳng Cấp Doanh Nghiệp (Enterprise QA Agent System)**  
@@ -35,8 +35,8 @@
 
 Hệ thống cung cấp một quy trình kiểm thử tự động khép kín, hướng chứng cứ, giải quyết triệt để hiện tượng AI tự suy đoán (hallucination) và cắt xén quy trình trong kiểm thử phần mềm doanh nghiệp thông qua 5 trụ cột kỹ thuật:
 
-1. **Toàn cảnh Kiến trúc Liên hệ thống & Phân tích AST (System Landscape & CodeGraph JIT):** Khám phá toàn cảnh kiến trúc liên hệ thống ở Bước 0 (chạy 1 lần duy nhất, lưu độc lập vào `system-architecture-flows.md` chống góc nhìn cục bộ); kết hợp duyệt cây đồ thị BFS an toàn chu trình và tự động phác thảo **Sơ đồ luồng hoạt động chuẩn mực (Mermaid Flowchart)** với hình thoi `{}` và hình chữ nhật `[]` vào `module-context.md` giúp đối chiếu vạch trần mọi điểm mù tích hợp.
-2. **Phân tích kẽ hở kép & Kịch bản tái hiện lỗi Playwright (Playwright MCP):** Đánh giá 2 trục tác động: **Trải nghiệm người dùng (UX)** và **Rủi ro kỹ thuật tương lai**; thay thế hoàn toàn ảnh chụp tĩnh bằng việc **tự động sinh kịch bản Playwright tái hiện lỗi (`tests/repro/`)** kèm câu lệnh chạy 1-click ở Terminal (`npm run <module>:gap:<id>`), kết hợp thu thập chẩn đoán DevTools (Console errors & Network $\ge 400$) giúp kiểm chứng lỗi thực tế tức thì.
+1. **Nghiên cứu Hệ thống Tương tự & Phân tích AST (Industry Benchmark & CodeGraph JIT):** Khám phá các hệ thống dẫn đầu trong ngành có phân hệ tương tự ở Bước 0 (chạy 1 lần duy nhất, lưu độc lập vào `industry-benchmark-flows.md` chống góc nhìn cục bộ; Subagent tự dọn file tạm và đóng phiên ngay); kết hợp duyệt cây đồ thị BFS an toàn chu trình và tự động phác thảo **Sơ đồ luồng hoạt động chuẩn mực (Mermaid Flowchart)** với hình thoi `{}` và hình chữ nhật `[]` vào `module-context.md` giúp đối chiếu vạch trần mọi điểm bất cập và điểm mù.
+2. **Đối chiếu Kẽ hở & Kịch bản tái hiện lỗi Playwright (Playwright MCP):** Đối chiếu mã nguồn thực tế với chuẩn mực ngành để vạch rõ **Điểm bất cập** và **Điểm mù**; đánh giá 2 trục tác động: **Trải nghiệm người dùng (UX)** và **Rủi ro kỹ thuật tương lai**; thay thế hoàn toàn ảnh chụp tĩnh bằng việc **tự động sinh kịch bản Playwright tái hiện lỗi (`tests/repro/`)** kèm câu lệnh chạy 1-click ở Terminal (`npm run <module>:gap:<id>`), kết hợp thu thập chẩn đoán DevTools (Console errors & Network $\ge 400$) giúp kiểm chứng lỗi thực tế tức thì.
 3. **Xuất bản Test Case chuẩn doanh nghiệp:** Sinh file Excel (`.xlsx`) 13 cột với phong cách thiết kế Pastel Pill Badges, bộ lọc tự động, căn chỉnh độ co giãn dòng và Data Validation dropdown list.
 4. **Kiểm soát Truy vết Hai chiều & Khử trùng lặp $O(N)$:** Cơ chế Bidirectional Traceability đảm bảo 100% yêu cầu trọng yếu có test case bao phủ (Forward Coverage), 100% test case có căn cứ mã nguồn/spec thực tế (Backward Grounding - không có test case ảo) và thuật toán bảng băm khử trùng lặp nội dung đơn lượt.
 5. **Cỗ máy trạng thái FSM Tự phục hồi (Atomic & Self-Healing):** Ghi file nguyên tử (`.tmp` + `.bak` + `os.replace`), chống sập hỏng JSON, tự động giải phóng deadlock với cơ chế kiểm tra tính sống của tiến trình theo PID (TTL 60 giây) và tích hợp bộ quét bảo mật ngăn chặn rò rỉ Plaintext Secret.
@@ -54,7 +54,7 @@ python scripts/validate_system.py
 ### Bước 2: Chạy bộ kiểm thử tự động toàn diện
 ```powershell
 $env:PYTHONIOENCODING="utf-8"; python -m pytest -s tests/
-# Kết quả mong đợi: 99 passed (100% PASS)
+# Kết quả mong đợi: 100 passed (100% PASS)
 ```
 
 ### Bước 3: Ra lệnh cho AI Agent
@@ -72,11 +72,11 @@ Sau khi thiết kế và xuất bản file Excel `<module>-testcases.xlsx`, AI s
 
 ```mermaid
 flowchart TD
-    Start(["Bắt đầu: Yêu cầu kiểm thử phân hệ"]) --> S0["Bước 0: Tiền xử lý & Khám phá Toàn cảnh Liên hệ thống<br/>(Subagent Scout: Chạy 1 lần -> system-architecture-flows.md -> Tự xóa file tạm & đóng phiên)"]
+    Start(["Bắt đầu: Yêu cầu kiểm thử phân hệ"]) --> S0["Bước 0: Tiền xử lý & Nghiên cứu Hệ thống Tương tự<br/>(Subagent Benchmark Scout: Chạy 1 lần -> industry-benchmark-flows.md -> Tự xóa file tạm & đóng phiên)"]
     
     S0 --> S1["Bước 1: Khám phá Ngữ cảnh Module & 3 Câu Hỏi Cốt Lõi<br/>(CodeGraph JIT AST -> module-context.md: Mục đích, Ai dùng, Sơ đồ luồng)"]
     
-    S1 --> S2["Bước 2 & 3: Phân tích Kẽ hở Kép & Sinh Kịch bản Tái hiện Playwright<br/>(Đối chiếu Toàn cảnh x Module -> tests/repro/<module>-gap.spec.ts & lệnh npm run <module>:gap:1)"]
+    S1 --> S2["Bước 2 & 3: Đối chiếu Chuẩn Ngành & Sinh Kịch bản Tái hiện Playwright<br/>(Vạch rõ Điểm bất cập & Điểm mù -> tests/repro/<module>-gap.spec.ts & lệnh npm run)"]
     
     S2 --> S4["Bước 4: Thiết kế Test Case theo Rủi ro Động (Tier S, M, L)"]
     S4 -. "Phát hiện bất định kiến trúc lớn" .-> S2
@@ -144,9 +144,9 @@ Mọi kịch bản, bước thực hiện và kết quả mong đợi đều tu�
 
 | Kỹ Năng (Skill) | Vai Trò & Nhiệm Vụ Cốt Lõi Trong Hệ Thống |
 | :--- | :--- |
-| [`module-intake`](skills/module-intake/SKILL.md) | Tiếp nhận tài liệu đặc tả, chuyển đổi PDF/Office sang Markdown qua MarkItDown, khởi tạo FSM. |
+| [`module-intake`](skills/module-intake/SKILL.md) | Tiếp nhận tài liệu, khám phá hệ thống tương tự trong ngành (Step 0) qua Subagent gọn nhẹ (chạy 1 lần, tự hủy), khởi tạo FSM. |
 | [`codegraph-context-discovery`](skills/codegraph-context-discovery/SKILL.md) | Quét cây AST mã nguồn qua CodeGraph SQLite; nạp chữ ký theo cơ chế 5-Level Progressive Context. |
-| [`requirement-gap-analysis`](skills/requirement-gap-analysis/SKILL.md) | Đối soát spec với code; phân tích tác động kép UX và rủi ro kỹ thuật tương lai; lập phiếu `<module>-gaps.md`. |
+| [`requirement-gap-analysis`](skills/requirement-gap-analysis/SKILL.md) | Đối chiếu spec x code x chuẩn ngành để vạch rõ Điểm bất cập & Điểm mù; sinh kịch bản tái hiện lỗi Playwright; lập phiếu `<module>-gaps.md`. |
 | [`playwright-investigation`](skills/playwright-investigation/SKILL.md) | Mở trình duyệt Chromium qua Playwright MCP, chụp ảnh minh chứng thực tế $\rightarrow$ **Dừng tại Cổng 1**. |
 | [`testcase-design`](skills/testcase-design/SKILL.md) | Thiết kế test case 13 cột và kiểm soát truy vết hai chiều trên tập yêu cầu đã nạp. |
 | [`testcase-review-export`](skills/testcase-review-export/SKILL.md) | Tự soát lỗi nội bộ, xuất Excel phong cách Pastel Pill Badges $\rightarrow$ **Dừng tại Cổng 2**. |
