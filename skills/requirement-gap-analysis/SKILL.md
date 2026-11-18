@@ -3,14 +3,15 @@ name: requirement-gap-analysis
 description: >-
   Audits inconsistencies, missing business rules, and contradictions between code and specifications.
   Analyzes dual-dimension impact: User Experience (UX) degradation and future technical bug prediction.
-  Collaborates with Playwright MCP to verify observable UI issues with screenshots, compiles the visual BA
-  clarification ticket (<module>-gaps.md in English), and halts at Human Gate 1 until the user commands to proceed.
+  Automatically authors executable Playwright bug reproduction scripts (tests/repro/<module>-gap-<id>.spec.ts),
+  provides 1-click terminal reproduction commands (npm run <module>:gap:<id>), compiles <module>-gaps.md,
+  and seamlessly progresses to testcase design.
 ---
 
 # Skill: Requirement Gap Analysis (Step 2)
 
 ## 1. Description & Trigger Conditions
-* **Purpose:** Audit the reconstructed context against available requirements, identify ambiguities and potential defects, assess dual-dimension impact (User Experience damage and future technical bug prediction), trigger live UI verification with screenshot capture via Playwright MCP, compile a visual BA/PO clarification report (`<module>-gaps.md`), and **halt execution for mandatory human confirmation**.
+* **Purpose:** Audit the reconstructed context against available requirements, identify ambiguities and potential defects, assess dual-dimension impact (User Experience damage and future technical bug prediction), automatically author standalone executable Playwright bug reproduction scripts (`tests/repro/<module>-gap-<id>.spec.ts`), provide 1-click terminal reproduction commands (`npm run <module>:gap:<id>` and `npx playwright test ...`), compile `<module>-gaps.md`, and seamlessly progress to testcase design.
 * **Triggers:**
   * Completed `codegraph-context-discovery` in full workflow orchestrator (`GAP_ANALYSIS`).
   * **Standalone Invocation:** Direct user request to investigate gaps for a module (e.g., *"Investigate gaps for Login module"*, *"Analyze requirement gaps for Checkout"*).
@@ -113,35 +114,34 @@ description: >-
        5. DevTools runtime diagnostics (console errors and network API failures).
        6. Direct questions for BA/PO and concrete options (Option A, Option B).
 
-5. **Persist State Checkpoint & Register Artifact:**
+5. **Direct Authoring of Playwright Reproduction Scripts (`tests/repro/`):**
+   * For every observable UI gap identified, the agent MUST immediately invoke `write_file` to author a standalone reproduction spec:
+     - Target path: `tests/repro/<module>-gap-<id>.spec.ts` (e.g. `tests/repro/order-gap-001.spec.ts`).
+     - Content: Navigation, user interactions replicating the issue, and an assertion proving the bug.
+   * Format the 1-click terminal commands into `<module-name>-gaps.md`:
+     - Registered script: `npm run <module>:gap:<id>`
+     - Direct CLI: `npx playwright test tests/repro/<module>-gap-<id>.spec.ts --headed`
+
+6. **Persist State Checkpoint & Register Artifact:**
    * Save questions into `.qa-state.json` under `clarification_issues`.
    * Register the generated report artifact:
      `python scripts/state_manager.py set-artifact gap_analysis <module-name>-gaps.md`
-   * Update workflow state:
-     `python scripts/state_manager.py transition WAITING_FOR_REQUIREMENT_CLARIFICATION "Gaps verified via Playwright MCP with screenshots and dual-dimension impact analysis. Awaiting user confirmation to proceed"`
+   * Update workflow state to advance seamlessly:
+     `python scripts/state_manager.py transition TESTCASE_GENERATION "Gaps identified with executable Playwright reproduction scripts and DevTools diagnostics. Seamlessly advancing to risk-based testcase design."`
 
-## 5. Mandatory Human Checkpoint 1 (CRITICAL STOP)
-> [!IMPORTANT]
-> **THE AGENT MUST HALT EXECUTION COMPLETELY HERE.**
-> Before pausing, the agent MUST:
-> 1. Deliver the clickable markdown link to the generated report file: `[<module-name>-gaps.md](file:///path/to/<module-name>-gaps.md)`.
-> 2. Present an executive summary table directly in chat showing Issue ID, Category, Flow, Screenshot Evidence, UX Impact, Future Risk, and BA Question.
-> 3. **WAIT FOR EXPLICIT USER INSTRUCTION:**
->    - **User commands "proceed" (or "continue"):** Advance to Step 4 (`testcase-design`) if running full workflow.
->    - **User provides answers from BA/PO:** Update `module-context.md` with resolved business rules, mark issues as `Answered`.
->    - **In Standalone Mode:** User can review the gaps ticket, forward it to BA, or request next steps when ready.
->
-> **STRICT PROHIBITION: DO NOT PROCEED TO STEP 4 WITHOUT USER COMMAND "PROCEED" OR BA ANSWERS.**
+## 5. Artifact Delivery & Review Integration
+* **Deliverable Link:** Deliver the clickable markdown link to the generated report file: `[<module-name>-gaps.md](file:///path/to/<module-name>-gaps.md)`.
+* **In Standalone Mode:** Deliver the report link and executive summary table directly in chat, ready for developer review.
+* **In Full Workflow Mode:** To ensure continuous execution without unnecessary blocking stops, the workflow advances seamlessly into Step 4 (`testcase-design`). The single mandatory human gate is at Step 5 (`WAITING_FOR_APPROVED_TESTCASES`), where the user reviews the complete test suite and decides whether to test or request revisions.
 
 ## 6. Expected Outputs
-* Dedicated Markdown report: `<module-name>-gaps.md` exported into workspace root with embedded screenshot links and dual-dimension impact analysis (UX + Future Risk).
-* State file updated to `WAITING_FOR_REQUIREMENT_CLARIFICATION` with `artifacts.gap_analysis` registered.
-* Executive table and clickable file link presented directly to the user in chat.
+* Dedicated Markdown report: `<module-name>-gaps.md` exported into workspace root with standalone Playwright reproduction scripts and dual-dimension impact analysis (UX + Future Risk).
+* Directory `tests/repro/` containing executable Playwright test specs (`tests/repro/<module>-gap-<id>.spec.ts`).
+* State file updated to `TESTCASE_GENERATION` (or `WAITING_FOR_REQUIREMENT_CLARIFICATION` if explicitly requested in standalone mode).
 
 ## 7. Failure Handling
-* If zero gaps are found: double-check edge cases (boundary values, throttling, role permissions). If genuinely clean, document verification criteria in `<module-name>-gaps.md` and request confirmation to proceed.
+* If zero gaps are found: double-check edge cases (boundary values, throttling, role permissions). If genuinely clean, document verification criteria in `<module-name>-gaps.md` and advance to testcase design.
 
 ## 8. Completion Criteria
-* Standalone `<module-name>-gaps.md` report is created with visual screenshots, reproduction steps, and dual-dimension impact analysis (UX Impact + Future Technical Risk) for every identified gap.
-* State is persisted as `WAITING_FOR_REQUIREMENT_CLARIFICATION`.
-* Workflow is paused waiting for user input.
+* Standalone `<module-name>-gaps.md` report is created with Playwright reproduction scripts (`tests/repro/`), terminal commands (`npm run`), and dual-dimension impact analysis (UX Impact + Future Technical Risk) for every identified gap.
+* Artifact is registered and workflow transitions to `TESTCASE_GENERATION`.

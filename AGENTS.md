@@ -10,7 +10,7 @@ You strictly adhere to **progressive disclosure**, **deterministic dependency di
 
 1. **CodeGraph-First Discovery:** Always reverse-engineer the codebase using **CodeGraph**. Never guess or hallucinate module architecture, entry points, or data schemas.
 2. **Evidence-Based Reasoning:** Clearly label every fact as `[CODE-CONFIRMED]`, `[DOC-CONFIRMED]`, `[RUNTIME-CONFIRMED]`, `[INFERRED]`, or `[UNKNOWN]`. Never invent requirements.
-3. **Mandatory Human-in-the-Loop:** You **MUST STOP** execution at the two defined approval checkpoints. Never bypass a human decision.
+3. **Mandatory Human-in-the-Loop:** You **MUST STOP** execution at the core approval checkpoint (Gate 2: Test Case Satisfaction Review). In Standalone Gap Mode, deliver the `<module>-gaps.md` ticket and reproduction scripts directly to the user. Never bypass human decisions.
 4. **Epistemic Discipline:** Playwright MCP observes *what code currently does*, not *whether that behavior is correct*. Never treat an unverified behavior as an approved business rule.
 5. **No False Success:** Never report a test as passed unless an actual CLI execution produced an exit code of 0 with green assertions.
 6. **Continuous Learning (Human-in-the-Loop):** When encountering recurring errors (>= 2 times) or project-specific obstacles, formulate a Lesson-Learned Proposal. If approved by the user, automatically inject it into the appropriate Skill via `scripts/learn_manager.py`. Never edit skills silently.
@@ -37,28 +37,14 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
 [Step 0: module-intake]
         │
         ▼
-[Step 1: codegraph-context-discovery]  --> Generates module-context.md (cycle-safe, observable AST discovery)
+[Step 1: codegraph-context-discovery]  --> Generates module-context.md (3 Golden Questions & cycle-safe AST discovery)
         │
         ▼
-[Step 2: requirement-gap-analysis]    --> Identifies specification & logic discrepancies (GAP-xxx)
+[Step 2 & 3: gap-analysis-reproduction] --> Identifies discrepancies (GAP-xxx), authors standalone Playwright
+                                           reproduction scripts (tests/repro/), embeds 1-click terminal commands
+                                           (npm run <module>:gap:<id>) into <module>-gaps.md, and advances automatically
         │
         ▼
-[Step 3: playwright-investigation]    --> Verifies UI behavior via Playwright MCP,
-                                          authors reproduction scripts (tests/repro/), and embeds
-                                          1-click terminal commands (npm run) into <module>-gaps.md
-        │
-        ▼
-═══════════════════════════════════════════════════════════════════════════
-🔴 MANDATORY CHECKPOINT 1: WAITING_FOR_REQUIREMENT_CLARIFICATION
-   STOP COMPLETELY AND PRESENT DELIVERABLES TO USER:
-   1. Clickable file link to [<module>-gaps.md] (with Playwright reproduction scripts & CLI commands)
-   2. Executive discrepancy table in chat
-   3. WAIT FOR USER INSTRUCTION:
-      - User commands "proceed" or "continue" (or provides BA answers) --> Proceed to Step 4
-      - STRICT PROHIBITION: DO NOT PROCEED TO STEP 4 WITHOUT USER COMMAND ("proceed" / "continue") OR BA ANSWERS!
-═══════════════════════════════════════════════════════════════════════════
-        │
-        ▼ (Only when user explicitly commands "proceed" or "continue" or provides BA answers)
 [Step 4: testcase-design]             --> Generates dynamic risk-based test cases (Tier S: 5–8, M: 10–18, L: 18–30+)
         │
         ▼
@@ -66,12 +52,14 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
         │
         ▼
 ═══════════════════════════════════════════════════════════════════════════
-🔴 MANDATORY CHECKPOINT 2: WAITING_FOR_APPROVED_TESTCASES
-   STOP AND DELIVER EXCEL WORKBOOK TO USER.
-   DO NOT PROCEED TO AUTOMATION UNTIL USER REVIEWS & CONFIRMS EXCEL FILE.
+🔴 CORE MANDATORY HUMAN GATE: WAITING_FOR_APPROVED_TESTCASES
+   DELIVER EXCEL WORKBOOK AND ASK USER:
+   "Bạn có hài lòng với bộ testcase hiện tại không?"
+   - If Satisfied ("Có" / "Hài lòng"): Stop for manual testing (or proceed to automation upon request)
+   - If Revisions Needed ("Chưa" / "Cần sửa"): Gather feedback and refine test cases
 ═══════════════════════════════════════════════════════════════════════════
         │
-        ▼
+        ▼ (Only when user explicitly requests automation)
 [Step 6: Implementation & Execution]
    ├── Phase 6.1 (automation-readiness)      --> Filters strictly Automation Ready = Yes
    ├── Phase 6.2 & 6.3 (automation-impl)     --> Reuses project POMs; writes clean tests

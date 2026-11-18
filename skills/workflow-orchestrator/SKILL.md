@@ -29,9 +29,9 @@ stateDiagram-v2
     CONTEXT_DISCOVERY --> DISCOVERY_INCOMPLETE: Technical Blocker / Parser Failure / Timeout
     DISCOVERY_INCOMPLETE --> CONTEXT_DISCOVERY: Retry / Resolve Technical Blocker
     
-    GAP_ANALYSIS --> RUNTIME_INVESTIGATION: Step 2 & 3 (Audit gaps & verify settled UI screenshots)
-    RUNTIME_INVESTIGATION --> TESTCASE_GENERATION: Automatic Streamlined Progression (Embed gaps in design)
-    GAP_ANALYSIS --> TESTCASE_GENERATION: Direct Progression (When no observable UI gaps)
+    GAP_ANALYSIS --> TESTCASE_GENERATION: Automatic Streamlined Progression (Audit gaps, author tests/repro/, embed npm run)
+    GAP_ANALYSIS --> RUNTIME_INVESTIGATION: Optional deep runtime exploration
+    RUNTIME_INVESTIGATION --> TESTCASE_GENERATION: Embed gaps in design
     
     TESTCASE_GENERATION --> TESTCASE_REVIEW: Step 4 (testcase-design: Dynamic RBC matrix)
     TESTCASE_REVIEW --> WAITING_FOR_APPROVED_TESTCASES: Step 5 [CORE HUMAN GATE: Deliver Excel & Ask Satisfaction]
