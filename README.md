@@ -21,13 +21,14 @@
 ## 📌 Mục Lục
 - [1. Giới Thiệu Tổng Quan](#1-giới-thiệu-tổng-quan)
 - [2. Bắt Đầu Nhanh (3 Phút)](#2-bắt-đầu-nhanh-3-phút)
-- [3. Quy Trình Vận Hành & 2 Chốt Chặn Kiểm Soát (Human Gates)](#3-quy-trình-vận-hành--2-chốt-chặn-kiểm-soát-human-gates)
-- [4. Ma Trận Độ Phủ Rủi Ro Động (Tier S, M, L)](#4-ma-trận-độ-phủ-rủi-ro-động-tier-s-m-l)
-- [5. Chuẩn Ngôn Ngữ Dễ Hiểu (Non-IT Business Phrasing)](#5-chuẩn-ngôn-ngữ-dễ-hiểu-non-it-business-phrasing)
-- [6. Chi Tiết 11 Kỹ Năng Chuyên Biệt (Skills)](#6-chi-tiết-11-kỹ-năng-chuyên-biệt-skills)
-- [7. Hiệu Năng & Đo Lường Token Thực Tế (Ground Truth)](#7-hiệu-năng--đo-lường-token-thực-tế-ground-truth)
-- [8. Cấu Trúc Dự Án & Bộ Kịch Bản (Scripts)](#8-cấu-trúc-dự-án--bộ-kịch-bản-scripts)
-- [9. Cài Đặt & Nhúng Dự Án](#9-cài-đặt--nhúng-dự-án)
+- [3. Quy Trình Vận Hành & Chốt Chặn Kiểm Soát Hài Lòng](#3-quy-trình-vận-hành--chốt-chặn-kiểm-soát-hài-lòng-core-human-gate)
+- [4. Đối Chiếu Luồng Song Song & Điểm Gây Ức Chế Người Dùng (User Friction Audit)](#4-đối-chiếu-luồng-song-song--điểm-gây-ức-chế-người-dùng-user-friction-audit)
+- [5. Ma Trận Độ Phủ Rủi Ro Động (Tier S, M, L)](#5-ma-trận-độ-phủ-rủi-ro-động-tier-s-m-l)
+- [6. Chuẩn Ngôn Ngữ Dễ Hiểu (Non-IT Business Phrasing)](#6-chuẩn-ngôn-ngữ-dễ-hiểu-non-it-business-phrasing)
+- [7. Chi Tiết 11 Kỹ Năng Chuyên Biệt (Skills)](#7-chi-tiết-11-kỹ-năng-chuyên-biệt-skills)
+- [8. Hiệu Năng & Đo Lường Token Thực Tế (Ground Truth)](#8-hiệu-năng--đo-lường-token-thực-tế-ground-truth)
+- [9. Cấu Trúc Dự Án & Bộ Kịch Bản (Scripts)](#9-cấu-trúc-dự-án--bộ-kịch-bản-scripts)
+- [10. Cài Đặt & Nhúng Dự Án](#10-cài-đặt--nhúng-dự-án)
 
 ---
 
@@ -111,7 +112,29 @@ flowchart TD
 
 ---
 
-## 4. Ma Trận Độ Phủ Rủi Ro Động (Tier S, M, L)
+## 4. Đối Chiếu Luồng Song Song & Điểm Gây Ức Chế Người Dùng (User Friction Audit)
+
+Mục đích tối thượng của việc nghiên cứu các hệ thống tương tự trong ngành ở Bước 0 (lưu độc lập vào `industry-benchmark-flows.md`) là làm **tấm gương soi chiếu trực diện** vào phân hệ dự án công ty mình ở Bước 2 nhằm vạch trần:
+1. **Điểm Bất Cập Kỹ Thuật (Inadequacies):** Luồng gãy vụn, thiếu chốt an toàn, thiếu cơ chế hoàn tác/rollback, xử lý bất đồng bộ hớ hênh.
+2. **Điểm Gây Khó Chịu / Ức Chế Cho Người Dùng (User Friction & Frustration Points):** Thao tác rườm rà, bẫy bấm nhầm, mất công sức nhập liệu, giao diện đơ hoặc thông báo gây hoang mang.
+
+Hệ thống bắt buộc đối chiếu song song qua **5 giai đoạn thao tác cốt lõi**:
+
+| Giai Đoạn Thao Tác (Operational Phase) | Chuẩn Mực Hệ Thống Dẫn Đầu (Benchmark Flow) | Luồng Thực Tế Dự Án Công Ty Mình | Điểm Bất Cập Kỹ Thuật (Inadequacy) | Điểm Gây Khó Chịu / Ức Chế Cho User (User Friction Point) |
+| :--- | :--- | :--- | :--- | :--- |
+| **1. Nhập liệu & Khởi tạo (Data Entry)** | Inline validation, tự động lưu nháp (auto-save draft), giữ nguyên form khi có lỗi. | [Khởi tạo & nhập form trong dự án] | Không validate phía client, reload trang toàn phần khi bấm Lưu. | ❌ **Ức chế 1: Mất dữ liệu vừa điền.** Báo lỗi 1 ô là xóa sạch cả form, bắt người dùng nhập lại từ đầu. |
+| **2. Gửi yêu cầu & Chuyển trạng thái (Submission)** | Disable nút submit ngay khi click, kèm Idempotency Key, loading mượt tại nút. | [Nút gửi & xử lý submit] | Nút bấm không disable, không debounce, không chặn double click. | ❌ **Ức chế 2: Bẫy bấm đúp (Double-Click Trap).** Người dùng tưởng chưa ăn nên bấm 2-3 lần, sinh đơn trùng hoặc trừ tiền 2 lần. |
+| **3. Chờ xử lý bất đồng bộ (Async Processing)** | Có tiến trình rõ ràng, timeout tối đa (ví dụ 10s), có nút Hủy/Thử lại. | [Xử lý API khi mạng chậm/lag] | Không bắt lỗi Promise reject, không đặt timeout trần. | ❌ **Ức chế 3: Treo màn hình / Spinner vô tận.** Màn hình đơ, spinner quay mãi không dừng, không dám F5 vì sợ mất dữ liệu. |
+| **4. Thông báo lỗi & Khắc phục (Error Feedback)** | Giải thích rõ lý do lỗi và chỉ đích danh thao tác cần sửa để tiếp tục. | [Thông báo lỗi hiển thị trên UI] | Banner chung chung *"Có lỗi xảy ra"* hoặc văng mã lỗi kỹ thuật 500. | ❌ **Ức chế 4: Thông báo mơ hồ hoặc im lặng.** Người dùng không biết tại sao lỗi (do thẻ, do mạng hay máy chủ) và không biết làm gì tiếp theo. |
+| **5. Kết thúc & Hoàn tất (Completion & Control)** | Hiển thị mã biên nhận rõ ràng, có thời gian ân hạn cho phép Hủy / Sửa (Undo). | [Màn hình hoàn tất sau thao tác] | Điều hướng thẳng về trang chủ không có mã xác nhận, không có nút Undo. | ❌ **Ức chế 5: Mất dấu vết & Thiếu quyền kiểm soát.** Không biết đơn đã lưu ở đâu, lỡ bấm nhầm không có cách nào hủy hoặc sửa. |
+
+> [!IMPORTANT]
+> **Cam Kết Tái Hiện Thực Tế:**  
+> Mọi Điểm Bất Cập và Điểm Khó Chịu được phát hiện đều tự động được AI chuyển hóa thành **Phiếu GAP chuẩn hóa** trong `<module>-gaps.md` và **Mã kiểm thử Playwright tự động** trong `tests/repro/<module>-gap-<id>.spec.ts` kèm lệnh chạy 1-click tại terminal (`npm run <module>:gap:<id>`), bảo đảm 100% bằng chứng thực tế, không lý thuyết suông.
+
+---
+
+## 5. Ma Trận Độ Phủ Rủi Ro Động (Tier S, M, L)
 
 Số lượng và cấu trúc test case tự động co giãn theo mức độ phức tạp kiến trúc và rủi ro vận hành ([`references/risk-based-coverage-matrix.md`](references/risk-based-coverage-matrix.md)):
 
@@ -126,7 +149,7 @@ Số lượng và cấu trúc test case tự động co giãn theo mức độ p
 
 ---
 
-## 5. Chuẩn Ngôn Ngữ Dễ Hiểu (Non-IT Business Phrasing)
+## 6. Chuẩn Ngôn Ngữ Dễ Hiểu (Non-IT Business Phrasing)
 
 Mọi kịch bản, bước thực hiện và kết quả mong đợi đều tuân thủ ngôn ngữ nghiệp vụ rõ ràng, không dùng tiếng lóng nội bộ nhà phát triển, giúp BA, Tester thủ công và Product Owner đều đọc hiểu ngay ([`references/business-terminology-guide.md`](references/business-terminology-guide.md)):
 
@@ -140,13 +163,13 @@ Mọi kịch bản, bước thực hiện và kết quả mong đợi đều tu�
 
 ---
 
-## 6. Chi Tiết 11 Kỹ Năng Chuyên Biệt (Skills)
+## 7. Chi Tiết 11 Kỹ Năng Chuyên Biệt (Skills)
 
 | Kỹ Năng (Skill) | Vai Trò & Nhiệm Vụ Cốt Lõi Trong Hệ Thống |
 | :--- | :--- |
 | [`module-intake`](skills/module-intake/SKILL.md) | Tiếp nhận tài liệu, khám phá hệ thống tương tự trong ngành (Step 0) qua Subagent gọn nhẹ (chạy 1 lần, tự hủy), khởi tạo FSM. |
 | [`codegraph-context-discovery`](skills/codegraph-context-discovery/SKILL.md) | Quét cây AST mã nguồn qua CodeGraph SQLite; nạp chữ ký theo cơ chế 5-Level Progressive Context. |
-| [`requirement-gap-analysis`](skills/requirement-gap-analysis/SKILL.md) | Đối chiếu spec x code x chuẩn ngành để vạch rõ Điểm bất cập & Điểm mù; sinh kịch bản tái hiện lỗi Playwright; lập phiếu `<module>-gaps.md`. |
+| [`requirement-gap-analysis`](skills/requirement-gap-analysis/SKILL.md) | Đối chiếu spec x code x chuẩn ngành để vạch rõ Điểm bất cập & Điểm gây ức chế người dùng (User Friction); sinh kịch bản Playwright tái hiện lỗi; lập phiếu `<module>-gaps.md`. |
 | [`playwright-investigation`](skills/playwright-investigation/SKILL.md) | Mở trình duyệt Chromium qua Playwright MCP, chụp ảnh minh chứng thực tế $\rightarrow$ **Dừng tại Cổng 1**. |
 | [`testcase-design`](skills/testcase-design/SKILL.md) | Thiết kế test case 13 cột và kiểm soát truy vết hai chiều trên tập yêu cầu đã nạp. |
 | [`testcase-review-export`](skills/testcase-review-export/SKILL.md) | Tự soát lỗi nội bộ, xuất Excel phong cách Pastel Pill Badges $\rightarrow$ **Dừng tại Cổng 2**. |
@@ -158,7 +181,7 @@ Mọi kịch bản, bước thực hiện và kết quả mong đợi đều tu�
 
 ---
 
-## 7. Hiệu Năng & Đo Lường Token Thực Tế (Ground Truth)
+## 8. Hiệu Năng & Đo Lường Token Thực Tế (Ground Truth)
 
 Hệ thống hoạt động theo nguyên lý kỹ thuật: **Tối ưu hóa tiêu thụ ngữ cảnh, KHÔNG thu hẹp phạm vi khám phá** (*Optimize Context Consumption, NOT Discovery Coverage*).
 
@@ -212,7 +235,7 @@ Thu thập chỉ số `usage_metadata` chuẩn xác từ các lệnh gọi API t
 
 ---
 
-## 8. Cấu Trúc Dự Án & Bộ Kịch Bản (Scripts)
+## 9. Cấu Trúc Dự Án & Bộ Kịch Bản (Scripts)
 
 ```text
 qa-agent-system/
@@ -243,7 +266,7 @@ qa-agent-system/
 
 ---
 
-## 9. Cài Đặt & Nhúng Dự Án
+## 10. Cài Đặt & Nhúng Dự Án
 
 ### Cài đặt công cụ phụ trợ (Chỉ cần chạy 1 lần):
 ```powershell
