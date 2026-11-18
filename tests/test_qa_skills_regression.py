@@ -932,6 +932,9 @@ class TestQASkillsRegression(unittest.TestCase):
         self.assertIn("system-architecture-flows.md", intake_text)
         self.assertIn("CACHE HIT", intake_text)
         self.assertIn("CACHE MISS", intake_text)
+        self.assertIn("invoke_subagent", intake_text)
+        self.assertIn("manage_subagents", intake_text)
+        self.assertIn("Temporary File Cleanup", intake_text)
 
         gap_skill = PROJECT_ROOT / "skills" / "requirement-gap-analysis" / "SKILL.md"
         gap_text = gap_skill.read_text(encoding="utf-8")

@@ -76,9 +76,15 @@ description: >-
    * **Idempotent Cache Check (Run ONLY if not already present):**
      - Check if `system-architecture-flows.md` exists in the project root or workspace root.
      - **CACHE HIT:** If `system-architecture-flows.md` already exists: **SKIP execution completely** (0 token consumption, 0 execution latency). Reuse the existing global landscape.
-     - **CACHE MISS:** If `system-architecture-flows.md` is missing:
-       1. Inspect high-level project structure, inter-service routes, API gateway configs, and external 3rd-party dependencies (payment, auth, messaging queues, webhooks).
-       2. Author a standalone deliverable `system-architecture-flows.md` in workspace root adhering to `references/system-architecture-flows-template.md`.
+     - **CACHE MISS (Ephemeral Subagent Acceleration & Immediate Teardown):**
+       If `system-architecture-flows.md` is missing, accelerate research and preserve the parent agent's context window by delegating to a dedicated, lightweight ephemeral subagent:
+       1. **Spawn Ephemeral Subagent:** Invoke a background subagent via `invoke_subagent`:
+          - `Role`: `"System Architecture Scout"`
+          - `TypeName`: `"research"` (or `"self"`)
+          - `Model`: `"flash"` (fast, economical, low-latency)
+          - `Prompt`: Instruct the subagent to explore high-level project structure, inter-service routes, API gateways, external 3rd-party dependencies (payment, auth, messaging queues, webhooks), and author `system-architecture-flows.md` in workspace root adhering to `references/system-architecture-flows-template.md`.
+       2. **Mandatory Temporary File Cleanup:** The subagent MUST clean up and delete all temporary scratch scripts, AST cache dumps, or intermediate logs created during discovery before completing.
+       3. **Immediate Session Termination (Zero Lingering Subagents):** As soon as `system-architecture-flows.md` is generated and verified on disk, the parent agent MUST immediately terminate the subagent session via `manage_subagents(Action="kill", ConversationIds=[subagent_id])`. This releases memory, conserves tokens, and strictly prevents idle subagents from lingering in the background.
    * **Strict Isolation Rule:** Strictly do NOT place global system architecture into `module-context.md`. `system-architecture-flows.md` is a standalone project-wide artifact reused across all module testing cycles to expose cross-system blindspots and architectural inconsistencies.
 6. **Initialize Workflow State:**
    * Invoke `python scripts/state_manager.py init "<ModuleName>"` to create or reset `.qa-state.json`.
