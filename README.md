@@ -72,17 +72,17 @@ Sau khi thiết kế và xuất bản file Excel `<module>-testcases.xlsx`, AI s
 
 ```mermaid
 flowchart TD
-    Start(["Bắt đầu: Yêu cầu kiểm thử phân hệ"]) --> S0["Bước 0: Tiền xử lý tài liệu & Đặc tả (MarkItDown)"]
-    S0 --> S1["Bước 1: Quét AST & Vẽ Sơ đồ luồng hình thoi/chữ nhật (CodeGraph JIT)"]
-    S1 --> S2["Bước 2: Phân tích kẽ hở kép UX & Rủi ro kỹ thuật (Gap Analysis)"]
-    S2 --> S3["Bước 3: Thám thính UI & Chụp ảnh đã lắng đọng (Playwright MCP Anti-Loading)"]
+    Start(["Bắt đầu: Yêu cầu kiểm thử phân hệ"]) --> S0["Bước 0: Tiền xử lý & Khám phá Toàn cảnh Liên hệ thống<br/>(Subagent Scout: Chạy 1 lần -> system-architecture-flows.md -> Tự xóa file tạm & đóng phiên)"]
     
-    S3 --> S4["Bước 4: Thiết kế Test Case theo Rủi ro Động (RBC Matrix)"]
+    S0 --> S1["Bước 1: Khám phá Ngữ cảnh Module & 3 Câu Hỏi Cốt Lõi<br/>(CodeGraph JIT AST -> module-context.md: Mục đích, Ai dùng, Sơ đồ luồng)"]
+    
+    S1 --> S2["Bước 2 & 3: Phân tích Kẽ hở Kép & Sinh Kịch bản Tái hiện Playwright<br/>(Đối chiếu Toàn cảnh x Module -> tests/repro/<module>-gap.spec.ts & lệnh npm run <module>:gap:1)"]
+    
+    S2 --> S4["Bước 4: Thiết kế Test Case theo Rủi ro Động (Tier S, M, L)"]
     S4 -. "Phát hiện bất định kiến trúc lớn" .-> S2
-    S4 --> S5["Bước 5: Xuất bản file Excel doanh nghiệp (.xlsx)"]
+    S4 --> S5["Bước 5: Xuất bản file Excel doanh nghiệp 13 cột (.xlsx)"]
     
-    S5 --> GateReview{{"CHỐT CHẶN TRỌNG YẾU: HÀI LÒNG TEST CASE?
-Bàn giao Excel và hỏi: 'Bạn có hài lòng với testcase hiện tại không?'"}}
+    S5 --> GateReview{{"CHỐT CHẶN TRỌNG YẾU DUY NHẤT: HÀI LÒNG TEST CASE?<br/>Bàn giao Excel và hỏi: 'Bạn có hài lòng với bộ testcase hiện tại không?'"}}
     
     GateReview -- "KHÔNG (Cần sửa)" --> FixLoop["Thu nhận góp ý & Rollback về Bước 4 sửa theo ý người dùng"]
     FixLoop --> S4
@@ -99,7 +99,7 @@ Bàn giao Excel và hỏi: 'Bạn có hài lòng với testcase hiện tại kh�
     classDef step fill:#EFF6FF,stroke:#3B82F6,stroke-width:1px,color:#1E3A8A;
     classDef done fill:#DCFCE7,stroke:#16A34A,stroke-width:1.5px,color:#166534;
     class GateReview stop;
-    class S0,S1,S2,S3,S4,S5,FixLoop,S61,S62,S64,S7 step;
+    class S0,S1,S2,S4,S5,FixLoop,S61,S62,S64,S7 step;
     class Start,WaitManual,EndNode done;
 ```
 
