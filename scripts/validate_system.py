@@ -81,6 +81,8 @@ def validate_file_structure():
     assert (SYSTEM_ROOT / "references" / "testcase-quality-checklist.md").exists(), "checklist missing"
     assert (SYSTEM_ROOT / "references" / "workflow-state-schema.json").exists(), "state schema missing"
     assert (SYSTEM_ROOT / "scripts" / "token_benchmark.py").exists(), "token_benchmark.py missing"
+    assert (SYSTEM_ROOT / "scripts" / "lint_test_code.py").exists(), "lint_test_code.py missing"
+    assert (SYSTEM_ROOT / "scripts" / "quality_gate.py").exists(), "quality_gate.py missing"
     return "All structural directories and global files exist."
 
 def validate_skill_metadata():

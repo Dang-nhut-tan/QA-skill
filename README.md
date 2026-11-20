@@ -6,7 +6,7 @@
 ![Automation: Playwright](https://img.shields.io/badge/Execution-Playwright_CLI_&_MCP_Hybrid-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
 ![Document: MarkItDown](https://img.shields.io/badge/Ingestion-Microsoft_MarkItDown-0284C7?style=for-the-badge&logo=microsoft)
 ![Optimization: Ground Truth](https://img.shields.io/badge/Telemetry-Ground_Truth_API-EA580C?style=for-the-badge)
-![Status: 127/127 Tests PASS](https://img.shields.io/badge/Test_Suite-127%2F127_PASS_(100%25)-16A34A?style=for-the-badge)
+![Status: 142/142 Tests PASS](https://img.shields.io/badge/Test_Suite-142%2F142_PASS_(100%25)-16A34A?style=for-the-badge)
 ![Architecture: 9/9 Validated](https://img.shields.io/badge/Architecture-9%2F9_VALIDATED-0D9488?style=for-the-badge)
 
 **Hệ Thống Trợ Lý Kiểm Thử Phần Mềm Thông Minh Đẳng Cấp Doanh Nghiệp (Enterprise QA Agent System)**  
@@ -90,7 +90,7 @@ python scripts/validate_system.py
 ### Bước 2: Chạy bộ kiểm thử tự động toàn diện
 ```powershell
 $env:PYTHONIOENCODING="utf-8"; python -m pytest tests -q
-# Kết quả mong đợi: 127 passed, 54 subtests passed (100% PASS)
+# Kết quả mong đợi: 142 passed, 54 subtests passed (100% PASS)
 
 npx playwright test
 # Kết quả mong đợi: 5 passed (2.0s)
@@ -365,6 +365,8 @@ qa-agent-system/
 ├── skills/                        # 13 kỹ năng kiểm thử chuyên biệt hóa (SKILL.md)
 ├── scripts/
 │   ├── quick_audit.py             # Động cơ Fast-Track QA Audit v2 (JIT AST, 5 nhóm bất cập, Playwright CLI ≤ 60s)
+│   ├── quality_gate.py            # Cổng kiểm soát chất lượng AI Coding Quality Gate (5 nhóm rules PW, SEC, PY, ARCH, QA)
+│   ├── lint_test_code.py          # Linter tĩnh kiểm soát chuẩn C1-C5, Playwright, Security & Python AST
 │   ├── state_manager.py           # Quản lý FSM nguyên tử (.tmp + .bak) với cơ chế PID lock recovery & Optimistic Lock
 │   ├── codegraph_discovery.py     # Quét cây AST, 5-level context và trích xuất chữ ký phương thức
 │   ├── codegraph_preflight.py     # Tiền kiểm tra môi trường CodeGraph, loại trừ thư mục binary
@@ -375,14 +377,14 @@ qa-agent-system/
 │   ├── token_benchmark.py         # Đo lường token ground-truth & production telemetry logger
 │   ├── verify_and_embed_images.py # Kiểm tra tính toàn vẹn của ảnh Playwright & nhúng link an toàn
 │   ├── generate_template.py       # Tự động sinh file Excel mẫu chuẩn (excel-testcases-template.xlsx)
-│   ├── lint_test_code.py          # Linter tĩnh kiểm soát chuẩn C1-C5 trước khi hoàn tất automation
 │   └── validate_system.py         # Bộ kiểm thử xác thực 9 bước kiến trúc toàn hệ thống (0 false PASS)
-├── tests/                         # 127 bài kiểm thử tự động toàn diện (100% PASS)
+├── tests/                         # 142 bài kiểm thử tự động toàn diện (100% PASS)
+│   ├── test_quality_gate_regression.py # 15 bài test hồi quy AI Coding Quality Gate & Lint Rules
+│   ├── test_quick_audit_regression.py # 15 bài test hồi quy Fast-Track QA Audit v2
 │   ├── test_qa_skills_regression.py   # 56 bài test hồi quy FSM, bảo mật, RTM, Excel & Learning
 │   ├── test_codegraph_upgrades.py     # 30 bài test AST discovery, classification & token benchmark
 │   ├── test_adaptive_level4.py        # 11 bài test cô lập trạng thái đa phân hệ và JIT AST Level 4
 │   ├── test_golden_e2e_pipeline.py    # 15 bài test mô phỏng khép kín quy trình E2E trên dự án mẫu
-│   ├── test_quick_audit_regression.py # 15 bài test hồi quy Fast-Track QA Audit v2
 │   ├── smoke.spec.js                  # Playwright smoke test khởi chạy trình duyệt thật
 │   └── fixtures/                      # Ứng dụng mẫu đối chứng (order-app.html, order.ts, order.page.ts)
 ├── templates/                     # File Excel mẫu chuẩn (testcase-template.xlsx)

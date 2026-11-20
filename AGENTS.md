@@ -104,7 +104,52 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
 
 ---
 
-## 4. Strict Guardrails & Prohibitions
+## 4. AI Coding Quality Gate & Lint Feedback Loop
+
+All AI coding agents (Codex, Claude Code, Antigravity) generating or editing code in this repository MUST comply with the **AI Coding Quality Gate** (`scripts/quality_gate.py`).
+
+### A. Mandatory Lint Rules Matrix
+| Rule ID | Rule Name | Severity | Scope | Violation Trigger & Remediation |
+| :--- | :--- | :---: | :--- | :--- |
+| **PW-001** | `ZERO_SLEEP_VIOLATION` | **BLOCK** | Test specs (`.js`, `.ts`, `.py`) | Prohibits `waitForTimeout()`, `time.sleep()`. Use web-first assertions (`await expect(locator).toBeVisible()`). |
+| **PW-002** | `FLOATING_PROMISE_VIOLATION` | **BLOCK** | Playwright specs (`.js`, `.ts`) | Prohibits un-awaited async web assertions and un-awaited Playwright page actions (`click`, `goto`, `fill`). Prefix with `await`. |
+| **PW-003** | `TRACEABILITY_VIOLATION` | **BLOCK** | Test specs | Every test title must contain an approved traceable ID: `TC-xxx`, `GAP-xxx`, or `GUARD-xxx`. |
+| **PW-004** | `FOCUSED_TEST_VIOLATION` | **BLOCK** | Playwright specs | Prohibits `test.only()`, `it.only()`, and ungrounded `test.skip()` without reason/ticket. Remove focus before handover. |
+| **PW-005** | `LOCATOR_QUALITY_WARNING` | **WARNING** | Playwright specs | Advises against absolute XPath (`//html/...`), deep DOM chains, or ungrounded `.nth()`. Use user-facing semantic locators (`getByRole`, `getByText`, `data-testid`). |
+| **SEC-001** | `HARDCODED_SECRET_VIOLATION` | **BLOCK** | All code (`.js`, `.ts`, `.py`) | Prohibits hardcoding passwords, API tokens, secret keys. Read from environment variables (`process.env.TEST_PASSWORD`). |
+| **SEC-002** | `UNMASKED_CREDENTIAL_LOG_VIOLATION` | **BLOCK** | All code | Prohibits printing or logging unmasked credentials/tokens to console or logger. Mask with `***REDACTED***`. |
+| **PY-001** | `SILENT_EXCEPTION_VIOLATION` | **BLOCK** | Python code (`.py`) | AST-level: Prohibits bare `except:` or swallowed exceptions (`except Exception: pass`). Catch specific errors and log or re-raise. |
+| **PY-002** | `MUTABLE_DEFAULT_ARG_VIOLATION` | **BLOCK** | Python code (`.py`) | AST-level: Prohibits mutable default parameters (`items=[]`, `data={}`). Default to `None` and initialize inside function. |
+| **PY-003** | `UNSAFE_EVAL_VIOLATION` | **BLOCK** | Python code (`.py`) | AST-level: Prohibits `eval()` and `exec()`. Use `ast.literal_eval()` or dictionary dispatch tables. |
+| **ARCH-001** | `IMPORT_BOUNDARY_VIOLATION` | **BLOCK** | All code | Prohibits production scripts (`scripts/`) from importing test code or test fixtures (`tests/`). |
+| **ARCH-002** | `FRAMEWORK_UTILITY_REUSE_WARNING` | **WARNING** | All code | Flags re-implementing manual sleep polling loops or file locking routines. Reuse `expect.poll` or `WorkflowStateManager`. |
+| **QA-001** | `NO_FALSE_PASS_VIOLATION` | **BLOCK** | State files & reports | Prohibits reporting COMPLETED when test execution failed or execution artifacts are missing. |
+| **QA-002** | `UNVERIFIED_BUG_VIOLATION` | **BLOCK** | State files & reports | Prohibits marking gaps CONFIRMED without reproducible script in `tests/repro/` and execution proof. |
+| **QA-003** | `UNVERIFIED_GUARD_VIOLATION` | **BLOCK** | State files & reports | Prohibits saving GUARD without verified negative execution proof in `tests/guards/`. |
+| **QA-004** | `APPROVAL_GATE_VIOLATION` | **BLOCK** | State files & runtime | Prohibits executing automation implementation without human approval token at Step 5. |
+| **QA-005** | `PRODUCTION_SAFETY_VIOLATION` | **BLOCK** | State files & runtime | Prohibits executing automated mutations against production environments. |
+
+### B. AI Auto-Fix Feedback Loop Protocol
+Whenever an AI Agent generates or modifies code:
+1. **Execute Quality Gate:**
+   ```powershell
+   python scripts/quality_gate.py <modified_files>
+   ```
+2. **Inspect Violations:** Read line numbers, rule IDs, and remediation instructions.
+3. **Target Root Cause:** Apply structural fixes based strictly on remediation hints.
+4. **Re-Audit Quality Gate:** Verify zero `BLOCK` violations remain.
+5. **Run Verification Tests:** Ensure related tests pass before handover.
+
+### C. Non-Negotiable Auto-Fix Guardrails
+* **Max 2 Iterations:** Maximum 2 auto-fix repair cycles per error group. If unresolved, stop and report blocker with evidence.
+* **PROHIBITED Suppression Tricks:** Never add lint suppression comments (`/* eslint-disable */`, `# noqa`, `// @ts-ignore`) without approved justification.
+* **PROHIBITED Rule Disabling:** Never alter linter source code or delete rule patterns to force a pass.
+* **PROHIBITED Assertion Weakening:** Never delete assertions or weaken expected checks to turn a failing test green.
+* **PROHIBITED Scope Creep:** Never modify business logic or files outside the assigned task scope.
+
+---
+
+## 5. Strict Guardrails & Prohibitions
 
 * **PROHIBITED:** Capturing screenshots while a page is still loading, spinning, or rendering skeleton placeholders (must wait for full DOM and network settlement).
 * **PROHIBITED:** Proceeding to automation without user satisfaction and explicit approval on test cases.
