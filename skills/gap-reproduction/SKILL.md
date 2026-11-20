@@ -10,7 +10,7 @@ description: >-
 # Skill: Gap Reproduction Engineering Standards (Step 3 Shared Capability)
 
 ## 1. Description & Trigger Conditions
-* **Purpose:** Serves as the dedicated runtime engineering bridge between **Step 2 (Requirement Gap Analysis)** and **Step 4 (Test Case Design)**. Takes suspected discrepancy items (`GAP-xxx`), physically tests them on live web UI and API endpoints using Playwright MCP, eliminates false alarms (Anti-False-Alarm Protocol), authors clean standalone Playwright bug reproduction specs (`tests/repro/<module>-gap-<id>.spec.ts`) without hardcoded sleeps, executes a live `--debug` pre-delivery verification run, and embeds dedicated 1-click terminal commands under each numbered gap item in `<module>-gaps.md`.
+* **Purpose:** Serves as the dedicated runtime engineering bridge between **Step 2 (Requirement Gap Analysis)** and **Step 4 (Test Case Design)**. Takes suspected discrepancy items (`GAP-xxx`), physically tests them on live web UI and API endpoints using the **Hybrid Architecture** (Playwright CLI primary for white-box/codebase, Playwright MCP fallback for black-box/exploration), eliminates false alarms (Anti-False-Alarm Protocol), authors clean standalone Playwright bug reproduction specs (`tests/repro/<module>-gap-<id>.spec.ts`) without hardcoded sleeps, executes a live `--debug` pre-delivery verification run, and embeds dedicated 1-click terminal commands under each numbered gap item in `<module>-gaps.md`.
 * **Triggers:**
   * Completed Step 2 (`requirement-gap-analysis`) with identified gaps.
   * Workflow state is `RUNTIME_INVESTIGATION` or `API_INVESTIGATION`.
@@ -24,18 +24,21 @@ description: >-
 
 ## 3. Step-by-Step Execution Sequence
 
-### Phase 1: Live Verification via Playwright MCP (Empirical Verification)
-1. **Navigate to Target Route (`browser_navigate`):**
+### Phase 1: Live Verification via Hybrid Engine (Empirical Verification)
+1. **Engine Selection:**
+   - **Primary (White-Box / Grey-Box):** Default to Playwright CLI execution against local server or fixtures (`npx playwright test tests/repro/...`). Fast (~1.5s), token-lean, generates persistent `.spec.ts` files immediately.
+   - **Fallback (Black-Box / Obfuscated DOM):** Activate Playwright MCP interactive tools (`browser_navigate`, `browser_snapshot`, `browser_click`) if locators are unknown, dynamic, or require interactive exploratory probing.
+2. **Navigate & Await Settlement:**
    - Open target page on dev/staging environment.
-   - Verify page ready state (`document.readyState === 'complete'`).
-2. **Inspect Accessibility Snapshot & DOM (`browser_snapshot`):**
-   - Capture live DOM tree, extract real buttons, inputs, placeholders, and container refs.
-3. **Execute Suspected Failure Scenario (`browser_click`, `browser_type`):**
+   - Verify page ready state (`document.readyState === 'complete'`) and clear loading spinners.
+3. **Inspect Accessibility Snapshot & DOM (`browser_snapshot` or Page Objects):**
+   - Capture live DOM tree or Page Object methods, extract real buttons, inputs, placeholders, and container refs.
+4. **Execute Suspected Failure Scenario (`browser_click`, `browser_type` or Playwright CLI spec):**
    - Reproduce exact user interactions.
-4. **Harvest Runtime Diagnostics:**
-   - Call `browser_console_messages` to capture uncaught JS exceptions and 4xx/5xx network responses.
-   - Call `browser_network_requests` to catch silent backend drops.
-5. **Anti-False-Alarm & Valuable Guard Retention Protocol:**
+5. **Harvest Runtime Diagnostics:**
+   - Capture uncaught JS exceptions and 4xx/5xx network responses via `browser_console_messages` or Playwright `page.on('pageerror', ...)`.
+   - Capture silent backend drops via `browser_network_requests` or Playwright `page.on('response', ...)`.
+6. **Anti-False-Alarm & Valuable Guard Retention Protocol:**
    - If live interaction proves the app functions safely, displays a clear validation message, or does not crash:
      * **IMMEDIATELY ROLL BACK TO `<module>-gaps.md`:** Remove the suspected gap from the active defect list.
      * Reclassify as `Verified Security Guards (GUARD-xxx, PASS)`.

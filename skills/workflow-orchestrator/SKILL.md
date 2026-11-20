@@ -34,6 +34,13 @@ The orchestrator dynamically scales lifecycle depth based on module risk tier an
 > [!TIP]
 > **Lean Execution Rule:** If the user only wants to investigate, reproduce, or verify a specific defect or hotfix, default to **`quick` mode**. Never force a single-bug investigation through 3-sheet Excel exports or multi-industry benchmark surveys.
 
+### 3.1. Hybrid UI Investigation Architecture (CLI Primary + MCP Fallback)
+During Step 3A (`RUNTIME_INVESTIGATION`):
+* **Primary Engine (White-Box / Grey-Box): Playwright CLI Execution**
+  When repository source code, Page Objects, or local fixtures are available, author and execute quick repro scripts (`tests/repro/` or `tests/guards/`) via `npx playwright test`. Fast (~1.5s), consumes ~90% fewer tokens, and directly outputs version-controlled, CI-ready test artifacts.
+* **Secondary / Fallback Engine (Black-Box / Obfuscated DOM): Playwright MCP Interactive Tools**
+  When targeting external systems without source code, dynamic selectors are obfuscated, or interactive exploratory probing is needed: use Playwright MCP interactive tools (`browser_navigate`, `browser_snapshot`, `browser_click`, `browser_console_messages`, `browser_network_requests`).
+
 ---
 
 ## 4. Workflow State Machine & Lifecycle Graph

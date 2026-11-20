@@ -1248,5 +1248,25 @@ class TestQASkillsRegression(unittest.TestCase):
         template_text = template_file.read_text(encoding="utf-8")
         self.assertIn("External benchmark differences without empirical grounds are triaged as Advisory", template_text)
 
+    def test_hybrid_ui_investigation_architecture_standardized(self):
+        """Verify Hybrid Architecture (Playwright CLI Primary + MCP Fallback) is codified across skills."""
+        pw_skill = PROJECT_ROOT / "skills" / "playwright-investigation" / "SKILL.md"
+        pw_text = pw_skill.read_text(encoding="utf-8")
+        self.assertIn("Primary Engine (White-Box / Grey-Box): Playwright CLI Execution", pw_text)
+        self.assertIn("Secondary / Fallback Engine (Black-Box / Obfuscated DOM): Playwright MCP Interactive Tools", pw_text)
+
+        orch_skill = PROJECT_ROOT / "skills" / "workflow-orchestrator" / "SKILL.md"
+        orch_text = orch_skill.read_text(encoding="utf-8")
+        self.assertIn("Hybrid UI Investigation Architecture", orch_text)
+        self.assertIn("Primary Engine (White-Box / Grey-Box): Playwright CLI Execution", orch_text)
+
+        agents_file = PROJECT_ROOT / "AGENTS.md"
+        agents_text = agents_file.read_text(encoding="utf-8")
+        self.assertIn("Playwright Hybrid (CLI Primary + MCP Fallback)", agents_text)
+
+        gap_repro_skill = PROJECT_ROOT / "skills" / "gap-reproduction" / "SKILL.md"
+        gap_repro_text = gap_repro_skill.read_text(encoding="utf-8")
+        self.assertIn("Hybrid Architecture", gap_repro_text)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

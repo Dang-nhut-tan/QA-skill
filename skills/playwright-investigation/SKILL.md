@@ -1,7 +1,8 @@
 ---
 name: playwright-investigation
 description: >-
-  Verifies discovered requirement gaps directly on the live UI using Playwright MCP.
+  Verifies discovered requirement gaps directly on the live UI using a Hybrid Architecture
+  (Playwright CLI primary for white-box/codebase, Playwright MCP fallback for black-box/exploration).
   Authors executable Playwright bug reproduction scripts (tests/repro/<module>-gap-<id>.spec.ts),
   provides 1-click terminal reproduction commands (npm run <module>:gap:<id>), harvests DevTools
   runtime errors, and embeds reproducible code proof into <module-name>-gaps.md before testcase design.
@@ -10,7 +11,11 @@ description: >-
 # Skill: Playwright Live UI Verification & Reproduction (Step 3A)
 
 ## 1. Description & Trigger Conditions
-* **Purpose:** Proactively verify on the actual web interface whether the requirement gaps and potential defects identified in Step 2 (`requirement-gap-analysis`) actually occur. Instead of relying on fragile, static screenshots that can capture loading screens or become obsolete, **author standalone executable Playwright bug reproduction scripts (`tests/repro/<module>-gap-<id>.spec.ts`)** for every observable gap. Provide 1-click terminal reproduction commands (`npm run <module>:gap:<id>` and `npx playwright test ...`), harvest DevTools runtime diagnostics, and embed the executable proof into the BA Clarification Ticket (`<module-name>-gaps.md`) so developers and QA engineers can effortlessly reproduce, debug, and verify the issues locally.
+* **Purpose:** Proactively verify on the actual web interface whether the requirement gaps and potential defects identified in Step 2 (`requirement-gap-analysis`) actually occur. Instead of relying on fragile, static screenshots that can capture loading screens or become obsolete, **author standalone executable Playwright bug reproduction scripts (`tests/repro/<module>-gap-<id>.spec.ts`)** for every observable gap using a Hybrid Investigation Architecture:
+  * **Primary Engine (White-Box / Grey-Box): Playwright CLI Execution**
+    When source code, fixtures, or Page Objects are accessible, author and execute quick repro specs (`tests/repro/` or `tests/guards/`) via Playwright CLI (`npx playwright test`). This provides ~1.5s execution speed, saves ~90% tokens by avoiding repetitive DOM snapshot round-trips, and directly produces version-controlled, CI-ready test artifacts.
+  * **Secondary / Fallback Engine (Black-Box / Obfuscated DOM): Playwright MCP Interactive Tools**
+    When no source code is accessible, dynamic selectors are obfuscated, or interactive step-by-step UI exploration is required: Use Playwright MCP interactive tools (`browser_navigate`, `browser_snapshot`, `browser_click`, `browser_console_messages`, `browser_network_requests`).
 * **Triggers:**
   * Identified discrepancy points (gaps) from `requirement-gap-analysis`.
   * State transitions from `GAP_ANALYSIS` $\rightarrow$ `RUNTIME_INVESTIGATION` or direct progression to `TESTCASE_GENERATION`.
@@ -21,9 +26,11 @@ description: >-
   * List of identified `clarification_issues` (`GAP-xxx`) from Step 2.
   * `module-context.md` from Step 1.
 
-## 3. Prerequisites
-* **Playwright MCP** server configured and operational.
-* Target web application running and accessible (local dev server or staging environment).
+## 3. Prerequisites & Tool Availability
+* **Playwright Hybrid Engine:**
+  * **Playwright CLI:** Installed globally or locally in repository (`npx playwright test`).
+  * **Playwright MCP Server:** Configured and operational as an exploratory fallback.
+* Target web application running and accessible (local dev server, staging environment, or local HTML fixtures).
 * **Credentials Check:** Verify if Staging URL and test account metadata are configured in `.env.local` or environment variables (per `module-intake`). Never persist plaintext passwords or secrets in `.qa-state.json`. If required credentials are not yet set, proactively instruct the user to configure `.env.local`.
 
 ## 4. Step-by-Step Execution Instructions
@@ -44,23 +51,27 @@ Prior to interacting with live forms or triggering actions on the web applicatio
 * Filter the list of identified gap items from Step 2 to isolate issues that can be observed on the UI (e.g., form validation, error messages, disabled buttons, warning modals, tab transitions, redirects).
 * For backend-only issues (e.g., database triggers without UI feedback, external gateway dependencies): Record `[Verified via AST - No UI Rendering]`.
 
-### 4.2. Live UI Inspection & Verification via Playwright MCP Tools
+### 4.2. Live UI Inspection & Verification (Hybrid Execution Protocol)
 > [!IMPORTANT]
-> **MANDATORY SEQUENCE: VERIFY VIA PLAYWRIGHT MCP FIRST $\longrightarrow$ AUTHOR REPRO SPEC ONLY IF BUG IS CONFIRMED!**
-> Strictly prohibited from authoring `tests/repro/` specs prior to live browser inspection via Playwright MCP.
+> **HYBRID ENGINE SELECTION POLICY:**
+> 1. **Default (White-Box / Grey-Box with Codebase):**
+>    - Author the isolated reproduction spec in `tests/repro/` and run directly via **Playwright CLI** (`npx playwright test tests/repro/<module>-gap-<id>.spec.ts`).
+>    - Fast, deterministic (~1.5s), consumes minimal tokens, and instantly generates a persistent reproduction spec for CI and developers.
+> 2. **Fallback (Black-Box / Obfuscated UI / Exploratory Debugging):**
+>    - If selectors cannot be determined from code or an unexpected modal/interaction state occurs, activate **Playwright MCP** interactive tools (`browser_snapshot`, `browser_click`, `browser_console_messages`, `browser_network_requests`) to inspect live accessibility trees and real-time DevTools diagnostics.
 
 Execution sequence:
-1. **Navigate to Route (`browser_navigate`):**
+1. **Navigate to Route (`browser_navigate` or spec `page.goto`):**
    - Navigate directly to target route (e.g. `https://talent.io.vn/auth/login`).
    - Await page load completion (`document.readyState === 'complete'`).
    - **Anti-Loading-Screen Clearance Protocol:** Never capture screenshots or snapshots while spinners, skeleton placeholders, or loading bars are active. Await full DOM settlement and `networkidle`.
-2. **Inspect Accessibility Snapshot & DOM (`browser_snapshot`):**
-   - Inspect live accessibility tree to determine real active button roles, inputs, tabs, and placeholders.
-3. **Execute Interactive Verification Steps (`browser_click`, `browser_type`, `browser_fill_form`):**
+2. **Inspect Accessibility Snapshot & DOM (`browser_snapshot` / Page Object Inspection):**
+   - Inspect live accessibility tree or Page Object methods to determine real active button roles, inputs, tabs, and placeholders.
+3. **Execute Interactive Verification Steps (`browser_click`, `browser_type`, `browser_fill_form` or CLI test run):**
    - Faithfully execute the user interaction sequence documented in `<module>-gaps.md`.
-4. **Harvest Console & Network Runtime Diagnostics:**
-   - Invoke `browser_console_messages` to collect uncaught exceptions and 4xx/5xx token refresh failures.
-   - Invoke `browser_network_requests` to inspect failed API calls or background network drops.
+4. **Mandatory DevTools Diagnostics Protocol (Console & Network Logs):**
+   - Harvest uncaught exceptions and 4xx/5xx token refresh failures using `browser_console_messages` or Playwright `page.on('pageerror', ...)` / `page.on('console', ...)`.
+   - Harvest failed API calls or background network drops using `browser_network_requests` or Playwright `page.on('response', ...)`.
 5. **Anti-False-Alarm & Valuable Guard Retention Protocol:**
    - If live interaction proves the app functions safely, displays clear validation banners, or disallows unauthorized actions:
      * **IMMEDIATELY ROLL BACK TO `<module>-gaps.md`:** Remove the suspected gap from the active defect list.
@@ -68,7 +79,7 @@ Execution sequence:
      * **Valuable Guard Migration:** If a reproduction spec proved the defensive validation holds, migrate it to `tests/guards/<module>-guard-<id>.spec.ts` with ID `GUARD-xxx` for permanent regression protection. If the script was defective or broken, delete it immediately.
      * **STOP:** Do NOT retain false alarms in the active gap defect list.
 6. **Confirmed Gap Handling:**
-   - Only when Playwright MCP proves an actual defect exists (infinite spinner, unhandled 500, silent data loss, validation bypass), author or keep `tests/repro/<module>-gap-<id>.spec.ts`.
+   - Only when live verification proves an actual defect exists (infinite spinner, unhandled 500, silent data loss, validation bypass), author or keep `tests/repro/<module>-gap-<id>.spec.ts`.
 
 ### 4.3. Author Playwright Bug Reproduction Script & Register Terminal Commands (Confirmed Gaps Only)
 * Instead of brittle, dead static screenshots, every observable UI gap MUST be accompanied by an executable Playwright reproduction spec:

@@ -61,7 +61,7 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
                                            expose Inadequacies & Blindspots, assesses UX/Technical Risk, compiles numbered gaps
         │
         ▼
-[Step 3A: playwright-investigation]    --> Live UI verification via Playwright MCP & standalone repro specs (tests/repro/)
+[Step 3A: playwright-investigation]    --> Live UI verification via Hybrid Engine (Playwright CLI primary + Playwright MCP fallback) & standalone repro specs (tests/repro/)
 [Step 3B: api-investigation]           --> Direct API/RPC verification (UI validation bypass & silent API failure repro)
 [Step 3 Shared: gap-reproduction]      --> Shared reproduction engineering standards (zero hardcoded sleeps, 1-click commands)
         │
@@ -95,7 +95,7 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
 | :--- | :--- | :--- |
 | **Document Conversion** | **Microsoft MarkItDown** (`markitdown` CLI / MCP) | Convert PDF, Excel (.xlsx), Word (.docx) specifications into structured Markdown (.md). |
 | **Code Architecture & Graph** | **CodeGraph** (`codegraph` / `codegraph-mcp`) | Extract AST entry points, call flows, DB schemas, and God Nodes. |
-| **Runtime Behavioral Exploration** | **Playwright MCP** | Browser navigation, live UI verification, authoring standalone reproduction scripts (`tests/repro/`), registering 1-click terminal commands (`npm run`), and harvesting DevTools diagnostics. |
+| **Runtime Behavioral Exploration** | **Playwright Hybrid (CLI Primary + MCP Fallback)** | Primary: Fast CLI execution of isolated repro specs (`tests/repro/`). Fallback: Playwright MCP interactive tools for black-box DOM discovery and DevTools diagnostics. |
 | **API & Backend Investigation** | **`api-investigator` Subagent** (`api-investigation`) | Direct API calls via Playwright APIRequestContext, detecting UI validation bypass, silent API failures, authoring `tests/repro/*-api-gap-*.spec.ts`, and pre-delivery live verification. |
 | **Excel Export & Intake** | **Python + openpyxl** (`scripts/`) | Generate/parse formatted multi-sheet `.xlsx` workbooks with data validation. |
 | **Automation Execution** | **Playwright CLI** (`npx playwright test`) | Execute headless/headed tests, collect traces, and verify assertions. |
