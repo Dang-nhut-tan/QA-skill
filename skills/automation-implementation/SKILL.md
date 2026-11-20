@@ -110,6 +110,14 @@ await expect(page.locator('.alert-success')).toBeVisible();
      | 4 | C4: State Concurrency Safe | PASS | StateFileLock with PID check & TTL recovery applied |
      | 5 | C5: 100% Awaited Assertions | PASS | Linter verified 0 floating promises |
      ```
+
+4. **Mandatory Pre-Delivery Smoke Execution Gate (Chạy thực tế trước khi bàn giao):**
+   * The AI agent MUST execute a live dry-run of the authored test spec:
+     `npx playwright test <spec_file> --project=chromium-desktop`
+   * Confirm 0 syntax errors, 0 locator timeouts, and 0 harness crashes.
+   * If any step fails due to locator changes or timing, auto-repair the script immediately and re-run.
+   * STRICTLY PROHIBITED from handing over untested or broken test files to the user.
+
 4. **Transition Workflow State:**
    * Update workflow state:
      `python scripts/state_manager.py transition AUTOMATION_EXECUTION "Automation scripts generated and verified via Linter Gate"`.

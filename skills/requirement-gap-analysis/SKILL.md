@@ -118,7 +118,8 @@ description: >-
      - Execute concrete interaction steps to verify if the discrepancy occurs.
      - **Author a standalone Playwright bug reproduction script (`tests/repro/<module>-gap-<id>.spec.ts`)** with explicit assertions reproducing the failure, and provide 1-click terminal commands:
        * `npm run <module>:gap:<id>`
-       * `npx playwright test tests/repro/<module>-gap-<id>.spec.ts --headed`
+       * `npx playwright test tests/repro/<module>-gap-<id>.spec.ts --project=chromium-desktop --debug`
+       * `npx playwright test tests/repro/<module>-gap-<id>.spec.ts --project=chromium-desktop --headed`
      - Record step-by-step reproduction instructions from the end-user perspective (1. Open... 2. Enter... 3. Click... and observe...).
      - For backend-only logic lacking UI: explicitly tag `[Verified via AST - No UI Rendering]`.
 
@@ -143,7 +144,26 @@ description: >-
      - Content: Navigation, user interactions replicating the issue, and an assertion proving the bug.
    * Format the 1-click terminal commands into `<module-name>-gaps.md`:
      - Registered script: `npm run <module>:gap:<id>`
-     - Direct CLI: `npx playwright test tests/repro/<module>-gap-<id>.spec.ts --headed`
+     - Primary QA Debug CLI (Interactive inspector with timeout=0):
+       `npx playwright test tests/repro/<module>-gap-<id>.spec.ts --project=chromium-desktop --debug`
+     - Headed standard CLI:
+       `npx playwright test tests/repro/<module>-gap-<id>.spec.ts --project=chromium-desktop --headed`
+   * **Configuration Guard for tests/repro/:** Ensure playwright.config.js sets `testDir: './tests'` (covering both e2e and repro), preventing `Error: No tests found`.
+
+   * **Deterministic Reproduction Architecture (Direct API & page.route):**
+      - For gaps requiring complex preconditions (e.g. rate limit exhaustion, duplicate hashes, empty groups), recommend direct API seeding or `page.route()` fault injection in the reproduction spec rather than fragile multi-step UI precondition workflows.
+
+   * **Mandatory Pre-Delivery Execution Gate (Chạy thử trước khi bàn giao):**
+      - The agent MUST execute `npx playwright test tests/repro/<module>-gap-<id>.spec.ts --project=chromium-desktop` immediately after generating the script.
+      - Auto-repair any locator mismatch or timeout before embedding the script and terminal command into `<module-name>-gaps.md`.
+      - STRICTLY NEVER deliver broken reproduction scripts to the user.
+
+   * **Strict Truthful Rollback & Gap Elimination Protocol (Xác nhận không lỗi -> Quay về bước Gaps xóa bỏ ngay):**
+      - Nếu quá trình tái hiện bằng giao diện / Playwright xác nhận ứng dụng KHÔNG CÓ LỖI:
+        + **LẬP TỨC QUAY VỀ BƯỚC GAPS:** Xóa bỏ hoàn toàn bất cập đó khỏi `<module-name>-gaps.md`. Tuyệt đối không giữ lại bất cập ảo trong tài liệu hay chuyển tiếp sang thiết kế Testcase!
+        + **Phân loại chuẩn xác:** Nếu hệ thống có chốt chặn an toàn hoặc luồng nghiệp vụ hợp lệ (Intended Behavior), ghi nhận vào `Verified Security Guards` (`GUARD-xxx`, `PASS`).
+        + **Xóa Script Repro sai lệch:** Gỡ bỏ file spec tương ứng trong `tests/repro/` để tránh chạy sai điều kiện tiên quyết.
+        + **Đồng bộ hóa State:** Cập nhật `.qa-state.json` để loại bỏ mã GAP bị hủy khỏi phạm vi test.
 
 6. **Persist State Checkpoint & Register Artifact:**
    * Save questions into `.qa-state.json` under `clarification_issues`.

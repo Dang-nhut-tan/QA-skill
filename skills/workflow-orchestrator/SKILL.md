@@ -31,7 +31,8 @@ stateDiagram-v2
     
     GAP_ANALYSIS --> TESTCASE_GENERATION: Automatic Streamlined Progression (Audit gaps, author tests/repro/, embed npm run)
     GAP_ANALYSIS --> RUNTIME_INVESTIGATION: Optional deep runtime exploration
-    RUNTIME_INVESTIGATION --> TESTCASE_GENERATION: Embed gaps in design
+    RUNTIME_INVESTIGATION --> GAP_ANALYSIS: No bug found on UI -> Rollback & Delete Gap completely
+    RUNTIME_INVESTIGATION --> TESTCASE_GENERATION: Embed verified gaps in design
     
     TESTCASE_GENERATION --> TESTCASE_REVIEW: Step 4 (testcase-design: Dynamic RBC matrix)
     TESTCASE_REVIEW --> WAITING_FOR_APPROVED_TESTCASES: Step 5 [CORE HUMAN GATE: Deliver Excel & Ask Satisfaction]

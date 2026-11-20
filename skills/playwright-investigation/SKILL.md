@@ -64,7 +64,11 @@ Before executing ANY `browser_take_screenshot`:
   2. **1-Click Terminal Reproduction Commands:**
      - Always provide two clear execution options in `<module-name>-gaps.md`:
        * **Direct Playwright CLI command (Universal / Zero-config):**
-         `npx playwright test tests/repro/<module>-gap-<id>.spec.ts --headed`
+         # Primary QA Debug CLI (Interactive step-by-step inspector, zero timeout):
+         `npx playwright test tests/repro/<module>-gap-<id>.spec.ts --project=chromium-desktop --debug`
+         # Headed standard execution:
+         `npx playwright test tests/repro/<module>-gap-<id>.spec.ts --project=chromium-desktop --headed`
+         # Note: Ensure playwright.config.js sets `testDir: './tests'` to include tests/repro/
        * **Registered npm shortcut command:**
          `npm run <module>:gap:<id>`
   3. **Register Script in `package.json` (Optional / If Writable):**
@@ -73,6 +77,57 @@ Before executing ANY `browser_take_screenshot`:
   4. **Capture Execution Failure Trace:**
      - Run the reproduction script to confirm failure and capture trace logs (`--trace on` / `test-results/`).
      - Note the exact error outcome (e.g. Timeout waiting for selector, unhandled 500 API response).
+
+
+### 4.3.1. Hybrid Precondition Seeding (Direct API) & Fault Injection (page.route)
+> [!TIP]
+> **LESSON-LEARNED (LRN-005 / LRN-006): AVOID BRITTLE MULTI-STEP UI PRECONDITION SETUP**
+> When reproducing complex bugs that depend on specific prerequisite data states (e.g., classes with 0 students, duplicate evidence hashes, rate limits, expired tokens):
+> 1. **Direct API Seeding:** Use backend API/RPC calls (`request.post()`, Supabase client, or direct SQL seed) in `beforeAll` to create required prerequisite data in milliseconds, completely bypassing slow and flaky UI navigation.
+> 2. **Fault Injection via `page.route()`:** When live backend data cannot be easily altered or to simulate rare edge cases (429 Rate Limit, 500 Server Crash, Network Timeouts, Fraud/Duplicate Detection Flags):
+>    - Intercept network requests directly via Playwright:
+>      ```typescript
+>      await page.route('**/rest/v1/endpoint*', async (route) => {
+>        await route.fulfill({
+>          status: 200,
+>          contentType: 'application/json',
+>          body: JSON.stringify(mockEdgeCaseData),
+>        });
+>      });
+>      ```
+>    - This guarantees 100% deterministic, instant bug reproduction (< 2s) without polluting the staging database or depending on fragile third-party states.
+
+
+### 4.3.2. Mandatory Pre-Delivery Execution & Self-Verification Gate (CHẠY THỰC TẾ TRƯỚC KHI BÀN GIAO)
+> [!CRITICAL]
+> **STRICT ZERO-BROKEN-CODE POLICY (KHÔNG BÀN GIAO CODE KHI CHƯA CHẠY THỬ):**
+> The AI agent is STRICTLY PROHIBITED from delivering any generated code (reproduction spec, test script, helper) to the user without executing a live pre-delivery verification run first.
+> 
+> **Execution Protocol:**
+> 1. **Immediate Execution:** Immediately after generating/editing any `.spec.ts` file, the agent MUST run:
+>    `npx playwright test <path_to_spec> --project=chromium-desktop`
+> 2. **Pre-flight Error Triaging:**
+>    - Check for syntax errors, missing imports, unresolvable modules.
+>    - Check for locator mismatches (e.g. heading vs span, outdated placeholder, missing input name, button text changes).
+>    - Check for premature timeouts.
+> 3. **Auto-Repair Loop:** If execution fails due to script defects or locator drift:
+>    - Inspect failure screenshot and trace in `test-results/`.
+>    - Refactor locator or apply `page.route()` fault injection.
+>    - Re-run verification until the script executes cleanly without harness errors.
+> 4. **Delivery Clearance:** ONLY when the script executes successfully and accurately asserts the target scenario (without harness/locator crashes) is the agent permitted to present the code and terminal command to the user.
+
+
+### 4.3.3. Anti-Fabrication & Immediate Gap Elimination Protocol (XÁC NHẬN KHÔNG CÓ LỖI -> LẬP TỨC QUAY VỀ BƯỚC GAPS VÀ XÓA BỎ)
+> [!CAUTION]
+> **STRICT ANTI-FABRICATION CONTRACT (XÓA BỎ BẤT CẬP NẾU XÁC NHẬN KHÔNG CÓ LỖI TRÊN GIAO DIỆN):**
+> 1. **Zero Fake Assertions:** The AI agent is STRICTLY FORBIDDEN from inventing artificial test assertions, fake mocks, or inverted logic to claim a bug is confirmed when the live execution proves otherwise.
+> 2. **Immediate Rollback & Gap Elimination (Xác nhận không lỗi -> Quay về bước Gaps xóa bỏ ngay):**
+>    Khi kiểm chứng trên giao diện thực tế (qua Playwright hoặc trình duyệt), nếu xác nhận hệ thống hoạt động bình thường, không có lỗi như phỏng đoán:
+>    - **LẬP TỨC QUAY VỀ BƯỚC GAPS (`<module>-gaps.md`):**
+>      * **XÓA BỎ HOÀN TOÀN (Purge & Delete):** Loại bỏ hoàn toàn bất cập đó khỏi danh mục `Identified Gaps (GAP-xxx)`. Tuyệt đối không để sót lại hay chuyển tiếp sang bước thiết kế Testcase!
+>      * **Nếu là cơ chế an toàn hoặc luồng nghiệp vụ có chủ đích (Intended Behavior):** Ghi nhận vào mục `Verified Security Guards (GUARD-xxx, PASS)`.
+>      * **Xóa bỏ Script Repro sai lệch:** Xóa bỏ file kịch bản trong `tests/repro/` ngay lập tức để tránh nhầm lẫn hoặc chạy lại dữ liệu rác.
+>    - **Đồng bộ hóa State:** Cập nhật `.qa-state.json`, đảm bảo bộ testcase chỉ kiểm chứng tính năng/bảo vệ thực tế, không kiểm chứng bug ảo.
 
 ### 4.4. Mandatory DevTools Diagnostics Protocol (Console & Network Error Harvesting)
 > [!IMPORTANT]
