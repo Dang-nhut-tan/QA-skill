@@ -28,6 +28,18 @@ description: >-
 
 ## 4. Step-by-Step Execution Instructions
 
+### 4.0. Production Safety Gate (Pre-Execution Protection)
+Prior to interacting with live forms or triggering actions on the web application:
+1. **Target Environment Classification:**
+   - Verify target URL against allowlisted environments (`localhost`, `127.0.0.1`, `*.test`, `*.local`, `dev.*`, `staging.*`, `uat.*`).
+   - If target is **Production** or unverified: **HALT IMMEDIATELY**. Request explicit user confirmation before executing destructive UI actions (deleting records, user accounts, mass updates, or checkout payments).
+2. **Deterministic Test Data Prefix:**
+   - Any form inputs creating or updating records MUST use collision-resistant names prefixed with `[QA-TEST]` or `qa_<timestamp>_<uuid>`.
+3. **Automated Teardown & Cleanup:**
+   - Ensure created entities can be safely deleted or provide an explicit teardown script.
+4. **Credential & Secret Protection:**
+   - Never enter real production credentials or output unmasked tokens to console logs.
+
 ### 4.1. Identify Observable UI Gaps
 * Filter the list of identified gap items from Step 2 to isolate issues that can be observed on the UI (e.g., form validation, error messages, disabled buttons, warning modals, tab transitions, redirects).
 * For backend-only issues (e.g., database triggers without UI feedback, external gateway dependencies): Record `[Verified via AST - No UI Rendering]`.
@@ -49,13 +61,14 @@ Execution sequence:
 4. **Harvest Console & Network Runtime Diagnostics:**
    - Invoke `browser_console_messages` to collect uncaught exceptions and 4xx/5xx token refresh failures.
    - Invoke `browser_network_requests` to inspect failed API calls or background network drops.
-5. **Anti-False-Alarm & Immediate Gap Elimination Protocol:**
+5. **Anti-False-Alarm & Valuable Guard Retention Protocol:**
    - If live interaction proves the app functions safely, displays clear validation banners, or disallows unauthorized actions:
-     * **IMMEDIATELY ROLL BACK TO `<module>-gaps.md`:** Delete the suspected gap completely from the active issue list.
+     * **IMMEDIATELY ROLL BACK TO `<module>-gaps.md`:** Remove the suspected gap from the active defect list.
      * Reclassify under `## 2. Verified Security Guards (GUARD-xxx, PASS)`.
-     * **STOP:** Do NOT author a reproduction spec for non-existent bugs.
+     * **Valuable Guard Migration:** If a reproduction spec proved the defensive validation holds, migrate it to `tests/guards/<module>-guard-<id>.spec.ts` with ID `GUARD-xxx` for permanent regression protection. If the script was defective or broken, delete it immediately.
+     * **STOP:** Do NOT retain false alarms in the active gap defect list.
 6. **Confirmed Gap Handling:**
-   - Only when Playwright MCP proves an actual defect exists (infinite spinner, unhandled 500, silent data loss, validation bypass), advance to authoring `tests/repro/<module>-gap-<id>.spec.ts`.
+   - Only when Playwright MCP proves an actual defect exists (infinite spinner, unhandled 500, silent data loss, validation bypass), author or keep `tests/repro/<module>-gap-<id>.spec.ts`.
 
 ### 4.3. Author Playwright Bug Reproduction Script & Register Terminal Commands (Confirmed Gaps Only)
 * Instead of brittle, dead static screenshots, every observable UI gap MUST be accompanied by an executable Playwright reproduction spec:
@@ -121,25 +134,27 @@ Execution sequence:
 > 4. **Delivery Clearance:** ONLY when the script executes successfully and accurately asserts the target scenario (without harness/locator crashes) is the agent permitted to present the code and terminal command to the user.
 
 
-### 4.3.3. Anti-Fabrication & Immediate Gap Elimination Protocol (XÁC NHẬN KHÔNG CÓ LỖI -> LẬP TỨC QUAY VỀ BƯỚC GAPS VÀ XÓA BỎ)
+### 4.3.3. Valuable Repro Guard Retention & Anti-Fabrication Protocol
 > [!CAUTION]
-> **STRICT ANTI-FABRICATION CONTRACT (XÓA BỎ BẤT CẬP NẾU XÁC NHẬN KHÔNG CÓ LỖI TRÊN GIAO DIỆN):**
-> 1. **Zero Fake Assertions:** The AI agent is STRICTLY FORBIDDEN from inventing artificial test assertions, fake mocks, or inverted logic to claim a bug is confirmed when the live execution proves otherwise.
-> 2. **Immediate Rollback & Gap Elimination (Xác nhận không lỗi -> Quay về bước Gaps xóa bỏ ngay):**
->    Khi kiểm chứng trên giao diện thực tế (qua Playwright hoặc trình duyệt), nếu xác nhận hệ thống hoạt động bình thường, không có lỗi như phỏng đoán:
->    - **LẬP TỨC QUAY VỀ BƯỚC GAPS (`<module>-gaps.md`):**
->      * **XÓA BỎ HOÀN TOÀN (Purge & Delete):** Loại bỏ hoàn toàn bất cập đó khỏi danh mục `Identified Gaps (GAP-xxx)`. Tuyệt đối không để sót lại hay chuyển tiếp sang bước thiết kế Testcase!
->      * **Nếu là cơ chế an toàn hoặc luồng nghiệp vụ có chủ đích (Intended Behavior):** Ghi nhận vào mục `Verified Security Guards (GUARD-xxx, PASS)`.
->      * **Xóa bỏ Script Repro sai lệch:** Xóa bỏ file kịch bản trong `tests/repro/` ngay lập tức để tránh nhầm lẫn hoặc chạy lại dữ liệu rác.
->    - **Đồng bộ hóa State:** Cập nhật `.qa-state.json`, đảm bảo bộ testcase chỉ kiểm chứng tính năng/bảo vệ thực tế, không kiểm chứng bug ảo.
-134: 
-### 4.3.4. Zero Hardcoded Timeout Rule (CẤM FIX CỨNG TIMEOUT & SLEEP)
+> **STRICT ANTI-FABRICATION CONTRACT & GUARD RETENTION:**
+> 1. **Zero Fake Assertions:** The AI agent is STRICTLY FORBIDDEN from inventing artificial test assertions, fake mocks, or inverted logic to claim a bug is confirmed when live execution proves otherwise.
+> 2. **Differentiate Script Quality on Proven System Defense:**
+>    When empirical verification proves the application functions safely (e.g. form validation alert displays, unauthorized action is blocked):
+>    - **Defective / Broken Script:** If the script failed due to wrong selectors, outdated DOM assumptions, or test harness crashes $\rightarrow$ **DELETE immediately**.
+>    - **Valuable Defensive Guard:** If the script correctly modeled the negative scenario and verified that the UI defense works $\rightarrow$ **DO NOT DELETE!**
+>      * Migrate script to `tests/guards/<module>-guard-<id>.spec.ts`.
+>      * Rebrand issue ID from `GAP-xxx` to `GUARD-xxx`.
+>      * Retain as an automated regression guard.
+> 3. **Roll Back from Active Gap List:**
+>    - In `<module>-gaps.md`, purge the item from `Identified Gaps (GAP-xxx)` and record under `## 2. Verified Security Guards (GUARD-xxx, PASS)`.
+>    - Synchronize `.qa-state.json`.
+
+### 4.3.4. Zero Hardcoded Timeout Rule
 > [!WARNING]
-> **LESSON-LEARNED (LRN-015): TUYỆT ĐỐI KHÔNG DÙNG `waitForTimeout()` HOẶC SLEEP CỐ ĐỊNH**
-> Fix cứng timeout (`waitForTimeout(1000)`) gây chậm chạp vô ích, dễ làm test bị flaky khi mạng lag hoặc chạy thiếu đồng bộ.
-> Thay vào đó, 100% kịch bản tái hiện và automation test PHẢI dùng cơ chế bất đồng bộ động:
-> 1. **Kiểm tra không phát sinh Request (Zero Request Triggered):**
->    - Dùng `page.waitForRequest(...)` bọc trong Promise timeout ngắn có catch fallback:
+> **LESSON-LEARNED (LRN-015): STRICT PROHIBITION ON `waitForTimeout()` AND ARBITRARY SLEEPS**
+> Hardcoded sleeps cause flakiness and artificial slowdowns. Use web-first asynchronous assertions:
+> 1. **Verify Zero Request Triggered (Safe Silent Drop / Form Validation Guard):**
+>    - Wrap `page.waitForRequest(...)` in a short timeout Promise with catch fallback:
 >      ```typescript
 >      const requestPromise = page.waitForRequest(
 >        (req) => req.url().includes('/rest/v1/') || req.url().includes('target-api'),
@@ -150,12 +165,12 @@ Execution sequence:
 >      const wasDispatched = await requestPromise;
 >      expect(wasDispatched).toBe(false);
 >      ```
-> 2. **Chờ phản hồi mạng / Tải trang:**
->    - Dùng `await page.waitForLoadState('networkidle')` hoặc `await page.waitForResponse(...)`.
-> 3. **Chờ phần tử / Trạng thái UI:**
->    - Dùng web-first auto-retrying assertions: `await expect(locator).toBeVisible({ timeout: 5000 })`, `toBeEnabled()`, `toHaveText()`.
-> 4. **Chờ điều hướng:**
->    - Dùng `await page.waitForURL('**/expected/path**', { timeout: 10000 })`.
+> 2. **Network / Navigation Settlement:**
+>    - Use `await page.waitForLoadState('networkidle')` or `await page.waitForResponse(...)`.
+> 3. **Locator / Visual State Settlement:**
+>    - Use web-first auto-retrying assertions: `await expect(locator).toBeVisible({ timeout: 5000 })`, `toBeEnabled()`, `toHaveText()`.
+> 4. **URL Transition Settlement:**
+>    - Use `await page.waitForURL('**/expected/path**', { timeout: 10000 })`.
 
 ### 4.4. Mandatory DevTools Diagnostics Protocol (Console & Network Error Harvesting)
 > [!IMPORTANT]

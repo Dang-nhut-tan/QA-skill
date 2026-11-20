@@ -16,7 +16,7 @@ import shutil
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Dict, Any, Optional, List
+from typing import Dict, Any, Optional, List, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -49,13 +49,13 @@ HUMAN_CHECKPOINT_STATES = {
 }
 
 ALLOWED_TRANSITIONS = {
-    "INITIALIZED": ["CONTEXT_DISCOVERY", "DISCOVERY_INCOMPLETE", "GAP_ANALYSIS", "WAITING_FOR_REQUIREMENT_CLARIFICATION", "BLOCKED"],
+    "INITIALIZED": ["CONTEXT_DISCOVERY", "DISCOVERY_INCOMPLETE", "GAP_ANALYSIS", "WAITING_FOR_REQUIREMENT_CLARIFICATION", "RUNTIME_INVESTIGATION", "API_INVESTIGATION", "BLOCKED"],
     "CONTEXT_DISCOVERY": ["GAP_ANALYSIS", "DISCOVERY_INCOMPLETE", "BLOCKED"],
     "DISCOVERY_INCOMPLETE": ["CONTEXT_DISCOVERY", "BLOCKED"],
     "GAP_ANALYSIS": ["WAITING_FOR_REQUIREMENT_CLARIFICATION", "RUNTIME_INVESTIGATION", "API_INVESTIGATION", "TESTCASE_GENERATION", "BLOCKED"],
     "WAITING_FOR_REQUIREMENT_CLARIFICATION": ["CONTEXT_DISCOVERY", "GAP_ANALYSIS", "RUNTIME_INVESTIGATION", "API_INVESTIGATION", "TESTCASE_GENERATION", "TESTCASE_REVIEW", "BLOCKED"],
-    "RUNTIME_INVESTIGATION": ["TESTCASE_GENERATION", "GAP_ANALYSIS", "WAITING_FOR_REQUIREMENT_CLARIFICATION", "BLOCKED"],
-    "API_INVESTIGATION": ["TESTCASE_GENERATION", "GAP_ANALYSIS", "WAITING_FOR_REQUIREMENT_CLARIFICATION", "BLOCKED"],
+    "RUNTIME_INVESTIGATION": ["TESTCASE_GENERATION", "GAP_ANALYSIS", "WAITING_FOR_REQUIREMENT_CLARIFICATION", "COMPLETED", "BLOCKED"],
+    "API_INVESTIGATION": ["TESTCASE_GENERATION", "GAP_ANALYSIS", "WAITING_FOR_REQUIREMENT_CLARIFICATION", "COMPLETED", "BLOCKED"],
     "TESTCASE_GENERATION": ["TESTCASE_REVIEW", "WAITING_FOR_APPROVED_TESTCASES", "GAP_ANALYSIS", "BLOCKED"],
     "TESTCASE_REVIEW": ["WAITING_FOR_APPROVED_TESTCASES", "TESTCASE_GENERATION", "BLOCKED"],
     "WAITING_FOR_APPROVED_TESTCASES": ["AUTOMATION_IMPLEMENTATION", "TESTCASE_GENERATION", "TESTCASE_REVIEW", "COMPLETED", "BLOCKED"],
@@ -64,6 +64,30 @@ ALLOWED_TRANSITIONS = {
     "COMPLETED": ["INITIALIZED", "CONTEXT_DISCOVERY", "AUTOMATION_EXECUTION"],
     "BLOCKED": VALID_STATES
 }
+
+SAFE_ENVIRONMENT_DOMAINS = [
+    "localhost", "127.0.0.1", "0.0.0.0"
+]
+
+SAFE_ENVIRONMENT_KEYWORDS = [
+    ".test", ".local", "dev.", "dev-", "-dev", "sandbox", "sit.", "staging.", "staging-", "-staging", "stg.", "uat."
+]
+
+def classify_environment(base_url: Optional[str]) -> Dict[str, Any]:
+    """Classifies target URL into local, test, staging, or production tiers."""
+    if not base_url or not isinstance(base_url, str):
+        return {"tier": "unknown", "base_url": "", "allowlist_verified": False}
+    url = base_url.strip().lower()
+    if not url:
+        return {"tier": "unknown", "base_url": "", "allowlist_verified": False}
+    if any(d in url for d in SAFE_ENVIRONMENT_DOMAINS):
+        return {"tier": "local", "base_url": base_url, "allowlist_verified": True}
+    if any(k in url for k in [".test", ".local", "dev.", "dev-", "-dev", "sandbox", "sit."]):
+        return {"tier": "test", "base_url": base_url, "allowlist_verified": True}
+    if any(k in url for k in ["staging.", "staging-", "-staging", "stg.", "uat."]):
+        return {"tier": "staging", "base_url": base_url, "allowlist_verified": True}
+    # Otherwise treat as production or unverified
+    return {"tier": "production", "base_url": base_url, "allowlist_verified": False}
 
 FORBIDDEN_SECRET_KEYS = {
     "password", "passwd", "secret", "token", "credentials", "auth_key", 
@@ -304,7 +328,14 @@ class WorkflowStateManager:
                         raise
                     time.sleep(0.02)
 
-    def init_state(self, module_name: str, repo_info: Dict[str, Any], docs: Optional[List[str]] = None) -> Dict[str, Any]:
+    def init_state(
+        self, 
+        module_name: str, 
+        repo_info: Dict[str, Any], 
+        docs: Optional[List[str]] = None,
+        execution_mode: str = "standard",
+        base_url: Optional[str] = None
+    ) -> Dict[str, Any]:
         if module_name:
             self.module_name = module_name
             self.state_file = _resolve_state_file(self.workspace_root, module_name)
@@ -318,9 +349,15 @@ class WorkflowStateManager:
                 if h:
                     doc_hashes[str(p)] = h
 
+        target_url = base_url or repo_info.get("base_url") or repo_info.get("staging_url")
+        env_info = classify_environment(target_url)
+
         state = {
             "version": "1.0.0",
             "module_name": module_name,
+            "execution_mode": execution_mode if execution_mode in ["quick", "standard", "critical"] else "standard",
+            "environment": env_info,
+            "guards": [],
             "current_state": "INITIALIZED",
             "repo_info": sanitize_metadata(repo_info),
             "created_at": self._now(),
@@ -342,12 +379,44 @@ class WorkflowStateManager:
                 {
                     "state": "INITIALIZED",
                     "timestamp": self._now(),
-                    "note": f"Workflow initialized for module '{module_name}'"
+                    "note": f"Workflow initialized for module '{module_name}' (mode: {execution_mode})"
                 }
             ]
         }
         self.save(state)
         return state
+
+    def register_guard(self, guard_id: str, title: str, spec_path: str) -> Dict[str, Any]:
+        """Registers a verified security guard script to protect against regression."""
+        state = self.load()
+        if not state:
+            raise RuntimeError(f"Cannot register guard: {STATE_FILE_NAME} does not exist.")
+        guards = state.setdefault("guards", [])
+        existing = [g for g in guards if g.get("id") == guard_id]
+        if not existing:
+            guards.append({
+                "id": guard_id,
+                "title": title,
+                "spec_path": spec_path,
+                "verified_at": self._now()
+            })
+        self.save(state)
+        return state
+
+    def check_mutation_allowed(self) -> Tuple[bool, str]:
+        """Checks if mutation / concurrency operations are safe for the current environment."""
+        state = self.load()
+        if not state:
+            return (False, "State file not initialized.")
+        env = state.get("environment", {})
+        tier = env.get("tier", "unknown")
+        allowlisted = env.get("allowlist_verified", False)
+        if tier in ["local", "test", "staging"] and allowlisted:
+            return (True, f"Target environment is allowlisted '{tier}'. Mutation allowed.")
+        return (
+            False,
+            f"Production Safety Gate: Mutations and concurrency tests are blocked on '{tier}' environment ({env.get('base_url')}) without explicit human confirmation."
+        )
 
     def transition(self, target_state: str, note: str = "", metadata: Optional[Dict[str, Any]] = None, enforce_fsm: bool = True, approval_token: Optional[str] = None) -> Dict[str, Any]:
         if target_state not in VALID_STATES:
@@ -506,9 +575,16 @@ if __name__ == "__main__":
     mgr = WorkflowStateManager(module_name=module_arg)
 
     if cmd == "init":
-        mod_name = clean_args[1] if len(clean_args) > 1 else (module_arg or "UnknownModule")
-        s = mgr.init_state(mod_name, {"cwd": str(Path.cwd())})
-        print(f"[OK] Initialized workflow state for '{mod_name}'. Current state: {s['current_state']}")
+        mod_name = clean_args[1] if len(clean_args) > 1 and not clean_args[1].startswith("-") else (module_arg or "UnknownModule")
+        mode = "standard"
+        base_url = None
+        for i, a in enumerate(clean_args):
+            if a in ("--mode", "-M") and i + 1 < len(clean_args):
+                mode = clean_args[i + 1]
+            elif a in ("--url", "-u", "--base-url") and i + 1 < len(clean_args):
+                base_url = clean_args[i + 1]
+        s = mgr.init_state(mod_name, {"cwd": str(Path.cwd()), "base_url": base_url}, execution_mode=mode, base_url=base_url)
+        print(f"[OK] Initialized workflow state for '{mod_name}' (mode: {s.get('execution_mode')}). Current state: {s['current_state']}")
 
     elif cmd == "status":
         if not mgr.exists():

@@ -45,6 +45,14 @@ DYNAMIC_DATA_PATTERN = re.compile(
     r'\b(?:Date\.now|Math\.random|uuid|process\.env|Date\(|timestamp|workerIndex)\b',
     re.IGNORECASE
 )
+UNMASKED_LOG_PATTERN = re.compile(
+    r'\b(?:console\s*\.\s*log|print)\s*\([^)]*\b(?:authHeader|process\.env|os\.environ|TEST_TOKEN|secretKey|bearerToken)\b[^)]*\)',
+    re.IGNORECASE
+)
+CONCURRENCY_BURST_PATTERN = re.compile(
+    r'\bArray\s*\(\s*(?:[6-9]|\d{2,})\s*\)\s*\.\s*fill|\bPromise\.all\s*\(\s*\[(?:[^\]]*,){5,}',
+    re.IGNORECASE
+)
 
 def lint_file(file_path: Path) -> List[Tuple[int, str, str]]:
     """
@@ -118,6 +126,22 @@ def lint_file(file_path: Path) -> List[Tuple[int, str, str]]:
                     f"Hardcoded user/entity identifier detected: '{stripped}'. Use collision-resistant dynamic generation (e.g., 'user_' + Date.now())."
                 ))
 
+        # Rule 8: Unmasked Token or Credential Logging
+        if UNMASKED_LOG_PATTERN.search(line):
+            violations.append((
+                idx,
+                "UNMASKED_CREDENTIAL_LOG_VIOLATION",
+                f"Prohibited unmasked credential logging: '{stripped}'. Never print tokens, auth headers, or raw environment variables to console/logs."
+            ))
+
+        # Rule 9: Excessive Concurrency Burst
+        if CONCURRENCY_BURST_PATTERN.search(line):
+            violations.append((
+                idx,
+                "EXCESSIVE_CONCURRENCY_VIOLATION",
+                f"Concurrency limit exceeded: '{stripped}'. Max allowed concurrent requests per batch is 5 to prevent DoS on target systems."
+            ))
+
         # Check for test blocks and test IDs
         if re.search(r'\btest\s*\(', line):
             has_test_block = True
@@ -149,7 +173,10 @@ def lint_path(target_path: Path) -> int:
     elif target_path.is_dir():
         files = [
             p for p in target_path.rglob("*")
-            if p.suffix in [".js", ".mjs", ".ts", ".tsx", ".py"] and not any(part.startswith(".") or part in ["node_modules", "__pycache__"] for part in p.parts)
+            if p.suffix in [".js", ".mjs", ".ts", ".tsx", ".py"] and not any(
+                (part.startswith(".") and not part.startswith(".env")) or part in ["node_modules", "__pycache__"]
+                for part in p.relative_to(target_path).parts
+            )
         ]
     else:
         print(f"[ERROR] Path does not exist: {target_path}")

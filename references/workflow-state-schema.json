@@ -163,6 +163,59 @@
       ],
       "default": "en",
       "description": "Language used for generated artifacts (markdown reports, spreadsheets). Default is 'en'."
+    },
+    "execution_mode": {
+      "type": "string",
+      "enum": [
+        "quick",
+        "standard",
+        "critical"
+      ],
+      "default": "standard",
+      "description": "Workflow execution mode: 'quick' for single-bug/hotfix/smoke without 3-sheet Excel; 'standard' for regular feature QA; 'critical' for high-risk financial/auth/concurrency modules."
+    },
+    "environment": {
+      "type": "object",
+      "properties": {
+        "tier": {
+          "type": "string",
+          "enum": [
+            "local",
+            "test",
+            "staging",
+            "production",
+            "unknown"
+          ],
+          "default": "unknown"
+        },
+        "base_url": {
+          "type": "string"
+        },
+        "allowlist_verified": {
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "guards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "spec_path": {
+            "type": "string"
+          },
+          "verified_at": {
+            "type": "string"
+          }
+        }
+      }
     }
   }
 }

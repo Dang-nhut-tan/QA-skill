@@ -33,6 +33,19 @@ description: >-
   5. `Architectural / Cross-System Inconsistency (Cross-System Architectural Synthesis)`: Inconsistencies, contract drifts, or blindspots between local module logic and global integration flows (from `system-architecture-flows.md`).
   6. `Industry Benchmark Discrepancy & Domain Blindspot`: Inadequacies (Điểm bất cập), anti-patterns, user friction points, or missing business rules (Điểm mù) uncovered when cross-referencing against mature industry leaders (`industry-benchmark-flows.md`).
 
+### 3.1.1. Industry Benchmark Triaging & Grounding Mandate
+* Differences identified by comparing against external industry benchmarks (`industry-benchmark-flows.md`) MUST NOT be automatically promoted to software defects (`GAP-xxx`).
+* **Default Advisory Categories:**
+  1. `Improvement Opportunity`: Non-blocking UX polish, autosave convenience, or smoother feedback.
+  2. `BA Clarification Request`: Business policy choices or feature scope decisions requiring Product Owner confirmation.
+  3. `Residual Architectural Risk`: Long-term technical debt, architectural resiliency suggestions.
+* **Strict Defect Promotion Gate:**
+  A benchmark difference may ONLY be classified as an active defect (`GAP-xxx`) if grounded by at least one of the four empirical criteria:
+  1. **Explicit Business Rule Violation:** Violates an established company business rule.
+  2. **Written Specification Contradiction:** Directly contradicts approved PRD/SRS/API contract.
+  3. **Internal Code Logic Contradiction:** Frontend and backend logic clash or self-contradict.
+  4. **Empirical Runtime Failure:** Confirmed crash, unhandled 500 exception, silent data loss, or UI freeze during live verification.
+
 ### 3.2. Strict Falsification & Negative Testing Rule (ANTI-FALSE-ALARM PROTOCOL)
 * **CASE 1: VERIFIED SECURITY GUARDS / CONSTRAINTS (GUARD-xxx, PASS):**
   - If specification or business logic restricts an action (e.g., student blocked from accepting without guardian consent, button disabled for unauthorized role), and source code AST enforces this:

@@ -71,6 +71,20 @@ description: >-
 
 ## 4. Step-by-Step Execution Instructions
 
+### 4.0. Production Safety Gate (Pre-Execution Protection)
+Prior to dispatching any state-mutating HTTP requests (`POST`, `PUT`, `DELETE`, `PATCH`), database seeding, or concurrency tests:
+1. **Target Environment Classification:**
+   - Verify target base URL against allowlisted environments (`localhost`, `127.0.0.1`, `*.test`, `*.local`, `dev.*`, `staging.*`, `uat.*`).
+   - If target domain is **Production** or unverified: **HALT EXECUTION IMMEDIATELY**. Ask for explicit user confirmation before proceeding with any mutation.
+2. **Deterministic Test Data Prefix:**
+   - All payload entities (e.g. usernames, invoice numbers, test titles) MUST include the prefix `[QA-TEST]` or `qa_<timestamp>_<uuid>` for collision resistance and safe bulk purging.
+3. **Mandatory Teardown / Cleanup:**
+   - Every mutation spec must include an automated cleanup routine (`afterAll` delete endpoint call) or document a rollback plan.
+4. **Token & Credential Redaction:**
+   - Prohibit printing raw tokens, authorization headers, or environment variables to console/logs. All logging must mask credentials (`Bearer [REDACTED]`).
+5. **Concurrency Ceiling:**
+   - Concurrency tests must be capped at a maximum of **5 concurrent requests** per batch to prevent system disruption.
+
 ### 4.1. Author Standalone Playwright API Reproduction Script
 * Every identified API gap MUST have an isolated, standalone executable script under `tests/repro/`:
   - Path format: `tests/repro/<module>-api-gap-<id>.spec.ts`
@@ -130,15 +144,22 @@ description: >-
 
 ---
 
-### 4.3. Anti-Fabrication & Immediate Gap Elimination Protocol
-> [!CAUTION]
-> **PROVEN BACKEND SAFETY -> IMMEDIATE GAP PURGE & ROLLBACK:**
+### 4.3. Valuable Repro Guard Retention & False Alarm Elimination Protocol
+> [!NOTE]
+> **PROVEN BACKEND SAFETY -> RETAIN VALUABLE GUARD TEST IN `tests/guards/`:**
 > When calling the live API, if the backend operates securely (e.g. returns `400 Bad Request`, `403 Forbidden`, `422 Unprocessable Entity`, or strictly enforces business constraints):
-> 1. **IMMEDIATELY ROLL BACK TO `<module>-gaps.md`:**
->    * **Purge & Delete:** Remove that suspected gap completely from `Identified Gaps (GAP-xxx)`. Strictly prohibit transferring false alarms to testcase design.
->    * **Reclassify as Verified Guard:** Record under `Verified Security Guards (GUARD-API-xxx, PASS)`.
->    * **Delete Faulty Script:** Delete `tests/repro/<module>-api-gap-<id>.spec.ts` immediately to keep the test suite clean.
-> 2. **Synchronize Workflow State:** Update `.qa-state.json`, ensuring zero testcase generation for fabricated or non-existent bugs.
+> 1. **Differentiate Script Quality:**
+>    * **Defective / Broken Script:** If the script failed due to syntax errors, wrong endpoints, or broken mock setups $\rightarrow$ **DELETE immediately** to avoid test rot.
+>    * **Valuable Security Guard Verification:** If the script accurately tested an attack or invalid payload and proved the backend successfully defended itself $\rightarrow$ **DO NOT DELETE!**
+> 2. **Migrate to Permanent Regression Guards (`tests/guards/`):**
+>    * Move spec file to `tests/guards/<module>-guard-<id>.spec.ts`.
+>    * Rebrand Issue ID from `GAP-API-<id>` to `GUARD-API-<id>`.
+>    * Update test assertion to verify guard success (e.g. `expect(status).toBe(400)`).
+>    * Register guard: `python scripts/state_manager.py register-guard GUARD-API-<id> "<Title>" "tests/guards/<module>-guard-<id>.spec.ts"`.
+> 3. **Synchronize Gap Catalogue & State:**
+>    * Remove suspected gap from `Identified Gaps (GAP-xxx)` in `<module>-gaps.md`.
+>    * Document under `## 2. Verified Security Guards (GUARD-API-xxx, PASS)`.
+>    * Synchronize `.qa-state.json`, ensuring zero false alarm defects pass to testcase design while retaining permanent automated regression protection.
 
 ---
 

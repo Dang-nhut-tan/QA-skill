@@ -35,11 +35,12 @@ description: >-
 4. **Harvest Runtime Diagnostics:**
    - Call `browser_console_messages` to capture uncaught JS exceptions and 4xx/5xx network responses.
    - Call `browser_network_requests` to catch silent backend drops.
-5. **Anti-False-Alarm & Immediate Gap Elimination Protocol:**
+5. **Anti-False-Alarm & Valuable Guard Retention Protocol:**
    - If live interaction proves the app functions safely, displays a clear validation message, or does not crash:
-     * **IMMEDIATELY ROLL BACK TO `<module>-gaps.md`:** Delete the gap completely from the active list.
+     * **IMMEDIATELY ROLL BACK TO `<module>-gaps.md`:** Remove the suspected gap from the active defect list.
      * Reclassify as `Verified Security Guards (GUARD-xxx, PASS)`.
-     * **STOP:** Do NOT author a reproduction script for a non-existent bug.
+     * **Valuable Guard Migration:** If a reproduction spec proved the defensive validation holds, migrate it to `tests/guards/<module>-guard-<id>.spec.ts` with ID `GUARD-xxx` for permanent regression protection. If the script was defective or broken, delete it immediately.
+     * **STOP:** Do NOT author or retain reproduction scripts for non-existent bugs in the active gap defect list.
 
 ---
 

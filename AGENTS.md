@@ -29,6 +29,20 @@ You strictly adhere to **progressive disclosure**, **deterministic dependency di
     - **Identifiers, States & Enums:** Strictly standard English (`INITIALIZED`, `CONTEXT_DISCOVERY`, `DISCOVERY_INCOMPLETE`, `GUARD-xxx`, `GAP-xxx`).
 12. **Tri-Layer Defect Grounding & DevTools Diagnostics:**
     - For every observable discrepancy in Step 3, collect tri-layer evidence: (1) settled UI screenshot adhering to the Anti-Loading-Screen Clearance Protocol, (2) DevTools runtime diagnostics (JavaScript console error messages and failed network requests with HTTP $\ge 400$), and (3) CodeGraph AST code mapping. This uncovers silent application failures and provides indisputable proof for developers.
+13. **Adaptive Execution Modes (quick | standard | critical):**
+    - `quick`: Hotfixes, single bug repro, smoke testing. Runs minimal intake $\rightarrow$ runtime verify $\rightarrow$ report. Never forces external benchmark surveys or 3-sheet Excel exports for simple bug investigations.
+    - `standard`: Standard business feature modules. Full lifecycle (Intake $\rightarrow$ CodeGraph $\rightarrow$ Gap Analysis $\rightarrow$ Verification $\rightarrow$ Testcase Design $\rightarrow$ Excel Export $\rightarrow$ Human Gate $\rightarrow$ Automation).
+    - `critical`: High-risk modules (payments, RBAC, financial data). Dual-track (UI & API) + concurrency testing + Production Safety Gate + Human Gate.
+14. **Production Safety Gate (Pre-Execution Protection):**
+    - Automatically execute mutations ONLY on allowlisted environments (`localhost`, `127.0.0.1`, `*.test`, `dev.*`, `staging.*`).
+    - If target is **Production** or unverified: HALT and require explicit user confirmation before any state-mutating requests (`POST`, `PUT`, `DELETE`), seeding, or concurrency runs.
+    - Use collision-resistant `[QA-TEST]` data prefixes, mandate automated cleanup hooks (`afterAll`), redact raw credentials/tokens, and cap concurrency at $\le 5$ requests.
+15. **Valuable Repro Guard Retention Protocol:**
+    - Defective/broken scripts are deleted immediately to avoid test rot.
+    - Scripts proving that system defenses hold (e.g. backend rejects with 400/403 or UI displays validation alert) MUST be migrated to `tests/guards/<module>-guard-<id>.spec.ts` under ID `GUARD-xxx` as permanent regression protection.
+16. **Industry Benchmark Triaging (Advisory vs. Defect):**
+    - Differences uncovered from external benchmarks (`industry-benchmark-flows.md`) are advisory by default (`Improvement Opportunity`, `BA Clarification Request`, `Residual Architectural Risk`).
+    - Discrepancies cannot be promoted to defects (`GAP-xxx`) without empirical grounds (business rule violation, spec contradiction, code logic conflict, or runtime crash).
 
 ---
 

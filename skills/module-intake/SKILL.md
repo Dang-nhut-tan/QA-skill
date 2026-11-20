@@ -72,7 +72,8 @@ description: >-
        ```
      - Only record non-sensitive environment metadata (e.g., `environment.base_url`, `environment.auth_method`, `environment.has_admin_portal`) in `.qa-state.json`.
 5. **External Industry Benchmark & Similar System Flow Discovery (Run-Once Cache Protocol):**
-   * **Purpose:** Prevent local module tunnel vision by researching leading external systems / competitors that implement a similar module or domain (e.g. how mature platforms like Stripe, Shopify, Auth0, Amazon handle similar workflows). Extract standard user journeys, best practices, universal fail-safes (idempotency, timeouts/TTL, auto-compensation, rate limiting), and common anti-patterns.
+   * **Execution Mode Exemption:** In **`quick` mode** (hotfixes, single bug reproduction, smoke tests), **SKIP benchmark research entirely** to optimize speed and minimize token consumption.
+   * **Purpose:** For `standard` and `critical` modes, prevent local module tunnel vision by researching leading external systems / competitors that implement a similar module or domain (e.g. how mature platforms like Stripe, Shopify, Auth0, Amazon handle similar workflows). Extract standard user journeys, best practices, universal fail-safes (idempotency, timeouts/TTL, auto-compensation, rate limiting), and common anti-patterns.
    * **Idempotent Cache Check (Run ONLY if not already present):**
      - Check if `industry-benchmark-flows.md` (or `system-architecture-flows.md`) exists in the project root or workspace root.
      - **CACHE HIT:** If `industry-benchmark-flows.md` (or `system-architecture-flows.md`) already exists: **SKIP execution completely** (0 token consumption, 0 execution latency). Reuse the existing benchmark flows.
@@ -94,7 +95,7 @@ description: >-
           - The agent is STRICTLY PROHIBITED from claiming that a subagent was spawned or terminated without verified platform tool call evidence.
    * **Strict Isolation Rule:** Strictly do NOT place industry benchmark flows or external architecture into `module-context.md`. `industry-benchmark-flows.md` is a standalone artifact reused across gap analysis and testcase design to expose domain blindspots and architectural inadequacies.
 6. **Initialize Workflow State:**
-   * Invoke `python scripts/state_manager.py init "<ModuleName>"` to create or reset `.qa-state.json`.
+   * Invoke `python scripts/state_manager.py init "<ModuleName>" --mode "<quick|standard|critical>"` to create or reset `.qa-state.json`.
    * Record discovered document paths, repository metadata, environment details, and `industry-benchmark-flows.md` (or `system-architecture-flows.md`) path.
 
 ## 5. Expected Outputs

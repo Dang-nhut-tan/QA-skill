@@ -49,6 +49,13 @@ Any AI agent implementing test automation MUST strictly adhere to the following 
 3. **C3 (Multi-Viewport Matrix):** STRICTLY PROHIBIT testing exclusively on a single viewport (e.g., mobile-only). For administration panels, dashboards, and responsive web apps, MUST verify both Desktop (1920x1080) and Mobile responsive viewports.
 4. **C4 (Process & State Concurrency):** Prevent race conditions and deadlocks when managing multi-process file locks. Utilize `StateFileLock` with automatic stale lock recovery (process liveness check + TTL timeout).
 5. **C5 (Zero Floating Promises):** STRICTLY PROHIBIT un-awaited asynchronous assertions (web-first assertions such as `toBeVisible`, `toHaveText`, `toHaveURL`). Every async expectation must be preceded by `await` to prevent silent false positives.
+6. **C6 (Production Safety Gate & Allowlist Verification):**
+   - Verify target environment tier before executing any real state mutation (`POST`, `PUT`, `DELETE`).
+   - Automatically execute ONLY on allowlisted environments (`localhost`, `127.0.0.1`, `*.test`, `dev.*`, `staging.*`). If the target is **Production** or unverified, HALT and require explicit human confirmation.
+   - All mutation test data MUST carry the prefix `[QA-TEST]` or `qa_<timestamp>_<uuid>` for traceability and safe purging.
+   - Mandatory teardown hook (`afterAll`) to delete or clean up created entities.
+   - Prohibit unmasked token/credential logging; mask all authorization headers.
+   - Concurrency bursts capped at a maximum of **5 concurrent requests**.
 
 #### 2. Contrastive Code Patterns (DO vs. DON'T)
 

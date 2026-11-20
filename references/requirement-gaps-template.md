@@ -31,7 +31,7 @@
 ---
 
 ## 3. CLASSIFICATION OF TRUE GAPs (IF ANY)
-*(Recorded only when an actual contradiction occurs: spec forbids but UI allows, spec missing causing confusion, or runtime crash)*
+*(Recorded only when an actual contradiction occurs: spec forbids but UI allows, spec missing causing confusion, or runtime crash. External benchmark differences without empirical grounds are triaged as Advisory under Improvement Opportunity, BA Clarification, or Residual Risk, not active GAP defects.)*
 
 | Issue ID | Gap Classification | Related Flow | Code Evidence (AST) & UI | UX Impact | Future Technical Risk | Risk Severity |
 | :---: | :--- | :--- | :--- | :--- | :--- | :---: |

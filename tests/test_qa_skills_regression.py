@@ -23,7 +23,8 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 sys.path.insert(0, str(PROJECT_ROOT / "scripts"))
 
-from scripts.state_manager import _dedup_list, WorkflowStateManager
+from scripts.state_manager import _dedup_list, WorkflowStateManager, classify_environment
+from scripts.lint_test_code import lint_file
 from scripts.read_approved_testcases import parse_automation_ready_val
 from scripts.export_testcases import (
     style_severity_cell,
@@ -1108,6 +1109,144 @@ class TestQASkillsRegression(unittest.TestCase):
         cg_script = PROJECT_ROOT / "scripts" / "codegraph_discovery.py"
         cg_script_text = cg_script.read_text(encoding="utf-8")
         self.assertIn("DISCOVERY_INCOMPLETE", cg_script_text)
+
+    # =========================================================================
+    # Phase 3 Gate Regression Tests: Lean Modes, Safety Gate, Guard Retention, Benchmark Triaging
+    # =========================================================================
+    def test_quick_mode_skips_unnecessary_excel(self):
+        """Verify quick mode enables lean hotfix/bug repro without mandating 3-sheet Excel."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmppath = Path(tmpdir)
+            mgr = WorkflowStateManager(str(tmppath))
+            state = mgr.init_state("HotfixAuthBug", {"root": str(tmppath)}, execution_mode="quick")
+            self.assertEqual(state.get("execution_mode"), "quick")
+            self.assertEqual(mgr.get_field("current_state"), "INITIALIZED")
+
+            # Quick mode allows direct transition to RUNTIME_INVESTIGATION
+            mgr.transition("RUNTIME_INVESTIGATION", "Direct UI reproduction of reported hotfix")
+            self.assertEqual(mgr.get_field("current_state"), "RUNTIME_INVESTIGATION")
+
+            # Quick mode allows direct completion without generating 3-sheet Excel or passing through Gate 5
+            mgr.transition("COMPLETED", "Bug verified and reproduction proof reported")
+            self.assertEqual(mgr.get_field("current_state"), "COMPLETED")
+            self.assertIsNone(mgr.get_field("artifacts.excel_testcases"), "Quick mode must not mandate excel testcase artifact")
+
+        # Verify orchestrator skill documents quick mode
+        orch_file = PROJECT_ROOT / "skills" / "workflow-orchestrator" / "SKILL.md"
+        orch_text = orch_file.read_text(encoding="utf-8")
+        self.assertIn("quick", orch_text)
+        self.assertIn("standard", orch_text)
+        self.assertIn("critical", orch_text)
+        self.assertIn("No 3-sheet Excel export, no external benchmark research", orch_text)
+
+    def test_production_safety_gate_blocks_unauthorized_mutation(self):
+        """Verify production safety gate blocks state mutations and concurrency on live targets."""
+        # Environment classification tests
+        self.assertEqual(classify_environment("http://localhost:3000")["tier"], "local")
+        self.assertTrue(classify_environment("http://localhost:3000")["allowlist_verified"])
+        self.assertEqual(classify_environment("https://dev.company.test")["tier"], "test")
+        self.assertTrue(classify_environment("https://dev.company.test")["allowlist_verified"])
+        self.assertEqual(classify_environment("https://staging.myapp.io")["tier"], "staging")
+        self.assertTrue(classify_environment("https://staging.myapp.io")["allowlist_verified"])
+        self.assertEqual(classify_environment("https://production.app.com")["tier"], "production")
+        self.assertFalse(classify_environment("https://production.app.com")["allowlist_verified"])
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmppath = Path(tmpdir)
+            mgr = WorkflowStateManager(str(tmppath))
+            # Test on staging
+            mgr.init_state("Checkout", {"root": str(tmppath)}, base_url="https://staging.app.io")
+            allowed, msg = mgr.check_mutation_allowed()
+            self.assertTrue(allowed, "Mutations must be allowed on allowlisted staging")
+
+            # Test on production
+            mgr.init_state("CheckoutProd", {"root": str(tmppath)}, base_url="https://app.com")
+            allowed, msg = mgr.check_mutation_allowed()
+            self.assertFalse(allowed, "Mutations must be blocked on unverified production target")
+            self.assertIn("Production Safety Gate", msg)
+
+        # Static linter tests on production safety violations
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmppath = Path(tmpdir)
+            # Test script with unmasked token logging
+            bad_log_script = tmppath / "bad_log.spec.ts"
+            bad_log_script.write_text(
+                "import { test } from '@playwright/test';\n"
+                "test('TC-SEC-001: test', async ({ request }) => {\n"
+                "  console.log(process.env.TEST_TOKEN);\n"
+                "  await expect(request).toBeDefined();\n"
+                "});\n",
+                encoding="utf-8"
+            )
+            violations = lint_file(bad_log_script)
+            rule_names = [v[1] for v in violations]
+            self.assertIn("UNMASKED_CREDENTIAL_LOG_VIOLATION", rule_names)
+
+            # Test script with excessive concurrency burst
+            bad_concurrency_script = tmppath / "bad_concurrency.spec.ts"
+            bad_concurrency_script.write_text(
+                "import { test } from '@playwright/test';\n"
+                "test('TC-PERF-001: test', async ({ request }) => {\n"
+                "  const reqs = Array(20).fill(0).map(() => request.get('/api'));\n"
+                "  await Promise.all(reqs);\n"
+                "});\n",
+                encoding="utf-8"
+            )
+            violations_conc = lint_file(bad_concurrency_script)
+            rule_names_conc = [v[1] for v in violations_conc]
+            self.assertIn("EXCESSIVE_CONCURRENCY_VIOLATION", rule_names_conc)
+
+    def test_valuable_guard_retention_policy(self):
+        """Verify verified security guards are retained in tests/guards/ rather than being purged."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmppath = Path(tmpdir)
+            mgr = WorkflowStateManager(str(tmppath))
+            mgr.init_state("AuthModule", {"root": str(tmppath)})
+            mgr.register_guard("GUARD-API-001", "Unauthorized payload rejected with 400", "tests/guards/auth-guard-001.spec.ts")
+            state = mgr.load()
+            self.assertIn("guards", state)
+            self.assertEqual(len(state["guards"]), 1)
+            self.assertEqual(state["guards"][0]["id"], "GUARD-API-001")
+            self.assertEqual(state["guards"][0]["spec_path"], "tests/guards/auth-guard-001.spec.ts")
+
+        # Verify skill documentation mandates guard retention in tests/guards/
+        api_skill = PROJECT_ROOT / "skills" / "api-investigation" / "SKILL.md"
+        api_text = api_skill.read_text(encoding="utf-8")
+        self.assertIn("tests/guards/", api_text)
+        self.assertIn("GUARD-API-", api_text)
+        self.assertIn("Valuable Repro Guard Retention", api_text)
+
+        pw_skill = PROJECT_ROOT / "skills" / "playwright-investigation" / "SKILL.md"
+        pw_text = pw_skill.read_text(encoding="utf-8")
+        self.assertIn("tests/guards/", pw_text)
+        self.assertIn("Valuable Repro Guard Retention", pw_text)
+
+        repro_skill = PROJECT_ROOT / "skills" / "gap-reproduction" / "SKILL.md"
+        repro_text = repro_skill.read_text(encoding="utf-8")
+        self.assertIn("tests/guards/", repro_text)
+        self.assertIn("Valuable Guard Migration", repro_text)
+
+    def test_benchmark_difference_requires_empirical_grounds_to_become_bug(self):
+        """Verify benchmark discrepancies cannot automatically become bugs without empirical grounds."""
+        gap_skill = PROJECT_ROOT / "skills" / "requirement-gap-analysis" / "SKILL.md"
+        gap_text = gap_skill.read_text(encoding="utf-8")
+        self.assertIn("Improvement Opportunity", gap_text)
+        self.assertIn("BA Clarification Request", gap_text)
+        self.assertIn("Residual Architectural Risk", gap_text)
+        self.assertIn("Explicit Business Rule Violation", gap_text)
+        self.assertIn("Written Specification Contradiction", gap_text)
+        self.assertIn("Internal Code Logic Contradiction", gap_text)
+        self.assertIn("Empirical Runtime Failure", gap_text)
+
+        orch_skill = PROJECT_ROOT / "skills" / "workflow-orchestrator" / "SKILL.md"
+        orch_text = orch_skill.read_text(encoding="utf-8")
+        self.assertIn("Industry Benchmark Triaging (Advisory vs. Defect)", orch_text)
+        self.assertIn("Improvement Opportunity", orch_text)
+        self.assertIn("Defect Promotion Rule", orch_text)
+
+        template_file = PROJECT_ROOT / "references" / "requirement-gaps-template.md"
+        template_text = template_file.read_text(encoding="utf-8")
+        self.assertIn("External benchmark differences without empirical grounds are triaged as Advisory", template_text)
 
 if __name__ == "__main__":
     unittest.main(verbosity=2)
