@@ -79,6 +79,7 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
 | **Document Conversion** | **Microsoft MarkItDown** (`markitdown` CLI / MCP) | Convert PDF, Excel (.xlsx), Word (.docx) specifications into structured Markdown (.md). |
 | **Code Architecture & Graph** | **CodeGraph** (`codegraph` / `codegraph-mcp`) | Extract AST entry points, call flows, DB schemas, and God Nodes. |
 | **Runtime Behavioral Exploration** | **Playwright MCP** | Browser navigation, live UI verification, authoring standalone reproduction scripts (`tests/repro/`), registering 1-click terminal commands (`npm run`), and harvesting DevTools diagnostics. |
+| **API & Backend Investigation** | **`api-investigator` Subagent** (`api-investigation`) | Direct API calls via Playwright APIRequestContext, detecting UI validation bypass, silent API failures, authoring `tests/repro/*-api-gap-*.spec.ts`, and pre-delivery live verification. |
 | **Excel Export & Intake** | **Python + openpyxl** (`scripts/`) | Generate/parse formatted multi-sheet `.xlsx` workbooks with data validation. |
 | **Automation Execution** | **Playwright CLI** (`npx playwright test`) | Execute headless/headed tests, collect traces, and verify assertions. |
 | **Continuous Learning** | **`scripts/learn_manager.py`** | Detect recurring errors, propose lessons, and inject approved rules into skills. |

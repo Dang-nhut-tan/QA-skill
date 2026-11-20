@@ -22,6 +22,19 @@ description: >-
   * Gaps tagged with `[Category: Backend / Security / Data Integrity]`.
   * State transitions from `GAP_ANALYSIS` $\rightarrow$ `API_INVESTIGATION`.
 
+### 1.1. Ephemeral Subagent Delegation Architecture (Ủy quyền Subagent Chuyên Trách)
+Để bảo tồn ngữ cảnh (context window) của Orchestrator và chạy song song, quy trình khuyến nghị ủy quyền việc điều tra API cho Subagent chuyên trách:
+* **Subagent Name:** `api-investigator` (`agents/api-investigator.md`).
+* **Spawn Invocation:**
+  ```python
+  invoke_subagent(
+      TypeName="api-investigator",
+      Role="API Investigation Specialist",
+      Prompt="Verify identified backend/API gaps for module <ModuleName> directly at endpoint level. Author tests/repro/<module>-api-gap-<id>.spec.ts, run pre-delivery smoke check, and return verified defect proof or safe guard rollback recommendations."
+  )
+  ```
+* **Isolation Boundary:** Subagent chỉ thao tác với HTTP network và file `tests/repro/`, không can thiệp vào các state khác. Sau khi hoàn thành và trả kết quả, Orchestrator thu nạp bằng chứng và đóng subagent.
+
 ---
 
 ## 2. Inputs & Prerequisites
