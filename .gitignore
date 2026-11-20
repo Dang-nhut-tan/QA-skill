@@ -78,10 +78,9 @@ htmlcov/
 junit.xml
 
 # ------------------------------------------------------------------------------
-# 4. Reverse-Engineering & Code Graph Artifacts (Graphify)
+# 4. Reverse-Engineering & Code Graph Artifacts (CodeGraph)
 # ------------------------------------------------------------------------------
-.graphify/
-graphify-out/
+.codegraph/
 *.graphml
 graph.json
 

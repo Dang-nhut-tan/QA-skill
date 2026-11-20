@@ -203,7 +203,7 @@ def profile_module_context(repo_path: str, module_pattern: str):
 
     for root, dirs, files in os.walk(repo):
         # Exclude node_modules, .git, dist, build, test-results
-        dirs[:] = [d for d in dirs if d not in {"node_modules", ".git", "dist", "build", "test-results", ".codegraph", "graphify-out"}]
+        dirs[:] = [d for d in dirs if d not in {"node_modules", ".git", "dist", "build", "test-results", ".codegraph"}]
         for file in files:
             p = Path(root) / file
             if p.suffix in allowed_exts:
