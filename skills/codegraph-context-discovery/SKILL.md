@@ -31,18 +31,15 @@ description: >-
 
 ## 4. Architectural Principles: Discovery vs. Context Loading
 
-### 4.1. Controlled Dependency Discovery
-* **NO Node Limits:** Strictly PROHIBIT artificial caps on the number of nodes CodeGraph is permitted to explore.
-* **Configurable limits:** Traverse direct, indirect, and cross-module dependencies with configurable `max_depth` and `max_nodes` values appropriate to repository size.
-* **NO Budget-Based Truncation:** Strictly PROHIBIT cutting short or pruning the dependency graph merely because a token budget was reached.
-* **NO Arbitrary Stopping:** Strictly PROHIBIT halting exploration upon finding an arbitrary threshold of functions, classes, or modules.
-* **No silent pruning:** Candidate or node ceilings are safety controls. When reached, preserve pending node identifiers and report `DISCOVERY_STATUS: TRUNCATED`.
-* **Incomplete discovery:** Parser, SQLite, timeout, or index failures must produce `DISCOVERY_INCOMPLETE`; do not claim completion.
-* **Technical Safety Guards Only:** Maintain robust safeguards against real technical obstacles:
-  * Maintain `visited_set` tracking and cycle detection to prevent infinite loops in cyclic dependencies.
-  * Exclude binary, vendor, and build artifact folders (`node_modules/`, `dist/`, `.git/`, test fixtures).
-  * Enforce process timeout guards to safely terminate hanging commands on corrupted syntax or file locks.
-* **Persistence:** Save the exhaustive knowledge graph locally to disk (`codegraph-out/`) for reuse across the entire QA lifecycle.
+### 4.1. Controlled Dependency Discovery & Operational Safety Ceilings
+* **Exhaustive Discovery with Configurable Safety Ceilings:** CodeGraph is authorized to traverse the full dependency tree (direct, indirect, and cross-module dependencies) bounded by configurable operational ceilings (`max_depth`, `max_nodes`, and execution timeout) to protect host memory and runtime.
+* **No Silent Truncation:** Operational ceilings (`max_depth`, `max_nodes`) and process timeouts are explicit safety controls. When a ceiling is reached, the crawler preserves pending node identifiers, logs `discovery_status: TRUNCATED`, and transitions state to `DISCOVERY_INCOMPLETE`.
+* **Mandatory DISCOVERY_INCOMPLETE Protocol:** If a ceiling is reached, or if parser crashes, SQLite locks, or timeouts occur, the system MUST transition to `DISCOVERY_INCOMPLETE` and report the exact technical bottleneck and untraversed node identifiers. Falsely declaring discovery complete when traversal was partial is strictly prohibited.
+* **Technical Safety Guards:**
+  * Cycle-safe BFS with `visited_set` to prevent infinite loops in circular imports.
+  * Automatic exclusion of binary, vendor, and build artifact folders (`node_modules/`, `dist/`, `.git/`, test fixtures).
+  * Process timeout guards to safely terminate hanging commands on corrupted syntax or file locks.
+* **Persistence:** Save the knowledge graph locally to disk (`codegraph-out/`) for caching across the entire QA lifecycle.
 
 ### 4.2. High-Efficiency Progressive Context Loading (5-Level Protocol)
 * **Never Dump Full Graph or Monolithic Files:** Strictly PROHIBIT ingesting raw graph JSON or complete source files into prompt context.

@@ -1,7 +1,7 @@
 ---
 name: workflow-orchestrator
 description: >-
-  Coordinates the end-to-end AI QA testing lifecycle across all 11 skills.
+  Coordinates the end-to-end AI QA testing lifecycle across all 13 skills.
   Enforces mandatory human checkpoints, dual-track investigation (UI & API), state transitions, evidence validation,
   and checkpoint resumption.
 ---
@@ -23,39 +23,42 @@ description: >-
 
 ```mermaid
 stateDiagram-v2
-    [*] --> INITIALIZED: Step 0 (module-intake: maps system-architecture-flows.md if missing)
-    INITIALIZED --> CONTEXT_DISCOVERY: Step 1 (codegraph-context-discovery)
-    CONTEXT_DISCOVERY --> GAP_ANALYSIS: Step 2 (requirement-gap-analysis: Pure Gap Analysis, Dual-Dimension Impact & Benchmark)
-    CONTEXT_DISCOVERY --> DISCOVERY_INCOMPLETE: Technical Blocker / Parser Failure / Timeout
-    DISCOVERY_INCOMPLETE --> CONTEXT_DISCOVERY: Retry / Resolve Technical Blocker
+    [*] --> INITIALIZED: Step 0 (module-intake: repo context & benchmark flows)
+    INITIALIZED --> CONTEXT_DISCOVERY: Step 1 (codegraph-context-discovery: AST call tree)
+    CONTEXT_DISCOVERY --> GAP_ANALYSIS: Step 2 (requirement-gap-analysis: gaps & UX impact)
+    CONTEXT_DISCOVERY --> DISCOVERY_INCOMPLETE: Ceiling Reached / Technical Blocker
+    DISCOVERY_INCOMPLETE --> CONTEXT_DISCOVERY: Retry / Adjust Ceilings
     
-    GAP_ANALYSIS --> RUNTIME_INVESTIGATION: Step 2.5 (gap-reproduction / playwright-investigation: Live UI MCP & Repro Authoring)
-    GAP_ANALYSIS --> API_INVESTIGATION: Step 2.5B (api-investigation: Verify direct backend contracts)
+    GAP_ANALYSIS --> RUNTIME_INVESTIGATION: Step 3A (playwright-investigation: live UI verification)
+    GAP_ANALYSIS --> API_INVESTIGATION: Step 3B (api-investigation: direct API/RPC verification)
+    GAP_ANALYSIS --> TESTCASE_GENERATION: Logical Gaps (no UI/API rendering)
+    GAP_ANALYSIS --> WAITING_FOR_REQUIREMENT_CLARIFICATION: Spec Ambiguity Gate (optional)
     
-    RUNTIME_INVESTIGATION --> GAP_ANALYSIS: No bug found on UI -> Rollback & Delete Gap completely
-    API_INVESTIGATION --> GAP_ANALYSIS: No bug found on API -> Rollback & Delete Gap completely
+    RUNTIME_INVESTIGATION --> GAP_ANALYSIS: No bug found on UI -> Rollback & Delete Gap
+    API_INVESTIGATION --> GAP_ANALYSIS: No bug found on API -> Rollback & Delete Gap
     
-    RUNTIME_INVESTIGATION --> TESTCASE_GENERATION: Confirmed gaps verified with --debug -> Step 4 (testcase-design)
+    RUNTIME_INVESTIGATION --> TESTCASE_GENERATION: Confirmed UI gaps verified -> Step 4 (testcase-design)
     API_INVESTIGATION --> TESTCASE_GENERATION: Confirmed API gaps verified -> Step 4 (testcase-design)
+    WAITING_FOR_REQUIREMENT_CLARIFICATION --> TESTCASE_GENERATION: User resolved ambiguities
     
-    TESTCASE_GENERATION --> TESTCASE_REVIEW: Step 4 (testcase-design: Dynamic RBC matrix)
-    TESTCASE_REVIEW --> WAITING_FOR_APPROVED_TESTCASES: Step 5 [CORE HUMAN GATE: Deliver Excel & Ask Satisfaction]
+    TESTCASE_GENERATION --> TESTCASE_REVIEW: Step 4 -> Step 5 (testcase-design to export)
+    TESTCASE_REVIEW --> WAITING_FOR_APPROVED_TESTCASES: Step 5 [CORE HUMAN GATE: Deliver Excel]
     
-    WAITING_FOR_APPROVED_TESTCASES --> TESTCASE_GENERATION: User not satisfied -> Revise per feedback
-    WAITING_FOR_APPROVED_TESTCASES --> COMPLETED: User satisfied -> Stop & wait for manual testing
-    WAITING_FOR_APPROVED_TESTCASES --> AUTOMATION_IMPLEMENTATION: User requests automation (Filter Automation Ready = Yes)
+    WAITING_FOR_APPROVED_TESTCASES --> COMPLETED: User approves manual testing
+    WAITING_FOR_APPROVED_TESTCASES --> TESTCASE_GENERATION: User requests revisions (feedback loop)
+    WAITING_FOR_APPROVED_TESTCASES --> AUTOMATION_IMPLEMENTATION: User approves automation implementation
     
-    AUTOMATION_IMPLEMENTATION --> AUTOMATION_EXECUTION: Phase 6.2 & 6.3 (automation-implementation)
-    AUTOMATION_EXECUTION --> COMPLETED: Phase 6.4 (test-execution-debugging)
+    AUTOMATION_IMPLEMENTATION --> AUTOMATION_EXECUTION: Step 6 -> Step 7 (CLI Run & Repair)
+    AUTOMATION_EXECUTION --> COMPLETED: Green tests & evidence registered
+    AUTOMATION_EXECUTION --> AUTOMATION_IMPLEMENTATION: Auto-repair loop (max 2 retries)
     AUTOMATION_EXECUTION --> BLOCKED: Unresolvable Environment Blocker
     COMPLETED --> [*]
 ```
 
-## 4. Unrestricted Discovery & Incomplete Discovery Protocol
+## 4. Controlled Discovery & DISCOVERY_INCOMPLETE Protocol
 * **Core Rule:** **Optimize Context Consumption, NOT Discovery Coverage.**
-* CodeGraph is permitted to traverse the entire dependency chain (direct, indirect, cross-module) without arbitrary hard limits on node count or depth.
-* Analysis must never be truncated or culled purely to conserve token budgets.
-* **Incomplete Discovery Protocol:** In the event of parser crashes, execution timeouts, or exhausted physical system resources, the system MUST transition to `DISCOVERY_INCOMPLETE` and report the exact technical bottleneck to the user. Reporting completion for incomplete analyses is strictly prohibited.
+* CodeGraph is authorized to traverse the full dependency tree (direct, indirect, cross-module) bounded by configurable operational ceilings (`max_depth`, `max_nodes`, execution timeout) to safeguard host memory and runtime.
+* **Incomplete Discovery Protocol:** In the event of reaching operational ceilings, parser crashes, SQLite locks, or execution timeouts, the system MUST transition to `DISCOVERY_INCOMPLETE` and report the exact technical bottleneck and untraversed node identifiers. Falsely declaring completion when traversal was truncated or partial is strictly prohibited.
 * **Mandatory Step 3 Gate (Zero-Bypass Enforcement - LRN-014):**
   - The orchestrator is STRICTLY PROHIBITED from skipping or bypassing Step 3 (`playwright-investigation` / `api-investigation`).
   - When transitioning out of `GAP_ANALYSIS`, if any observable UI or API gaps are identified, the workflow MUST execute live inspection (Playwright MCP or direct API request dispatch) and author verified `--debug` reproduction specs for confirmed defects BEFORE advancing to `TESTCASE_GENERATION`. Jumping directly from static AST gap analysis to testcase generation is a critical compliance violation.

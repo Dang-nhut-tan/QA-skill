@@ -1,4 +1,3 @@
-import re
 #!/usr/bin/env python3
 """
 scripts/state_manager.py
@@ -9,6 +8,7 @@ and resumability without storing secrets or credentials.
 
 import sys
 import os
+import re
 import json
 import time
 import hashlib

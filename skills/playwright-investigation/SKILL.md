@@ -7,7 +7,7 @@ description: >-
   runtime errors, and embeds reproducible code proof into <module-name>-gaps.md before testcase design.
 ---
 
-# Skill: Playwright UI Verification & Gap Reproduction (Step 3)
+# Skill: Playwright Live UI Verification & Reproduction (Step 3A)
 
 ## 1. Description & Trigger Conditions
 * **Purpose:** Proactively verify on the actual web interface whether the requirement gaps and potential defects identified in Step 2 (`requirement-gap-analysis`) actually occur. Instead of relying on fragile, static screenshots that can capture loading screens or become obsolete, **author standalone executable Playwright bug reproduction scripts (`tests/repro/<module>-gap-<id>.spec.ts`)** for every observable gap. Provide 1-click terminal reproduction commands (`npm run <module>:gap:<id>` and `npx playwright test ...`), harvest DevTools runtime diagnostics, and embed the executable proof into the BA Clarification Ticket (`<module-name>-gaps.md`) so developers and QA engineers can effortlessly reproduce, debug, and verify the issues locally.
@@ -32,32 +32,32 @@ description: >-
 * Filter the list of identified gap items from Step 2 to isolate issues that can be observed on the UI (e.g., form validation, error messages, disabled buttons, warning modals, tab transitions, redirects).
 * For backend-only issues (e.g., database triggers without UI feedback, external gateway dependencies): Record `[Verified via AST - No UI Rendering]`.
 
-### 4.2. Live UI Inspection & Verification via Playwright MCP Tools (Kiểm chứng Thực tế)
+### 4.2. Live UI Inspection & Verification via Playwright MCP Tools
 > [!IMPORTANT]
-> **THỨ TỰ BẮT BUỘC: KIỂM CHỨNG BẰNG PLAYWRIGHT MCP TRƯỚC $\longrightarrow$ NẾU CÓ LỖI THẬT MỚI TÁC TẠO SCRIPT REPRO!**
-> Tuyệt đối không sinh file `tests/repro/` trước khi dùng Playwright MCP mở trang lên kiểm tra thực tế.
+> **MANDATORY SEQUENCE: VERIFY VIA PLAYWRIGHT MCP FIRST $\longrightarrow$ AUTHOR REPRO SPEC ONLY IF BUG IS CONFIRMED!**
+> Strictly prohibited from authoring `tests/repro/` specs prior to live browser inspection via Playwright MCP.
 
-Trước khi tác tạo bất kỳ file kịch bản tái hiện nào:
-1. **Mở trang và định tuyến (`browser_navigate`):**
-   - Điều hướng trực tiếp đến route của module (ví dụ: `https://talent.io.vn/auth/login`).
-   - Đảm bảo trang tải hoàn tất `document.readyState === 'complete'`.
-   - **Quy chuẩn Chống Chụp Màn Hình Đang Tải (Anti-Loading-Screen Clearance Protocol):** Tuyệt đối không chụp màn hình hay lấy snapshot khi trang đang xoay spinner, skeleton placeholder hoặc đang tải dở dang. Phải đợi DOM ổn định (settled) và `networkidle`.
-2. **Khảo sát cây DOM thực tế (`browser_snapshot`):**
-   - Đọc cây Accessibility Snapshot thực tế của trang để xác định chính xác các button, tab, input, placeholder đang chạy trên môi trường live (tránh lệch selector so với code tĩnh).
-3. **Thao tác kiểm chứng trực tiếp (`browser_click`, `browser_type`, `browser_fill_form`):**
-   - Thao tác trực tiếp theo từng kịch bản nghi ngờ trong file `<module>-gaps.md`.
-4. **Thu hoạch lỗi Console & Network Runtime:**
-   - Gọi `browser_console_messages` để bắt lỗi uncaught exceptions, 4xx/5xx token refresh.
-   - Gọi `browser_network_requests` để kiểm tra các request ngầm bị rò rỉ hoặc thất bại.
-5. **Chốt chặn Xóa bỏ Lỗi ảo (Rollback & Gap Elimination):**
-   - Nếu thao tác trên UI xác nhận hệ thống hoạt động an toàn, có thông báo rõ ràng, hoặc không có lỗi như suy diễn:
-     * **LẬP TỨC QUAY VỀ `<module>-gaps.md` VÀ XÓA BỎ HOÀN TOÀN GAP ĐÓ!**
-     * Chuyển thành `Verified Security Guards (GUARD-xxx, PASS)`.
-     * **DỪNG LẠI, KHÔNG SINH SCRIPT REPRO.**
-6. **Xác nhận Lỗi thật (Confirmed Gap):**
-   - Chỉ khi Playwright MCP xác nhận đúng là UI bị lỗi (kẹt spinner, nuốt lỗi, mất dữ liệu, bypass kiểm tra) thì mới chuyển tiếp sang Mục 4.3 để tác tạo file `tests/repro/<module>-gap-<id>.spec.ts`.
+Execution sequence:
+1. **Navigate to Route (`browser_navigate`):**
+   - Navigate directly to target route (e.g. `https://talent.io.vn/auth/login`).
+   - Await page load completion (`document.readyState === 'complete'`).
+   - **Anti-Loading-Screen Clearance Protocol:** Never capture screenshots or snapshots while spinners, skeleton placeholders, or loading bars are active. Await full DOM settlement and `networkidle`.
+2. **Inspect Accessibility Snapshot & DOM (`browser_snapshot`):**
+   - Inspect live accessibility tree to determine real active button roles, inputs, tabs, and placeholders.
+3. **Execute Interactive Verification Steps (`browser_click`, `browser_type`, `browser_fill_form`):**
+   - Faithfully execute the user interaction sequence documented in `<module>-gaps.md`.
+4. **Harvest Console & Network Runtime Diagnostics:**
+   - Invoke `browser_console_messages` to collect uncaught exceptions and 4xx/5xx token refresh failures.
+   - Invoke `browser_network_requests` to inspect failed API calls or background network drops.
+5. **Anti-False-Alarm & Immediate Gap Elimination Protocol:**
+   - If live interaction proves the app functions safely, displays clear validation banners, or disallows unauthorized actions:
+     * **IMMEDIATELY ROLL BACK TO `<module>-gaps.md`:** Delete the suspected gap completely from the active issue list.
+     * Reclassify under `## 2. Verified Security Guards (GUARD-xxx, PASS)`.
+     * **STOP:** Do NOT author a reproduction spec for non-existent bugs.
+6. **Confirmed Gap Handling:**
+   - Only when Playwright MCP proves an actual defect exists (infinite spinner, unhandled 500, silent data loss, validation bypass), advance to authoring `tests/repro/<module>-gap-<id>.spec.ts`.
 
-### 4.3. Author Playwright Bug Reproduction Script & Register Terminal Commands (Chỉ cho Confirmed Gaps)
+### 4.3. Author Playwright Bug Reproduction Script & Register Terminal Commands (Confirmed Gaps Only)
 * Instead of brittle, dead static screenshots, every observable UI gap MUST be accompanied by an executable Playwright reproduction spec:
   1. **Author Standalone Reproduction Script (`tests/repro/<module>-gap-<id>.spec.ts`):**
      - Create an isolated test file inside `tests/repro/` (e.g. `tests/repro/order-gap-001.spec.ts`).

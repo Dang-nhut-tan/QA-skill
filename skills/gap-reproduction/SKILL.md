@@ -7,7 +7,7 @@ description: >-
   and embeds verified command blocks directly under each numbered gap item in <module>-gaps.md.
 ---
 
-# Skill: Playwright Bug Reproduction & Verification Engineering (Step 2.5)
+# Skill: Gap Reproduction Engineering Standards (Step 3 Shared Capability)
 
 ## 1. Description & Trigger Conditions
 * **Purpose:** Serves as the dedicated runtime engineering bridge between **Step 2 (Requirement Gap Analysis)** and **Step 4 (Test Case Design)**. Takes suspected discrepancy items (`GAP-xxx`), physically tests them on live web UI and API endpoints using Playwright MCP, eliminates false alarms (Anti-False-Alarm Protocol), authors clean standalone Playwright bug reproduction specs (`tests/repro/<module>-gap-<id>.spec.ts`) without hardcoded sleeps, executes a live `--debug` pre-delivery verification run, and embeds dedicated 1-click terminal commands under each numbered gap item in `<module>-gaps.md`.
@@ -24,7 +24,7 @@ description: >-
 
 ## 3. Step-by-Step Execution Sequence
 
-### Phase 1: Live Verification via Playwright MCP (Kiểm chứng Thực nghiệm)
+### Phase 1: Live Verification via Playwright MCP (Empirical Verification)
 1. **Navigate to Target Route (`browser_navigate`):**
    - Open target page on dev/staging environment.
    - Verify page ready state (`document.readyState === 'complete'`).
@@ -50,9 +50,9 @@ For every confirmed genuine gap:
    - Explicit Setup, Reproduction Steps, and Assertion proving the bug.
 2. **Strict Zero Hardcoded Timeout Rule (LRN-015):**
    > [!WARNING]
-   > **TUYỆT ĐỐI KHÔNG DÙNG `waitForTimeout()` HOẶC SLEEP CỐ ĐỊNH.**
-   > Fix cứng timeout gây chậm chạp, dễ flaky khi mạng lag. Bắt buộc dùng cơ chế bất đồng bộ động:
-   > - **Kiểm tra không phát sinh Request (Zero Request Triggered):**
+   > **STRICT PROHIBITION: NEVER USE ARBITRARY SLEEPS OR `waitForTimeout()`.**
+   > Hardcoded sleeps cause test flakiness and artificial slowdowns. Use web-first asynchronous assertions:
+   > - **Verify Zero Request Triggered (Safe Silent Drop / Form Validation Guard):**
    >   ```typescript
    >   const requestPromise = page.waitForRequest(
    >     (req) => req.url().includes('/target-api/'),
@@ -62,9 +62,9 @@ For every confirmed genuine gap:
    >   const wasDispatched = await requestPromise;
    >   expect(wasDispatched).toBe(false);
    >   ```
-   > - **Chờ mạng / Tải trang:** Dùng `await page.waitForLoadState('networkidle')`.
-   > - **Chờ phần tử / Trạng thái UI:** Dùng `await expect(locator).toBeVisible({ timeout: 5000 })`, `toBeEnabled()`.
-   > - **Chờ điều hướng:** Dùng `await page.waitForURL('**/expected/path**')`.
+   > - **Network / Navigation Settlement:** Use `await page.waitForLoadState('networkidle')`.
+   > - **Locator / Visual State Settlement:** Use `await expect(locator).toBeVisible({ timeout: 5000 })`, `toBeEnabled()`.
+   > - **URL Transition Settlement:** Use `await page.waitForURL('**/expected/path**')`.
 
 ---
 
@@ -85,13 +85,13 @@ For every confirmed genuine gap:
 Under each numbered gap item in `<module>-gaps.md` (`### 1. GAP-001`, `### 2. GAP-002`...):
 Embed the verified 1-click execution block:
 ```bash
-# 1. Chạy chế độ Interactive Step-by-Step Debug Inspector (Khuyến nghị cho QA/Dev):
+# 1. Interactive step-by-step debug inspector (Recommended for QA/Devs):
 npx playwright test tests/repro/<module>-gap-<id>.spec.ts --project=chromium-desktop --debug
 
-# 2. Chạy có mở trình duyệt quan sát:
+# 2. Headed browser execution:
 npx playwright test tests/repro/<module>-gap-<id>.spec.ts --project=chromium-desktop --headed
 
-# 3. Lệnh tắt npm đã đăng ký trong package.json:
+# 3. Registered npm shortcut command:
 npm run <module>:gap:<id>
 ```
 

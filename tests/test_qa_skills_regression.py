@@ -982,5 +982,132 @@ class TestQASkillsRegression(unittest.TestCase):
         self.assertIn("SIDE-BY-SIDE BENCHMARK & USER FRICTION AUDIT", gap_tmpl_text)
         self.assertIn("User Friction & Frustration Point", tmpl_text)
 
+    # =========================================================================
+    # Phase 2 Gate Regression Tests: Unified FSM, Ceilings, Fallbacks
+    # =========================================================================
+    def test_fsm_single_valid_state_list(self):
+        """Verify canonical 14 FSM states are consistent across schema, state_manager, and orchestrator."""
+        from scripts.state_manager import VALID_STATES
+        canonical_14 = [
+            "INITIALIZED",
+            "CONTEXT_DISCOVERY",
+            "DISCOVERY_INCOMPLETE",
+            "GAP_ANALYSIS",
+            "WAITING_FOR_REQUIREMENT_CLARIFICATION",
+            "RUNTIME_INVESTIGATION",
+            "API_INVESTIGATION",
+            "TESTCASE_GENERATION",
+            "TESTCASE_REVIEW",
+            "WAITING_FOR_APPROVED_TESTCASES",
+            "AUTOMATION_IMPLEMENTATION",
+            "AUTOMATION_EXECUTION",
+            "COMPLETED",
+            "BLOCKED"
+        ]
+        self.assertEqual(VALID_STATES, canonical_14, "VALID_STATES in state_manager must match canonical 14 states")
+
+        schema_file = PROJECT_ROOT / "references" / "workflow-state-schema.json"
+        self.assertTrue(schema_file.exists(), "workflow-state-schema.json must exist")
+        schema = json.loads(schema_file.read_text(encoding="utf-8"))
+        schema_states = schema["properties"]["current_state"]["enum"]
+        self.assertEqual(schema_states, canonical_14, "Schema current_state enum must match canonical 14 states")
+
+        orch_file = PROJECT_ROOT / "skills" / "workflow-orchestrator" / "SKILL.md"
+        orch_text = orch_file.read_text(encoding="utf-8")
+        for state in canonical_14:
+            self.assertIn(state, orch_text, f"State '{state}' must be documented in workflow-orchestrator state machine")
+
+    def test_fsm_no_invalid_step_skipping(self):
+        """Verify WorkflowStateManager strictly forbids invalid step skipping and protects gates."""
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmppath = Path(tmpdir)
+            mgr = WorkflowStateManager(str(tmppath))
+            mgr.init_state("CheckoutModule", {"root": str(tmppath)})
+            self.assertEqual(mgr.get_field("current_state"), "INITIALIZED")
+
+            # Illegal transitions from INITIALIZED
+            with self.assertRaises(ValueError):
+                mgr.transition("TESTCASE_GENERATION", "Skipping to testcase generation is illegal")
+            with self.assertRaises(ValueError):
+                mgr.transition("AUTOMATION_IMPLEMENTATION", "Skipping to automation is illegal")
+            with self.assertRaises(ValueError):
+                mgr.transition("COMPLETED", "Skipping to completed is illegal")
+
+            # Valid transition to CONTEXT_DISCOVERY
+            mgr.transition("CONTEXT_DISCOVERY", "Begin context discovery")
+            self.assertEqual(mgr.get_field("current_state"), "CONTEXT_DISCOVERY")
+
+            # Illegal leap from CONTEXT_DISCOVERY to AUTOMATION_EXECUTION
+            with self.assertRaises(ValueError):
+                mgr.transition("AUTOMATION_EXECUTION", "Illegal leap")
+
+            # Valid progression to GAP_ANALYSIS
+            mgr.transition("GAP_ANALYSIS", "Discovered context, analyze gaps")
+            self.assertEqual(mgr.get_field("current_state"), "GAP_ANALYSIS")
+
+            # Illegal bypass from GAP_ANALYSIS to COMPLETED
+            with self.assertRaises(ValueError):
+                mgr.transition("COMPLETED", "Illegal bypass")
+
+            # Dual-track: RUNTIME_INVESTIGATION
+            mgr.transition("RUNTIME_INVESTIGATION", "Investigate UI")
+            mgr.transition("TESTCASE_GENERATION", "Design test cases")
+            mgr.transition("TESTCASE_REVIEW", "Review and export test cases")
+            mgr.transition("WAITING_FOR_APPROVED_TESTCASES", "Core human approval gate")
+
+            # Illegal bypass: cannot transition to AUTOMATION_IMPLEMENTATION without approved workbook & token
+            with self.assertRaises(ValueError):
+                mgr.transition("AUTOMATION_IMPLEMENTATION", "Attempting automation without approved workbook")
+
+            # User satisfaction exit to COMPLETED from human gate is valid
+            mgr.transition("COMPLETED", "User approved manual test suite")
+            self.assertEqual(mgr.get_field("current_state"), "COMPLETED")
+
+    def test_pseudo_tools_capability_fallback(self):
+        """Verify pseudo-tool instructions specify Branch A (multi-agent) and Branch B (sequential fallback)."""
+        intake_file = PROJECT_ROOT / "skills" / "module-intake" / "SKILL.md"
+        intake_text = intake_file.read_text(encoding="utf-8")
+        self.assertIn("Branch A: Multi-Agent Environment", intake_text)
+        self.assertIn("Branch B: Single-Agent Environment", intake_text)
+        self.assertIn("Universal Artifact Guarantee", intake_text)
+        self.assertIn("industry-benchmark-flows.md", intake_text)
+
+        api_file = PROJECT_ROOT / "skills" / "api-investigation" / "SKILL.md"
+        api_text = api_file.read_text(encoding="utf-8")
+        self.assertIn("Branch A: Dedicated Subagent Delegation", api_text)
+        self.assertIn("Branch B: Sequential Main Thread Execution", api_text)
+        self.assertIn("Universal Evidence Guarantee", api_text)
+        self.assertIn("tests/repro/<module>-api-gap-<id>.spec.ts", api_text)
+
+        agent_file = PROJECT_ROOT / "agents" / "api-investigator.md"
+        agent_text = agent_file.read_text(encoding="utf-8")
+        self.assertIn("Execution Modes & Portability", agent_text)
+        self.assertIn("Multi-Agent Environments", agent_text)
+        self.assertIn("Single-Agent Environments", agent_text)
+
+    def test_unified_discovery_incomplete_terminology(self):
+        """Verify CodeGraph policy uses DISCOVERY_INCOMPLETE without contradictory 'NO Node Limits'."""
+        agents_file = PROJECT_ROOT / "AGENTS.md"
+        agents_text = agents_file.read_text(encoding="utf-8")
+        self.assertIn("DISCOVERY_INCOMPLETE", agents_text)
+        self.assertNotIn("NO Node Limits", agents_text)
+        self.assertNotIn("no node limits", agents_text.lower())
+
+        orch_file = PROJECT_ROOT / "skills" / "workflow-orchestrator" / "SKILL.md"
+        orch_text = orch_file.read_text(encoding="utf-8")
+        self.assertIn("DISCOVERY_INCOMPLETE", orch_text)
+        self.assertNotIn("no node limits", orch_text.lower())
+
+        cg_skill = PROJECT_ROOT / "skills" / "codegraph-context-discovery" / "SKILL.md"
+        cg_text = cg_skill.read_text(encoding="utf-8")
+        self.assertIn("DISCOVERY_INCOMPLETE", cg_text)
+        self.assertIn("max_depth", cg_text)
+        self.assertIn("max_nodes", cg_text)
+        self.assertNotIn("no node limits", cg_text.lower())
+
+        cg_script = PROJECT_ROOT / "scripts" / "codegraph_discovery.py"
+        cg_script_text = cg_script.read_text(encoding="utf-8")
+        self.assertIn("DISCOVERY_INCOMPLETE", cg_script_text)
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

@@ -51,21 +51,24 @@ For every suspected gap (`GAP-xxx`), conduct a rigorous dual-dimension evaluatio
   - Concurrency & race conditions under peak traffic (`workers > 1`).
   - Cascading downstream failures in billing, reporting, or scoring engines.
 
-### 3.4. Compile Numbered Gap Catalogue in `<module>-gaps.md` (Zero Markdown Table)
-* **BỎ HOÀN TOÀN DẠNG BẢNG NGANG:** Bắt buộc trình bày danh sách Gaps theo cấu trúc đánh số thứ tự (`### 1. GAP-001`, `### 2. GAP-002`, `### 3. GAP-003`...):
-  - `Issue ID` & Tiêu đề súc tích
-  - `Phân loại (Category)` & `Quy trình liên quan (Related Flow)`
-  - `Mức độ nghiêm trọng (Severity)`: `Critical`, `Major`, `Minor`
-  - `Bằng chứng mã nguồn (Code AST)`: Đường dẫn file và dòng chính xác
-  - `Tác động trải nghiệm người dùng (UX Impact)`
-  - `Rủi ro kỹ thuật tương lai (Future Technical Risk)`
-  - `Câu hỏi làm rõ cho BA/PO & Đề xuất giải pháp`
+### 3.4. Compile Numbered Gap Catalogue in `<module>-gaps.md` (Structured Item Format)
+* **Numbered Gap Catalogue Format (No Wide Horizontal Tables):** Structure suspected gaps as clear numbered items (`### 1. GAP-001`, `### 2. GAP-002`, `### 3. GAP-003`...):
+  - `Issue ID` & Concise Title
+  - `Category` & `Related Business Flow`
+  - `Severity`: `Critical`, `Major`, `Minor`
+  - `Source Code Evidence (Code AST)`: Exact file path and line range
+  - `User Experience Impact (UX Impact)`: Operational friction, lost effort, confusing feedback
+  - `Future Technical Risk`: Concurrency race condition, data corruption, downstream cascading failure
+  - `Clarification Questions for BA/PO & Proposed Options`
 
-### 3.5. Seamless Handover to Step 2.5 (`gap-reproduction`)
+### 3.5. Seamless Handover to Step 3 (Step 3A UI & Step 3B API Verification)
 * Upon completing the numbered gap catalogue in `<module>-gaps.md`:
   - Update workflow state:
-    `python scripts/state_manager.py transition RUNTIME_INVESTIGATION "Gap analysis completed. Handing over to Step 2.5 gap-reproduction for live UI/API verification and repro authoring."`
-  - Hand over `<module>-gaps.md` to **Step 2.5 (`gap-reproduction`)** to execute live Playwright MCP inspection, eliminate false alarms, author standalone `tests/repro/<module>-gap-<id>.spec.ts` specs (with zero hardcoded timeouts), and embed 1-click debug commands (`npm run <module>:gap:<id>` and `npx playwright test tests/repro/... --headed`) under each numbered gap item.
+    `python scripts/state_manager.py transition RUNTIME_INVESTIGATION "Gap analysis completed. Handing over to Step 3 verification tracks for live verification and repro spec authoring."`
+  - Hand over `<module>-gaps.md` to:
+    * **Step 3A (`playwright-investigation`):** For UI-observable gaps, conduct live browser verification and author standalone `tests/repro/<module>-gap-<id>.spec.ts` specs.
+    * **Step 3B (`api-investigation`):** For backend/RPC/data gaps, conduct direct endpoint verification and author standalone `tests/repro/<module>-api-gap-<id>.spec.ts` specs.
+    * Both tracks strictly adhere to **Step 3 Shared Gap Reproduction Engineering standards (`gap-reproduction`)**, ensuring zero hardcoded timeouts and embedding 1-click terminal commands (`npm run <module>:gap:<id>` and `npx playwright test ...`).
 
 ## 4. Expected Outputs
 * `<module>-gaps.md` containing Verified Security Guards (`GUARD-xxx`, PASS) and the numbered list of suspected gaps (`### 1. GAP-001`, `### 2. GAP-002`...).

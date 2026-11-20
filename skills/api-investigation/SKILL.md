@@ -8,32 +8,40 @@ description: >-
   and rollback when the API operates safely according to business rules.
 ---
 
-# Skill: API & Backend Service Verification & Reproduction (Step 3 - API Track)
+# Skill: Direct API & Backend Service Verification & Reproduction (Step 3B)
 
 ## 1. Description & Trigger Conditions
-* **Purpose:** Proactively verify requirement gaps, authorization boundaries, and data integrity constraints directly at the backend API, RPC, or REST endpoint level — bypassing the frontend UI entirely.
-  * While `playwright-investigation` verifies what the user experiences on the screen (DOM state, visuals, click flows), `api-investigation` exposes whether the backend enforces true business security:
-    1. **Bypass UI Validation (Vượt rào UI):** Giao diện disable nút hoặc validate form, nhưng khi gọi thẳng API thì server vẫn nhận dữ liệu bậy.
-    2. **Silent API Failures (UI nuốt lỗi):** API trả về `400 / 422 / 500` hoặc crash nhưng UI không hề hiển thị thông báo lỗi cho người dùng.
-    3. **Data Contract & Security Flaws:** Rò rỉ dữ liệu nhạy cảm, thiếu idempotency, hoặc vi phạm RBAC (Role-Based Access Control).
-  * Authors standalone, deterministic, executable Playwright API reproduction scripts (`tests/repro/<module>-api-gap-<id>.spec.ts`) without browser launch overhead (< 500ms execution).
+* **Purpose:** Proactively verify requirement gaps, authorization boundaries, and data integrity constraints directly at the backend API, RPC, or REST endpoint level — completely bypassing the browser UI.
+  * While `playwright-investigation` (Step 3A) verifies screen interactions and visual flows, `api-investigation` (Step 3B) exposes server-side defensive robustness:
+    1. **Bypass of UI Validation:** Frontend disables submit button or enforces regex validation, but calling the raw API endpoint allows invalid, out-of-range, or malicious payloads to persist.
+    2. **Silent API Failures:** Backend endpoint returns `400 / 422 / 500` or crashes with an unhandled exception, but frontend UI swallows the failure without displaying user feedback.
+    3. **Data Contract & Security Flaws:** Leakage of sensitive PII fields, absence of idempotency keys causing duplicate records, or broken Role-Based Access Control (RBAC).
+  * Authors standalone, deterministic, executable Playwright API reproduction specs (`tests/repro/<module>-api-gap-<id>.spec.ts`) without browser launch overhead (< 500ms execution).
 * **Triggers:**
   * Identified API/Backend gap items from Step 2 (`requirement-gap-analysis`).
   * Gaps tagged with `[Category: Backend / Security / Data Integrity]`.
   * State transitions from `GAP_ANALYSIS` $\rightarrow$ `API_INVESTIGATION`.
 
-### 1.1. Ephemeral Subagent Delegation Architecture (Ủy quyền Subagent Chuyên Trách)
-Để bảo tồn ngữ cảnh (context window) của Orchestrator và chạy song song, quy trình khuyến nghị ủy quyền việc điều tra API cho Subagent chuyên trách:
-* **Subagent Name:** `api-investigator` (`agents/api-investigator.md`).
-* **Spawn Invocation:**
-  ```python
-  invoke_subagent(
-      TypeName="api-investigator",
-      Role="API Investigation Specialist",
-      Prompt="Verify identified backend/API gaps for module <ModuleName> directly at endpoint level. Author tests/repro/<module>-api-gap-<id>.spec.ts, run pre-delivery smoke check, and return verified defect proof or safe guard rollback recommendations."
-  )
-  ```
-* **Isolation Boundary:** Subagent chỉ thao tác với HTTP network và file `tests/repro/`, không can thiệp vào các state khác. Sau khi hoàn thành và trả kết quả, Orchestrator thu nạp bằng chứng và đóng subagent.
+### 1.1. Capability-Aware Dispatch & Execution Mode (Multi-Agent vs Sequential Fallback)
+* The agent detects available host platform capabilities:
+  - **Branch A: Dedicated Subagent Delegation (`api-investigator`):**
+    When running in an environment supporting native subagent spawning (`invoke_subagent`):
+    * Dispatch investigation task to subagent `api-investigator` (`agents/api-investigator.md`):
+      ```json
+      {
+        "TypeName": "api-investigator",
+        "Role": "API Investigation Specialist",
+        "Prompt": "Verify identified backend/API gaps for module <ModuleName> directly at endpoint level. Author tests/repro/<module>-api-gap-<id>.spec.ts, run pre-delivery smoke check, and return verified defect proof or safe guard rollback recommendations."
+      }
+      ```
+    * Subagent operates strictly within HTTP network calls and `tests/repro/` spec authoring.
+    * Upon completion, parent collects verified reproduction specs and terminates subagent session via `manage_subagents(Action="kill")`.
+  - **Branch B: Sequential Main Thread Execution (Single-Agent Fallback):**
+    When running in a standard single-agent environment (Claude Code, Cursor, standalone Playwright CLI):
+    * The primary agent executes the API dispatch sequentially using Playwright `request` fixture or Node.js `fetch`.
+    * Directly authors `tests/repro/<module>-api-gap-<id>.spec.ts` with explicit assertions replicating the bug.
+    * Embeds 1-click execution commands into `<module>-gaps.md`.
+* **Universal Evidence Guarantee:** Both branches produce the identical verified artifact `tests/repro/<module>-api-gap-<id>.spec.ts` and update `.qa-state.json`. Never claim a subagent was dispatched without verified tool call execution.
 
 ---
 
@@ -49,15 +57,15 @@ description: >-
 
 ---
 
-## 3. Core API Defect Taxonomy (Phân loại lỗi API)
+## 3. Core API Defect Taxonomy
 
-| Mã danh mục | Loại lỗi | Dấu hiệu nhận biết & Hệ quả |
+| Defect Code | Category | Root Cause & Failure Signature |
 | :--- | :--- | :--- |
-| **`API-DEF-01`** | **UI Bypass (Thiếu Server-side Validation)** | UI chặn (nút disabled, input regex), nhưng gọi thẳng API với payload sai lệch thì backend trả về `200 OK` và ghi dữ liệu rác vào CSDL. |
-| **`API-DEF-02`** | **Silent API Failure (Nuốt lỗi backend)** | Backend trả về `400 / 422 / 500` hoặc Unhandled Exception, nhưng giao diện frontend không hiện Toast / Alert, người dùng tưởng thao tác thành công hoặc bị đơ. |
-| **`API-DEF-03`** | **RBAC / Privilege Escalation** | Tài khoản vai trò thấp (ví dụ: Học sinh) gọi endpoint của vai trò cao (Giảng viên / Quản trị) mà không bị từ chối bằng `401 Unauthorized` hoặc `403 Forbidden`. |
-| **`API-DEF-04`** | **Race Condition & Idempotency Failure** | Bắn 2-5 request đồng thời (Concurrent requests) với cùng 1 idempotency key hoặc transaction mà backend tạo trùng 2 bản ghi thanh toán / duyệt bài. |
-| **`API-DEF-05`** | **Contract & Schema Inconsistency** | Endpoint trả về HTTP `200 OK` nhưng body chứa `{ "error": true, "message": "Failed" }` (Anti-pattern), hoặc trả về sai kiểu dữ liệu làm crash parser. |
+| **`API-DEF-01`** | **UI Bypass (Missing Server-side Validation)** | UI blocks input (disabled button, client regex), but direct API call accepts malformed payload, returning `200 OK` and persisting dirty data. |
+| **`API-DEF-02`** | **Silent API Failure (Swallowed Backend Error)** | Backend returns `400 / 422 / 500` or uncaught exception, but frontend displays no error toast or alert, leaving users stranded or assuming success. |
+| **`API-DEF-03`** | **RBAC / Privilege Escalation** | Low-privilege role calls high-privilege administrative endpoint without receiving HTTP `401 Unauthorized` or `403 Forbidden`. |
+| **`API-DEF-04`** | **Race Condition & Idempotency Failure** | 2-5 concurrent requests sent with identical idempotency token produce duplicate database records or double-billing mutations. |
+| **`API-DEF-05`** | **Contract & Schema Inconsistency** | Endpoint returns HTTP `200 OK` but body contains `{ "error": true, "message": "Failed" }` (anti-pattern), or returns unexpected types causing frontend parser crash. |
 
 ---
 
@@ -110,7 +118,7 @@ description: >-
     });
     ```
 
-### 4.2. Mandatory Pre-Delivery Execution Gate (Chạy thực tế trước khi bàn giao)
+### 4.2. Mandatory Pre-Delivery Execution Gate
 > [!CRITICAL]
 > **STRICT ZERO-BROKEN-CODE POLICY:**
 > The AI agent MUST execute a live test run before presenting the script to the user:
@@ -124,13 +132,13 @@ description: >-
 
 ### 4.3. Anti-Fabrication & Immediate Gap Elimination Protocol
 > [!CAUTION]
-> **XÁC NHẬN KHÔNG CÓ LỖI TẠI API -> LẬP TỨC QUAY VỀ BƯỚC GAPS VÀ XÓA BỎ NGAY:**
-> Khi gọi API thực tế, nếu backend xử lý an toàn (ví dụ: trả về `400 Bad Request`, `403 Forbidden`, hoặc tuân thủ đúng business rules):
-> 1. **LẬP TỨC QUAY VỀ BƯỚC GAPS (`<module>-gaps.md`):**
->    * **XÓA BỎ HOÀN TOÀN (Purge & Delete):** Gỡ bỏ bất cập đó khỏi danh mục `Identified Gaps (GAP-xxx)`. Tuyệt đối không giữ lại hay chuyển sang bước viết Testcase.
->    * **Phân loại vào Chốt chặn an toàn:** Ghi nhận vào mục `Verified Security Guards (GUARD-API-xxx, PASS)`.
->    * **Xóa script sai lệch:** Xóa bỏ file `tests/repro/<module>-api-gap-<id>.spec.ts` ngay lập tức để giữ kho mã sạch.
-> 2. **Đồng bộ hóa State:** Cập nhật `.qa-state.json`, đảm bảo không tạo testcase cho lỗi không có thật.
+> **PROVEN BACKEND SAFETY -> IMMEDIATE GAP PURGE & ROLLBACK:**
+> When calling the live API, if the backend operates securely (e.g. returns `400 Bad Request`, `403 Forbidden`, `422 Unprocessable Entity`, or strictly enforces business constraints):
+> 1. **IMMEDIATELY ROLL BACK TO `<module>-gaps.md`:**
+>    * **Purge & Delete:** Remove that suspected gap completely from `Identified Gaps (GAP-xxx)`. Strictly prohibit transferring false alarms to testcase design.
+>    * **Reclassify as Verified Guard:** Record under `Verified Security Guards (GUARD-API-xxx, PASS)`.
+>    * **Delete Faulty Script:** Delete `tests/repro/<module>-api-gap-<id>.spec.ts` immediately to keep the test suite clean.
+> 2. **Synchronize Workflow State:** Update `.qa-state.json`, ensuring zero testcase generation for fabricated or non-existent bugs.
 
 ---
 

@@ -76,15 +76,22 @@ description: >-
    * **Idempotent Cache Check (Run ONLY if not already present):**
      - Check if `industry-benchmark-flows.md` (or `system-architecture-flows.md`) exists in the project root or workspace root.
      - **CACHE HIT:** If `industry-benchmark-flows.md` (or `system-architecture-flows.md`) already exists: **SKIP execution completely** (0 token consumption, 0 execution latency). Reuse the existing benchmark flows.
-     - **CACHE MISS (Ephemeral Subagent Acceleration & Immediate Teardown):**
-       If missing, accelerate research and preserve the parent agent's context window by delegating to a dedicated, lightweight ephemeral subagent:
-       1. **Spawn Ephemeral Subagent:** Invoke a background subagent via `invoke_subagent`:
-          - `Role`: `"Industry Benchmark Scout"`
-          - `TypeName`: `"research"` (or `"self"`)
-          - `Model`: `"flash"` (fast, economical, low-latency)
-          - `Prompt`: Instruct the subagent to research how mature external systems and industry leaders implement similar modules, extract standard Mermaid flowcharts, universal edge cases, and anti-patterns, and author `industry-benchmark-flows.md` in workspace root adhering to `references/industry-benchmark-flows-template.md`.
-       2. **Mandatory Temporary File Cleanup:** The subagent MUST clean up and delete all temporary scratch scripts, query dumps, or intermediate logs created during discovery before completing.
-       3. **Immediate Session Termination (Zero Lingering Subagents):** As soon as `industry-benchmark-flows.md` is generated and verified on disk, the parent agent MUST immediately terminate the subagent session via `manage_subagents(Action="kill", ConversationIds=[subagent_id])`. This releases memory, conserves tokens, and strictly prevents idle subagents from lingering in the background.
+     - **CACHE MISS (Capability-Aware Execution with Sequential Fallback):**
+       If `industry-benchmark-flows.md` is missing, check platform capabilities to execute research:
+       1. **Branch A: Multi-Agent Environment (Native Tool Available):**
+          - If the host platform provides native multi-agent tools (e.g. `invoke_subagent` in Antigravity):
+            * Invoke ephemeral subagent (`Role: "Industry Benchmark Scout"`, `TypeName: "research"`, `Model: "flash"`).
+            * Subagent researches similar mature industry platforms, drafts `industry-benchmark-flows.md` adhering to `references/industry-benchmark-flows-template.md`.
+            * **Mandatory Temporary File Cleanup:** Subagent deletes all temporary scratch scripts or intermediate logs before exit.
+            * Parent agent immediately terminates the subagent session via `manage_subagents(Action="kill", ConversationIds=[subagent_id])`.
+       2. **Branch B: Single-Agent Environment (Standard Sequential Fallback):**
+          - If native multi-agent tools are not available (e.g. running in Claude Code, Cursor, or standalone CLI):
+            * The primary agent executes the benchmark research sequentially in the main thread.
+            * Directly generates `industry-benchmark-flows.md` following `references/industry-benchmark-flows-template.md`.
+            * **Mandatory Temporary File Cleanup:** Cleans up any scratch files upon completion.
+       3. **Universal Artifact Guarantee & Strict Anti-Hallucination:**
+          - Both branches MUST produce the exact same verified artifact `industry-benchmark-flows.md` on disk.
+          - The agent is STRICTLY PROHIBITED from claiming that a subagent was spawned or terminated without verified platform tool call evidence.
    * **Strict Isolation Rule:** Strictly do NOT place industry benchmark flows or external architecture into `module-context.md`. `industry-benchmark-flows.md` is a standalone artifact reused across gap analysis and testcase design to expose domain blindspots and architectural inadequacies.
 6. **Initialize Workflow State:**
    * Invoke `python scripts/state_manager.py init "<ModuleName>"` to create or reset `.qa-state.json`.

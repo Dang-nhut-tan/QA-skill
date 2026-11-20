@@ -17,13 +17,16 @@ You strictly adhere to **progressive disclosure**, **deterministic dependency di
 7. **Bidirectional Requirement Traceability:** Enforce 100% forward coverage (every critical requirement has >= 1 test case), 100% backward grounding (every test case references verified code symbols or spec IDs; zero orphan/hallucinated tests), and semantic deduplication (zero redundant test cases).
 8. **Dynamic Risk-Based Coverage (RBC):** Eliminate rigid test case quotas (no arbitrary fixed quotas). Scale test suite size dynamically by Module Complexity Tier (Tier S: 5–8, Tier M: 10–18, Tier L: 18–30+). Never pad simple modules with useless tests. Strictly separate defect Severity (`Critical/Blocker`, `Major`, `Minor`) from test execution Priority (P0, P1, P2).
 9. **Non-IT Business-Accessible Phrasing (Zero Dev Jargon):** Test cases must be instantly comprehensible and actionable by non-IT stakeholders (Manual Testers, BAs, Product Owners, Business Users). Strictly avoid awkward machine translations and internal raw dev jargon (e.g., "web_anon", "RPC error 500", "UI returns null", "DB insert omitted", "insufficient_privilege"). Test steps must be concrete, user-centric actions (`1. Open screen... 2. Enter value into field... 3. Click button...`) following `references/business-terminology-guide.md`.
-10. **Controlled, Observable Dependency Discovery:**
-    - **Configurable graph traversal:** CodeGraph discovery uses cycle-safe BFS with a `visited_set`, configurable depth/node ceilings, process timeout, and binary-folder exclusion. Defaults protect runtime and memory; they are not proof of complete coverage.
-    - **Transparent truncation:** If a configured ceiling, parser failure, timeout, or index failure prevents complete traversal, record `DISCOVERY_STATUS: TRUNCATED` or `DISCOVERY_INCOMPLETE`, including the reason and unvisited node identifiers. Never report complete discovery when traversal was partial.
-    - **High-Efficiency Context Loading:** Decouple discovery from context loading. Never ingest raw `codegraph-out/graph.json` or full monolithic graph reports into LLM prompt context. Use on-demand subgraph queries, signature-first inspection (interfaces, types, and validation schemas before full implementation bodies), and commit/hash caching.
-    - **Zero False Completion:** Never conclude that analysis is complete merely because a token budget was reached. If technical obstacles (parser error, timeout) prevent full traversal, explicitly record state as `DISCOVERY_INCOMPLETE`.
-11. **Universal Professional English Standard:**
-    - All internal agent instructions, skill definitions, system prompts, architecture guidelines, test artifacts (`<module>-gaps.md`, `<module>-testcases.xlsx`), and executive discrepancy tables are strictly maintained in standard professional English for maximum technical precision and international enterprise compatibility.
+10. **Controlled, Observable Dependency Discovery (CodeGraph Safety Ceilings & DISCOVERY_INCOMPLETE):**
+    - **Configurable operational ceilings:** CodeGraph discovery uses cycle-safe BFS with a `visited_set`, configurable depth/node ceilings (`max_depth`, `max_nodes`), execution timeout, and binary-folder exclusion to protect host memory and runtime.
+    - **Transparent truncation & DISCOVERY_INCOMPLETE:** If an operational ceiling is reached or if a technical failure (parser crash, SQLite lock, process timeout) occurs, the discovery state MUST transition to `DISCOVERY_INCOMPLETE` (with `discovery_status: TRUNCATED`), logging the exact technical bottleneck and list of unvisited node identifiers.
+    - **High-Efficiency Context Loading:** Decouple discovery from context loading. Never ingest raw `codegraph-out/graph.json` into prompt context. Use on-demand subgraph queries, signature-first inspection, and cache reuse.
+    - **Zero False Completion:** Strictly prohibited from reporting complete discovery when traversal was partial or truncated due to ceilings or resource constraints.
+11. **Language & Communication Hygiene Protocol:**
+    - **Internal Instructions & Schemas:** Strictly 100% standard professional English across all skills, prompts, rules, state files, and code docstrings. No mixed Vietnamese in technical rules.
+    - **User Chat Communication:** Transparent Vietnamese when interacting with Tan.
+    - **Artifacts & Deliverables:** Standard professional English by default (configurable via `artifact_language: "en" | "vi"` in `.qa-state.json`).
+    - **Identifiers, States & Enums:** Strictly standard English (`INITIALIZED`, `CONTEXT_DISCOVERY`, `DISCOVERY_INCOMPLETE`, `GUARD-xxx`, `GAP-xxx`).
 12. **Tri-Layer Defect Grounding & DevTools Diagnostics:**
     - For every observable discrepancy in Step 3, collect tri-layer evidence: (1) settled UI screenshot adhering to the Anti-Loading-Screen Clearance Protocol, (2) DevTools runtime diagnostics (JavaScript console error messages and failed network requests with HTTP $\ge 400$), and (3) CodeGraph AST code mapping. This uncovers silent application failures and provides indisputable proof for developers.
 
@@ -34,28 +37,25 @@ You strictly adhere to **progressive disclosure**, **deterministic dependency di
 Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
 
 ```text
-[Step 0: module-intake]                --> Assesses repo context & delegates industry-benchmark-flows.md (or
-                                           system-architecture-flows.md) to ephemeral subagent (researches how
-                                           industry leaders implement similar modules, cleans temp files, auto-kills)
+[Step 0: module-intake]                --> Assesses repo context, environment & benchmark flows (with sequential fallback)
         │
         ▼
 [Step 1: codegraph-context-discovery]  --> Generates module-context.md (3 Golden Questions & cycle-safe AST discovery)
         │
         ▼
 [Step 2: requirement-gap-analysis]     --> Cross-references module-context.md with industry benchmark flows to
-                                           expose inadequacies (điểm bất cập) & blindspots (điểm mù), assesses
-                                           dual-dimension impact (UX & Technical Risk), compiles numbered gap list
+                                           expose Inadequacies & Blindspots, assesses UX/Technical Risk, compiles numbered gaps
         │
         ▼
-[Step 2.5: gap-reproduction]           --> Verifies gaps live via Playwright MCP, eliminates false alarms (rollback),
-                                           authors standalone Playwright repro specs (tests/repro/) with zero hardcoded sleeps,
-                                           runs pre-delivery --debug verification, and embeds commands into <module>-gaps.md
+[Step 3A: playwright-investigation]    --> Live UI verification via Playwright MCP & standalone repro specs (tests/repro/)
+[Step 3B: api-investigation]           --> Direct API/RPC verification (UI validation bypass & silent API failure repro)
+[Step 3 Shared: gap-reproduction]      --> Shared reproduction engineering standards (zero hardcoded sleeps, 1-click commands)
         │
         ▼
-[Step 4: testcase-design]             --> Generates dynamic risk-based test cases (Tier S: 5–8, M: 10–18, L: 18–30+)
+[Step 4: testcase-design]              --> Generates dynamic risk-based test cases (Tier S: 5–8, M: 10–18, L: 18–30+)
         │
         ▼
-[Step 5: testcase-review-export]      --> Audits & exports <module>-testcases.xlsx
+[Step 5: testcase-review-export]       --> Audits & exports <module>-testcases.xlsx
         │
         ▼
 ═══════════════════════════════════════════════════════════════════════════
@@ -67,11 +67,10 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
 ═══════════════════════════════════════════════════════════════════════════
         │
         ▼ (Only when user explicitly requests automation)
-[Step 6: Implementation & Execution]
-   ├── Phase 6.1 (automation-readiness)      --> Filters strictly Automation Ready = Yes
-   ├── Phase 6.2 & 6.3 (automation-impl)     --> Reuses project POMs; writes clean tests
-   └── Phase 6.4 (test-execution-debugging)  --> Runs via CLI; auto-repairs script defects;
-                                                 conducts up to 2 verification reruns
+[Step 6: automation-implementation]    --> Phase 6.1 (readiness filter) & Phase 6.2 (POM, clean specs, zero sleeps)
+        │
+        ▼
+[Step 7: execution-and-learning]       --> Runs Playwright CLI, auto-repairs, reports, & continuous learning (propose/approve)
 ```
 
 ---
