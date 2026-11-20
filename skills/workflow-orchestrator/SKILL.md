@@ -27,12 +27,12 @@ The orchestrator dynamically scales lifecycle depth based on module risk tier an
 
 | Mode | Target Scope | Lifecycle Sequence | Deliverables Required |
 | :--- | :--- | :--- | :--- |
-| **`quick`** | Hotfix, single bug repro, smoke test | Minimal Intake $\rightarrow$ Step 3 (UI / API Verification) $\rightarrow$ Summary Report | Repro spec or guard proof + executive chat summary. **No 3-sheet Excel export, no external benchmark research.** |
+| **`quick`** | Fast-Track QA Audit (Hotfix, single flow, rapid defect triage) | Step 1 Targeted Code Discovery (depth 1–3) $\rightarrow$ Step 2 Flash Friction Audit (5 Groups) $\rightarrow$ Step 3 Empirical Verification $\rightarrow$ Step 4 Executive QA Flash Report | Executive QA Flash Report (chat markdown) + Repro spec (`tests/repro/`) or guard proof (`tests/guards/`). **No 3-sheet Excel export, no external benchmark research.** Target budget: $\le 60s$. |
 | **`standard`** | Standard business feature modules | Step 0 Intake $\rightarrow$ Step 1 CodeGraph $\rightarrow$ Step 2 Gap Analysis $\rightarrow$ Step 3 Verification $\rightarrow$ Step 4/5 Testcase Design & Excel $\rightarrow$ Human Gate $\rightarrow$ Step 6/7 Automation | `module-context.md`, `<module>-gaps.md`, `<module>-testcases.xlsx`, automated specs. |
 | **`critical`** | Financial checkout, billing, RBAC, sensitive data | Full Lifecycle + Dual-Track (Step 3A UI & Step 3B API) + Idempotency/Concurrency check + **Production Safety Gate** + Human Gate | Complete audit trail, repro & guard specs in `tests/guards/`, 3-sheet Excel with 100% bidirectional traceability. |
 
 > [!TIP]
-> **Lean Execution Rule:** If the user only wants to investigate, reproduce, or verify a specific defect or hotfix, default to **`quick` mode**. Never force a single-bug investigation through 3-sheet Excel exports or multi-industry benchmark surveys.
+> **Fast-Track QA Audit v2 Rule:** In `quick` mode, the system executes targeted code discovery (depth 1–3) and systematically evaluates the **5 Universal User Friction Groups** (Data Loss, Duplicate Action, Async Recovery, Error Contract, Hidden Logic) with live CLI verification under a $\le 60s$ budget. It outputs a concise executive markdown report without generating 3-sheet Excel workbooks or conducting external industry surveys.
 
 ### 3.1. Hybrid UI Investigation Architecture (CLI Primary + MCP Fallback)
 During Step 3A (`RUNTIME_INVESTIGATION`):
@@ -48,23 +48,24 @@ During Step 3A (`RUNTIME_INVESTIGATION`):
 ```mermaid
 stateDiagram-v2
     [*] --> INITIALIZED: Step 0 (module-intake: repo context & benchmark flows)
-    INITIALIZED --> CONTEXT_DISCOVERY: Step 1 (standard/critical mode: AST call tree)
-    INITIALIZED --> RUNTIME_INVESTIGATION: Step 3A (quick mode UI verify)
-    INITIALIZED --> API_INVESTIGATION: Step 3B (quick mode API verify)
+    INITIALIZED --> CONTEXT_DISCOVERY: Step 1 (standard/critical mode full AST, quick mode targeted JIT)
+    INITIALIZED --> RUNTIME_INVESTIGATION: Step 3A (hotfix direct repro fallback)
+    INITIALIZED --> API_INVESTIGATION: Step 3B (hotfix direct repro fallback)
     
-    CONTEXT_DISCOVERY --> GAP_ANALYSIS: Step 2 (requirement-gap-analysis: gaps & UX impact)
-    CONTEXT_DISCOVERY --> DISCOVERY_INCOMPLETE: Ceiling Reached / Technical Blocker
+    CONTEXT_DISCOVERY --> GAP_ANALYSIS: Step 2 (standard/critical: benchmark gaps, quick: 5 friction groups)
+    CONTEXT_DISCOVERY --> DISCOVERY_INCOMPLETE: Ceiling Reached / Missing Source
+    DISCOVERY_INCOMPLETE --> GAP_ANALYSIS: Quick Mode partial analysis
     DISCOVERY_INCOMPLETE --> CONTEXT_DISCOVERY: Retry / Adjust Ceilings
     
-    GAP_ANALYSIS --> RUNTIME_INVESTIGATION: Step 3A (playwright-investigation: live UI verification)
+    GAP_ANALYSIS --> RUNTIME_INVESTIGATION: Step 3A (live UI verification: CLI primary, MCP fallback)
     GAP_ANALYSIS --> API_INVESTIGATION: Step 3B (api-investigation: direct API/RPC verification)
-    GAP_ANALYSIS --> TESTCASE_GENERATION: Logical Gaps (no UI/API rendering)
+    GAP_ANALYSIS --> TESTCASE_GENERATION: Logical Gaps (standard/critical)
     GAP_ANALYSIS --> WAITING_FOR_REQUIREMENT_CLARIFICATION: Spec Ambiguity Gate (optional)
     
     RUNTIME_INVESTIGATION --> GAP_ANALYSIS: Safe defense observed -> Migrate to tests/guards/
     API_INVESTIGATION --> GAP_ANALYSIS: Safe defense observed -> Migrate to tests/guards/
-    RUNTIME_INVESTIGATION --> COMPLETED: Quick mode verified -> Direct summary
-    API_INVESTIGATION --> COMPLETED: Quick mode verified -> Direct summary
+    RUNTIME_INVESTIGATION --> COMPLETED: Quick mode verified -> Executive QA Flash Report
+    API_INVESTIGATION --> COMPLETED: Quick mode verified -> Executive QA Flash Report
     
     RUNTIME_INVESTIGATION --> TESTCASE_GENERATION: Confirmed UI gaps verified -> Step 4 (testcase-design)
     API_INVESTIGATION --> TESTCASE_GENERATION: Confirmed API gaps verified -> Step 4 (testcase-design)

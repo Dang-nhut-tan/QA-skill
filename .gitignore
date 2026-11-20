@@ -33,11 +33,13 @@ auth.json
 # Workflow state machine persistence
 .qa-state.json
 .qa-state.*.json
+.qa-state-*.json
 
 # Dynamic module context and execution deliverables generated during runs
 module-context.md
 automation-summary.md
 requirement-gaps.md
+*-quick-audit.md
 
 # Generated module-specific Excel test case workbooks
 # (Explicitly whitelist the blank template in templates/)

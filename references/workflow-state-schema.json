@@ -111,6 +111,12 @@
             "string",
             "null"
           ]
+        },
+        "quick_audit_report": {
+          "type": [
+            "string",
+            "null"
+          ]
         }
       }
     },
@@ -172,7 +178,7 @@
         "critical"
       ],
       "default": "standard",
-      "description": "Workflow execution mode: 'quick' for single-bug/hotfix/smoke without 3-sheet Excel; 'standard' for regular feature QA; 'critical' for high-risk financial/auth/concurrency modules."
+      "description": "Workflow execution mode: 'quick' for Fast-Track QA Audit v2; 'standard' for regular feature QA; 'critical' for high-risk financial/auth/concurrency modules."
     },
     "environment": {
       "type": "object",

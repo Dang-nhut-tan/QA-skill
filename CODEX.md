@@ -99,10 +99,13 @@ flowchart TD
      * **Giới hạn tương tranh (Concurrency Burst Cap):** Tối đa 5 requests đồng thời để chống DoS và kiểm tra race condition/idempotency.
      * **Dual-Track bắt buộc:** Kiểm tra song song cả giao diện UI (3A) và backend API (3B).
 
-3. **`quick` (Rút gọn / Hotfix):**
-   - Dùng khi người dùng yêu cầu smoke test hoặc tái hiện gấp 1 con bug cụ thể.
-   - Đi đường tắt: Intake $\rightarrow$ Runtime/API verify $\rightarrow$ Báo cáo log chat.
-   - **LƯU Ý DÀNH CHO CODEX:** Không được lạm dụng `quick` mode cho các yêu cầu QA thông thường, vì `quick` mode bỏ qua bước phân tích luồng và không tìm ra điểm bất cập.
+3. **`quick` (Fast-Track QA Audit v2 — Khám nhanh, chẩn đoán trúng, bằng chứng sống):**
+   - Áp dụng khi cần kiểm tra nhanh một luồng cụ thể, triage lỗi hoặc hotfix trong ngân sách thời gian $\le 60s$.
+   - **Quy trình 4 bước chuẩn mực:**
+     1. *Đọc code mục tiêu (Targeted Code Discovery):* Quét AST / CodeGraph JIT với `depth=1` (mở rộng tối đa `depth=3`). Nếu thiếu mã nguồn ghi nhận `DISCOVERY_INCOMPLETE`.
+     2. *Quét 5 nhóm bất cập (Flash Friction Audit):* Soi chiếu vào 5 nhóm quy luật cốt lõi (`DATA_LOSS`, `DUPLICATE_ACTION`, `ASYNC_RECOVERY`, `ERROR_CONTRACT`, `HIDDEN_LOGIC`).
+     3. *Kiểm chứng thực nghiệm:* Bật Production Safety Gate; dùng Playwright CLI / API tái hiện 1–2 giả thuyết rủi ro cao nhất (xác nhận bug $\rightarrow$ `tests/repro/`, xác nhận guard $\rightarrow$ `tests/guards/`).
+     4. *Báo cáo ngắn (Executive QA Flash Report):* Xuất báo cáo Markdown trực tiếp trong chat (Tổng quan, Bảng 5 nhóm, Bằng chứng, Đề xuất xử lý). Không xuất Excel, không tự ý triển khai full automation suite.
 
 ---
 
