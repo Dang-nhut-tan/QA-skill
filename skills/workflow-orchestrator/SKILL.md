@@ -1,8 +1,8 @@
 ---
 name: workflow-orchestrator
 description: >-
-  Coordinates the end-to-end AI QA testing lifecycle across all 10 skills.
-  Enforces mandatory human checkpoints, state transitions, evidence validation,
+  Coordinates the end-to-end AI QA testing lifecycle across all 11 skills.
+  Enforces mandatory human checkpoints, dual-track investigation (UI & API), state transitions, evidence validation,
   and checkpoint resumption.
 ---
 
@@ -29,10 +29,15 @@ stateDiagram-v2
     CONTEXT_DISCOVERY --> DISCOVERY_INCOMPLETE: Technical Blocker / Parser Failure / Timeout
     DISCOVERY_INCOMPLETE --> CONTEXT_DISCOVERY: Retry / Resolve Technical Blocker
     
-    GAP_ANALYSIS --> TESTCASE_GENERATION: Automatic Streamlined Progression (Audit gaps, author tests/repro/, embed npm run)
-    GAP_ANALYSIS --> RUNTIME_INVESTIGATION: Optional deep runtime exploration
+    GAP_ANALYSIS --> TESTCASE_GENERATION: Automatic Streamlined Progression (Pure logical gaps)
+    GAP_ANALYSIS --> RUNTIME_INVESTIGATION: UI-layer Gaps (playwright-investigation)
+    GAP_ANALYSIS --> API_INVESTIGATION: API & Backend Gaps (api-investigation)
+    
     RUNTIME_INVESTIGATION --> GAP_ANALYSIS: No bug found on UI -> Rollback & Delete Gap completely
-    RUNTIME_INVESTIGATION --> TESTCASE_GENERATION: Embed verified gaps in design
+    API_INVESTIGATION --> GAP_ANALYSIS: No bug found on API -> Rollback & Delete Gap completely
+    
+    RUNTIME_INVESTIGATION --> TESTCASE_GENERATION: Embed verified UI gaps in design
+    API_INVESTIGATION --> TESTCASE_GENERATION: Embed verified API gaps in design
     
     TESTCASE_GENERATION --> TESTCASE_REVIEW: Step 4 (testcase-design: Dynamic RBC matrix)
     TESTCASE_REVIEW --> WAITING_FOR_APPROVED_TESTCASES: Step 5 [CORE HUMAN GATE: Deliver Excel & Ask Satisfaction]

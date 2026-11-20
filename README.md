@@ -163,14 +163,15 @@ Mọi kịch bản, bước thực hiện và kết quả mong đợi đều tu�
 
 ---
 
-## 7. Chi Tiết 11 Kỹ Năng Chuyên Biệt (Skills)
+## 7. Chi Tiết 12 Kỹ Năng Chuyên Biệt (Skills)
 
 | Kỹ Năng (Skill) | Vai Trò & Nhiệm Vụ Cốt Lõi Trong Hệ Thống |
 | :--- | :--- |
 | [`module-intake`](skills/module-intake/SKILL.md) | Tiếp nhận tài liệu, khám phá hệ thống tương tự trong ngành (Step 0) qua Subagent gọn nhẹ (chạy 1 lần, tự hủy), khởi tạo FSM. |
 | [`codegraph-context-discovery`](skills/codegraph-context-discovery/SKILL.md) | Quét cây AST mã nguồn qua CodeGraph SQLite; nạp chữ ký theo cơ chế 5-Level Progressive Context. |
 | [`requirement-gap-analysis`](skills/requirement-gap-analysis/SKILL.md) | Đối chiếu spec x code x chuẩn ngành để vạch rõ Điểm bất cập & Điểm gây ức chế người dùng (User Friction); sinh kịch bản Playwright tái hiện lỗi; lập phiếu `<module>-gaps.md`. |
-| [`playwright-investigation`](skills/playwright-investigation/SKILL.md) | Mở trình duyệt Chromium qua Playwright MCP, chụp ảnh minh chứng thực tế $\rightarrow$ **Dừng tại Cổng 1**. |
+| [`playwright-investigation`](skills/playwright-investigation/SKILL.md) | Mở trình duyệt Chromium qua Playwright MCP, kiểm chứng giao diện, tác giả kịch bản UI repro (`tests/repro/*-gap-*.spec.ts`). |
+| [`api-investigation`](skills/api-investigation/SKILL.md) | Kiểm chứng trực tiếp tại tầng API/RPC/REST (bỏ qua UI), tác giả kịch bản Playwright API (`tests/repro/*-api-gap-*.spec.ts`), bắt lỗi UI Bypass và Silent API Failures. |
 | [`testcase-design`](skills/testcase-design/SKILL.md) | Thiết kế test case 13 cột và kiểm soát truy vết hai chiều trên tập yêu cầu đã nạp. |
 | [`testcase-review-export`](skills/testcase-review-export/SKILL.md) | Tự soát lỗi nội bộ, xuất Excel phong cách Pastel Pill Badges $\rightarrow$ **Dừng tại Cổng 2**. |
 | [`automation-readiness`](skills/automation-readiness/SKILL.md) | Đọc file Excel người dùng duyệt, lọc chính xác các ca `Automation Ready = Yes`, chống giả mạo kết quả. |

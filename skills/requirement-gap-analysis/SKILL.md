@@ -111,17 +111,16 @@ description: >-
      * `Suggested Options` (Hypotheses A, B, C)
      * `Status` (`Pending`)
 
-3. **Trigger Playwright MCP UI Verification & Reproduction Script Generation (Step 3 Collaboration):**
-   * **Mandatory UI Verification & Script Authoring:**
-     - For every gap observable on the web UI:
-     - Activate `playwright-investigation` (Step 3) to navigate to the live screen.
-     - Execute concrete interaction steps to verify if the discrepancy occurs.
-     - **Author a standalone Playwright bug reproduction script (`tests/repro/<module>-gap-<id>.spec.ts`)** with explicit assertions reproducing the failure, and provide 1-click terminal commands:
-       * `npm run <module>:gap:<id>`
-       * `npx playwright test tests/repro/<module>-gap-<id>.spec.ts --project=chromium-desktop --debug`
-       * `npx playwright test tests/repro/<module>-gap-<id>.spec.ts --project=chromium-desktop --headed`
-     - Record step-by-step reproduction instructions from the end-user perspective (1. Open... 2. Enter... 3. Click... and observe...).
-     - For backend-only logic lacking UI: explicitly tag `[Verified via AST - No UI Rendering]`.
+3. **Trigger Dual-Track Verification & Reproduction Script Generation (Step 3 Collaboration):**
+   * **Route A: UI-Layer Gaps (`playwright-investigation`):**
+     - For gaps observable on the web UI (form validation, error banners, button states, DOM behavior):
+     - Activate `playwright-investigation` to verify live interaction and author `tests/repro/<module>-gap-<id>.spec.ts`.
+     - 1-Click commands: `npx playwright test tests/repro/<module>-gap-<id>.spec.ts --project=chromium-desktop --debug`.
+   * **Route B: API & Backend Gaps (`api-investigation`):**
+     - For backend-only gaps, UI bypass vulnerabilities, silent API failures, rate limiting, and contract flaws:
+     - Activate `api-investigation` to dispatch direct API calls via Playwright `request` and author `tests/repro/<module>-api-gap-<id>.spec.ts`.
+     - 1-Click commands: `npx playwright test tests/repro/<module>-api-gap-<id>.spec.ts --project=chromium-desktop`.
+   * **Strict Elimination:** If live execution in either route confirms system acts safely $\rightarrow$ immediately purge the gap from `<module-name>-gaps.md`.
 
 4. **Generate Standalone Deliverable (`<module-name>-gaps.md`):**
    * **Deliverable Format:** The generated deliverable `<module-name>-gaps.md` must follow `references/requirement-gaps-template.md` so that stakeholders can understand and act on it immediately.
