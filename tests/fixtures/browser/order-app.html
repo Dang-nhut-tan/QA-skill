@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Golden Order App Fixture</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; padding: 2rem; max-width: 600px; margin: 0 auto; }
+    .form-group { margin-bottom: 1rem; }
+    label { display: block; margin-bottom: 0.25rem; font-weight: bold; }
+    input { width: 100%; padding: 0.5rem; font-size: 1rem; box-sizing: border-box; }
+    .error { color: #dc2626; font-size: 0.875rem; margin-top: 0.25rem; display: none; }
+    button { padding: 0.5rem 1rem; font-size: 1rem; cursor: pointer; background: #2563eb; color: #fff; border: none; border-radius: 4px; }
+    button:disabled { background: #94a3b8; cursor: not-allowed; }
+    .alert { padding: 0.75rem; border-radius: 4px; margin-top: 1rem; display: none; }
+    .alert-success { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
+    .spinner-active { opacity: 0.7; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <h1>Golden Order Management</h1>
+
+  <form id="order-form" onsubmit="return false;">
+    <div class="form-group">
+      <label for="item-name">Item Name</label>
+      <input type="text" id="item-name" name="item" value="Laptop">
+    </div>
+
+    <div class="form-group">
+      <label for="item-qty">Quantity</label>
+      <input type="number" id="item-qty" name="quantity" value="1">
+      <div id="error-qty" class="error" data-testid="error-qty">Quantity must be greater than 0</div>
+    </div>
+
+    <div class="form-group">
+      <label for="item-price">Unit Price ($)</label>
+      <input type="number" id="item-price" name="price" value="500">
+    </div>
+
+    <div class="form-group">
+      <!-- Feature with UI Bug: Calculate shipping rates -->
+      <button type="button" id="btn-calc-shipping" name="calc-shipping">Calculate Shipping Rates</button>
+      <span id="shipping-rate-status"></span>
+    </div>
+
+    <div class="form-group">
+      <button type="button" id="btn-submit-order" name="submit-order">Create Order</button>
+    </div>
+  </form>
+
+  <div id="confirmation-banner" class="alert alert-success" role="alert">
+    Order created successfully: <span id="created-order-id">ORD-1001</span>
+  </div>
+
+  <script>
+    const qtyInput = document.getElementById('item-qty');
+    const submitBtn = document.getElementById('btn-submit-order');
+    const errorQty = document.getElementById('error-qty');
+    const banner = document.getElementById('confirmation-banner');
+    const shippingBtn = document.getElementById('btn-calc-shipping');
+
+    // 1. Validation Guard: Negative or zero quantity
+    qtyInput.addEventListener('input', () => {
+      const val = parseInt(qtyInput.value, 10);
+      if (isNaN(val) || val <= 0) {
+        errorQty.style.display = 'block';
+        submitBtn.disabled = true;
+      } else {
+        errorQty.style.display = 'none';
+        submitBtn.disabled = false;
+      }
+    });
+
+    // 2. Happy Path Submission
+    submitBtn.addEventListener('click', () => {
+      const val = parseInt(qtyInput.value, 10);
+      if (val > 0) {
+        banner.style.display = 'block';
+      }
+    });
+
+    // 3. Real UI Bug (Unhandled Exception & Frozen Spinner)
+    shippingBtn.addEventListener('click', () => {
+      shippingBtn.classList.add('spinner-active');
+      shippingBtn.textContent = 'Calculating...';
+      shippingBtn.disabled = true;
+      
+      // Intentional UI defect: reading property of undefined
+      // Throws Uncaught TypeError: Cannot read properties of undefined (reading 'rate')
+      const config = window.__nonExistentShippingConfig;
+      const rate = config.rate;
+      document.getElementById('shipping-rate-status').textContent = '$' + rate;
+    });
+  </script>
+</body>
+</html>

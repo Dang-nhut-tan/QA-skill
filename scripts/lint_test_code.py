@@ -22,7 +22,7 @@ from typing import List, Tuple
 SLEEP_PATTERN = re.compile(r'\b(?:page\s*\.\s*waitForTimeout\s*\(|time\s*\.\s*sleep\s*\(|sleep\s*\(\s*\d+)', re.IGNORECASE)
 SECRET_PATTERN = re.compile(r'''\b(?:password|passwd|api_key|secret|token)\s*[:=]\s*['"][^'"]{4,}['"]''', re.IGNORECASE)
 ENV_VAR_PATTERN = re.compile(r'\b(?:process\s*\.\s*env\s*|os\s*\.\s*environ\b|env\s*\[)')
-TEST_ID_PATTERN = re.compile(r'\btest\s*\(\s*[\'"`](TC-[A-Z0-9_-]+)')
+TEST_ID_PATTERN = re.compile(r'\btest\s*\(\s*[\'"`]((?:TC|GAP|GUARD)-[A-Z0-9_-]+)')
 ASSERTION_PATTERN = re.compile(r'\b(?:expect\s*\(|assert\s+)')
 
 # Extended verification patterns for C2, C3, C5
@@ -153,7 +153,7 @@ def lint_file(file_path: Path) -> List[Tuple[int, str, str]]:
         violations.append((
             1,
             "TRACEABILITY_VIOLATION",
-            "Test cases must explicitly reference approved Excel Test Case IDs in titles (e.g., test('TC-AUTH-001: ...'))."
+            "Test cases must explicitly reference traceable Test Case, Gap, or Guard IDs in titles (e.g., test('TC-AUTH-001: ...') or test('GAP-xxx: ...') or test('GUARD-xxx: ...'))."
         ))
 
     # Rule 4: Assertion Presence
