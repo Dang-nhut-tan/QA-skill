@@ -25,19 +25,18 @@ description: >-
 stateDiagram-v2
     [*] --> INITIALIZED: Step 0 (module-intake: maps system-architecture-flows.md if missing)
     INITIALIZED --> CONTEXT_DISCOVERY: Step 1 (codegraph-context-discovery)
-    CONTEXT_DISCOVERY --> GAP_ANALYSIS: CodeGraph AST & Operational Flowchart Mapped
+    CONTEXT_DISCOVERY --> GAP_ANALYSIS: Step 2 (requirement-gap-analysis: Pure Gap Analysis, Dual-Dimension Impact & Benchmark)
     CONTEXT_DISCOVERY --> DISCOVERY_INCOMPLETE: Technical Blocker / Parser Failure / Timeout
     DISCOVERY_INCOMPLETE --> CONTEXT_DISCOVERY: Retry / Resolve Technical Blocker
     
-    GAP_ANALYSIS --> TESTCASE_GENERATION: Automatic Streamlined Progression (Pure logical gaps)
-    GAP_ANALYSIS --> RUNTIME_INVESTIGATION: UI-layer Gaps (playwright-investigation)
-    GAP_ANALYSIS --> API_INVESTIGATION: API & Backend Gaps (api-investigation)
+    GAP_ANALYSIS --> RUNTIME_INVESTIGATION: Step 2.5 (gap-reproduction / playwright-investigation: Live UI MCP & Repro Authoring)
+    GAP_ANALYSIS --> API_INVESTIGATION: Step 2.5B (api-investigation: Verify direct backend contracts)
     
     RUNTIME_INVESTIGATION --> GAP_ANALYSIS: No bug found on UI -> Rollback & Delete Gap completely
     API_INVESTIGATION --> GAP_ANALYSIS: No bug found on API -> Rollback & Delete Gap completely
     
-    RUNTIME_INVESTIGATION --> TESTCASE_GENERATION: Embed verified UI gaps in design
-    API_INVESTIGATION --> TESTCASE_GENERATION: Embed verified API gaps in design
+    RUNTIME_INVESTIGATION --> TESTCASE_GENERATION: Confirmed gaps verified with --debug -> Step 4 (testcase-design)
+    API_INVESTIGATION --> TESTCASE_GENERATION: Confirmed API gaps verified -> Step 4 (testcase-design)
     
     TESTCASE_GENERATION --> TESTCASE_REVIEW: Step 4 (testcase-design: Dynamic RBC matrix)
     TESTCASE_REVIEW --> WAITING_FOR_APPROVED_TESTCASES: Step 5 [CORE HUMAN GATE: Deliver Excel & Ask Satisfaction]
@@ -57,6 +56,9 @@ stateDiagram-v2
 * CodeGraph is permitted to traverse the entire dependency chain (direct, indirect, cross-module) without arbitrary hard limits on node count or depth.
 * Analysis must never be truncated or culled purely to conserve token budgets.
 * **Incomplete Discovery Protocol:** In the event of parser crashes, execution timeouts, or exhausted physical system resources, the system MUST transition to `DISCOVERY_INCOMPLETE` and report the exact technical bottleneck to the user. Reporting completion for incomplete analyses is strictly prohibited.
+* **Mandatory Step 3 Gate (Zero-Bypass Enforcement - LRN-014):**
+  - The orchestrator is STRICTLY PROHIBITED from skipping or bypassing Step 3 (`playwright-investigation` / `api-investigation`).
+  - When transitioning out of `GAP_ANALYSIS`, if any observable UI or API gaps are identified, the workflow MUST execute live inspection (Playwright MCP or direct API request dispatch) and author verified `--debug` reproduction specs for confirmed defects BEFORE advancing to `TESTCASE_GENERATION`. Jumping directly from static AST gap analysis to testcase generation is a critical compliance violation.
 
 ## 5. Core Human Review Gate (Test Case Satisfaction & Approval)
 

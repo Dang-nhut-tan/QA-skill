@@ -32,28 +32,32 @@ description: >-
 * Filter the list of identified gap items from Step 2 to isolate issues that can be observed on the UI (e.g., form validation, error messages, disabled buttons, warning modals, tab transitions, redirects).
 * For backend-only issues (e.g., database triggers without UI feedback, external gateway dependencies): Record `[Verified via AST - No UI Rendering]`.
 
-### 4.2. Mandatory Page Settlement & Anti-Loading-Screen Clearance Protocol
-> [!CAUTION]
-> **STRICT PROHIBITION ON CAPTURING LOADING SCREENS / SKELETONS:**
-> Capturing a screenshot while a page or component is still loading, spinning, or rendering skeleton placeholders produces **FALSE EVIDENCE** and makes it impossible to verify whether a defect is genuine. All screenshots MUST capture a fully settled, final rendered state.
+### 4.2. Live UI Inspection & Verification via Playwright MCP Tools (Kiểm chứng Thực tế)
+> [!IMPORTANT]
+> **THỨ TỰ BẮT BUỘC: KIỂM CHỨNG BẰNG PLAYWRIGHT MCP TRƯỚC $\longrightarrow$ NẾU CÓ LỖI THẬT MỚI TÁC TẠO SCRIPT REPRO!**
+> Tuyệt đối không sinh file `tests/repro/` trước khi dùng Playwright MCP mở trang lên kiểm tra thực tế.
 
-Before executing ANY `browser_take_screenshot`:
-1. **Network & DOM Completion Check:**
-   - After `browser_navigate` or trigger actions, ensure navigation has reached `document.readyState === 'complete'`.
-   - Wait for pending network requests to settle via `browser_wait_for` or appropriate selector checks.
-2. **Loading Mask & Spinner Disappearance:**
-   - The AI agent MUST verify that all loading overlays, progressbars, spinners, and skeleton screens are completely hidden or detached:
-     - Check selectors: `[role="progressbar"]`, `.spinner`, `.loading`, `.ant-spin`, `.skeleton`, `[aria-busy="true"]`, `.shimmer-placeholder`, or application-specific loading overlays.
-     - Wait for these selectors to have state `hidden` or `detached` before triggering screenshot capture.
-3. **Target Element Settlement & Stability:**
-   - Wait specifically for the target feedback element to be visible and stable:
-     - For validation/error messages: Wait until the specific alert banner, inline error label, or toast container is attached and displays non-empty text.
-     - For table/form results: Wait until the data rows or disabled submit buttons are rendered.
-4. **Anti-Premature Screenshot Self-Audit:**
-   - If a captured screenshot reveals a loading indicator, spinner, or blank/skeleton canvas, the AI agent MUST deem that screenshot INVALID, wait for the DOM to settle, and re-capture.
-   - If an asynchronous action hangs or times out (> 10s without completing), classify it explicitly as `[SYSTEM_TIMEOUT_OR_HANG]` with console logs and network failure evidence, rather than misrepresenting an incomplete loading state as a normal UI bug.
+Trước khi tác tạo bất kỳ file kịch bản tái hiện nào:
+1. **Mở trang và định tuyến (`browser_navigate`):**
+   - Điều hướng trực tiếp đến route của module (ví dụ: `https://talent.io.vn/auth/login`).
+   - Đảm bảo trang tải hoàn tất `document.readyState === 'complete'`.
+   - **Quy chuẩn Chống Chụp Màn Hình Đang Tải (Anti-Loading-Screen Clearance Protocol):** Tuyệt đối không chụp màn hình hay lấy snapshot khi trang đang xoay spinner, skeleton placeholder hoặc đang tải dở dang. Phải đợi DOM ổn định (settled) và `networkidle`.
+2. **Khảo sát cây DOM thực tế (`browser_snapshot`):**
+   - Đọc cây Accessibility Snapshot thực tế của trang để xác định chính xác các button, tab, input, placeholder đang chạy trên môi trường live (tránh lệch selector so với code tĩnh).
+3. **Thao tác kiểm chứng trực tiếp (`browser_click`, `browser_type`, `browser_fill_form`):**
+   - Thao tác trực tiếp theo từng kịch bản nghi ngờ trong file `<module>-gaps.md`.
+4. **Thu hoạch lỗi Console & Network Runtime:**
+   - Gọi `browser_console_messages` để bắt lỗi uncaught exceptions, 4xx/5xx token refresh.
+   - Gọi `browser_network_requests` để kiểm tra các request ngầm bị rò rỉ hoặc thất bại.
+5. **Chốt chặn Xóa bỏ Lỗi ảo (Rollback & Gap Elimination):**
+   - Nếu thao tác trên UI xác nhận hệ thống hoạt động an toàn, có thông báo rõ ràng, hoặc không có lỗi như suy diễn:
+     * **LẬP TỨC QUAY VỀ `<module>-gaps.md` VÀ XÓA BỎ HOÀN TOÀN GAP ĐÓ!**
+     * Chuyển thành `Verified Security Guards (GUARD-xxx, PASS)`.
+     * **DỪNG LẠI, KHÔNG SINH SCRIPT REPRO.**
+6. **Xác nhận Lỗi thật (Confirmed Gap):**
+   - Chỉ khi Playwright MCP xác nhận đúng là UI bị lỗi (kẹt spinner, nuốt lỗi, mất dữ liệu, bypass kiểm tra) thì mới chuyển tiếp sang Mục 4.3 để tác tạo file `tests/repro/<module>-gap-<id>.spec.ts`.
 
-### 4.3. Author Playwright Bug Reproduction Script & Register Terminal Commands
+### 4.3. Author Playwright Bug Reproduction Script & Register Terminal Commands (Chỉ cho Confirmed Gaps)
 * Instead of brittle, dead static screenshots, every observable UI gap MUST be accompanied by an executable Playwright reproduction spec:
   1. **Author Standalone Reproduction Script (`tests/repro/<module>-gap-<id>.spec.ts`):**
      - Create an isolated test file inside `tests/repro/` (e.g. `tests/repro/order-gap-001.spec.ts`).
@@ -128,6 +132,30 @@ Before executing ANY `browser_take_screenshot`:
 >      * **Nếu là cơ chế an toàn hoặc luồng nghiệp vụ có chủ đích (Intended Behavior):** Ghi nhận vào mục `Verified Security Guards (GUARD-xxx, PASS)`.
 >      * **Xóa bỏ Script Repro sai lệch:** Xóa bỏ file kịch bản trong `tests/repro/` ngay lập tức để tránh nhầm lẫn hoặc chạy lại dữ liệu rác.
 >    - **Đồng bộ hóa State:** Cập nhật `.qa-state.json`, đảm bảo bộ testcase chỉ kiểm chứng tính năng/bảo vệ thực tế, không kiểm chứng bug ảo.
+134: 
+### 4.3.4. Zero Hardcoded Timeout Rule (CẤM FIX CỨNG TIMEOUT & SLEEP)
+> [!WARNING]
+> **LESSON-LEARNED (LRN-015): TUYỆT ĐỐI KHÔNG DÙNG `waitForTimeout()` HOẶC SLEEP CỐ ĐỊNH**
+> Fix cứng timeout (`waitForTimeout(1000)`) gây chậm chạp vô ích, dễ làm test bị flaky khi mạng lag hoặc chạy thiếu đồng bộ.
+> Thay vào đó, 100% kịch bản tái hiện và automation test PHẢI dùng cơ chế bất đồng bộ động:
+> 1. **Kiểm tra không phát sinh Request (Zero Request Triggered):**
+>    - Dùng `page.waitForRequest(...)` bọc trong Promise timeout ngắn có catch fallback:
+>      ```typescript
+>      const requestPromise = page.waitForRequest(
+>        (req) => req.url().includes('/rest/v1/') || req.url().includes('target-api'),
+>        { timeout: 1500 }
+>      ).then(() => true).catch(() => false);
+>
+>      await triggerButton.click();
+>      const wasDispatched = await requestPromise;
+>      expect(wasDispatched).toBe(false);
+>      ```
+> 2. **Chờ phản hồi mạng / Tải trang:**
+>    - Dùng `await page.waitForLoadState('networkidle')` hoặc `await page.waitForResponse(...)`.
+> 3. **Chờ phần tử / Trạng thái UI:**
+>    - Dùng web-first auto-retrying assertions: `await expect(locator).toBeVisible({ timeout: 5000 })`, `toBeEnabled()`, `toHaveText()`.
+> 4. **Chờ điều hướng:**
+>    - Dùng `await page.waitForURL('**/expected/path**', { timeout: 10000 })`.
 
 ### 4.4. Mandatory DevTools Diagnostics Protocol (Console & Network Error Harvesting)
 > [!IMPORTANT]

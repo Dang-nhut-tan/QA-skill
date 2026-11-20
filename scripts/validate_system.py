@@ -25,33 +25,50 @@ SYSTEM_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(SYSTEM_ROOT))
 sys.path.insert(0, str(SYSTEM_ROOT / "scripts"))
 
-EXPECTED_SKILLS = [
-    "module-intake",
-    "codegraph-context-discovery",
-    "requirement-gap-analysis",
-    "playwright-investigation",
-    "testcase-design",
-    "testcase-review-export",
-    "automation-readiness",
-    "automation-implementation",
-    "test-execution-debugging",
-    "continuous-learning",
-    "workflow-orchestrator"
-]
+def get_discovered_skills():
+    skills_dir = SYSTEM_ROOT / "skills"
+    if not skills_dir.exists():
+        return []
+    return sorted([
+        d.name for d in skills_dir.iterdir()
+        if d.is_dir() and (d / "SKILL.md").exists()
+    ])
 
 def check(name, fn, compact=False):
     if not compact:
         print(f"\n[RUNNING] {name}...")
     try:
         res = fn()
-        if compact:
-            print(f"[{name.split('.')[0]}/9 PASS] {name.split('. ', 1)[-1]}")
+        if isinstance(res, tuple):
+            status, msg = res
         else:
-            print(f"  [PASS] {name}: {res}")
-        return True, res
+            msg = str(res)
+            lower_msg = msg.lower()
+            if any(k in lower_msg for k in ["not available", "not found", "missing", "warning"]):
+                status = "WARN"
+            elif any(k in lower_msg for k in ["blocked", "cannot run"]):
+                status = "BLOCKED"
+            elif "fail" in lower_msg:
+                status = "FAIL"
+            else:
+                status = "PASS"
+
+        # Anti-False-Pass Guard: Never allow PASS to accompany negative status keywords
+        lower_msg = msg.lower()
+        if status == "PASS" and any(k in lower_msg for k in ["not available", "missing", "failed", "not found"]):
+            status = "WARN"
+
+        if compact:
+            print(f"[{status}] {name.split('. ', 1)[-1]}: {msg}")
+        else:
+            print(f"  [{status}] {name}: {msg}")
+
+        is_passed = (status == "PASS")
+        is_ok = status in ("PASS", "WARN")
+        return is_ok, status, msg
     except (AssertionError, OSError, ValueError, ImportError) as e:
         print(f"  [FAIL] {name}: {str(e)}")
-        return False, str(e)
+        return False, "FAIL", str(e)
 
 def validate_file_structure():
     assert (SYSTEM_ROOT / "AGENTS.md").exists(), "AGENTS.md missing"
@@ -67,14 +84,16 @@ def validate_file_structure():
     return "All structural directories and global files exist."
 
 def validate_skill_metadata():
-    for sk in EXPECTED_SKILLS:
+    skills = get_discovered_skills()
+    assert len(skills) > 0, "No skills discovered under skills/ directory"
+    for sk in skills:
         skill_file = SYSTEM_ROOT / "skills" / sk / "SKILL.md"
         assert skill_file.exists(), f"Skill file {skill_file} missing"
         text = skill_file.read_text(encoding="utf-8")
         assert text.startswith("---"), f"Skill {sk} lacks YAML frontmatter"
         assert f"name: {sk}" in text, f"Skill {sk} name mismatch in frontmatter"
         assert "description:" in text, f"Skill {sk} missing description"
-    return f"All {len(EXPECTED_SKILLS)} skills have valid frontmatter and files."
+    return ("PASS", f"All {len(skills)} skills have valid frontmatter and files.")
 
 def validate_excel_template():
     import openpyxl
@@ -95,46 +114,63 @@ def validate_excel_template():
 def check_codegraph_tool():
     executable = shutil.which("codegraph")
     if not executable:
-        return "CodeGraph CLI not found in PATH"
-    command = [executable, "--version"]
-    if os.name == "nt" and Path(executable).suffix.lower() in {".cmd", ".bat"}:
-        command = [os.environ.get("COMSPEC", "cmd.exe"), "/d", "/s", "/c", executable, "--version"]
-    res = subprocess.run(command, capture_output=True, text=True, shell=False)
-    if res.returncode == 0:
-        return f"Operational: {res.stdout.strip()}"
-    return "CodeGraph CLI not found in PATH"
+        return ("BLOCKED", "CodeGraph CLI not found in PATH")
+    try:
+        res = subprocess.run([executable, "--version"], capture_output=True, text=True, shell=True, timeout=8)
+        if res.returncode == 0 and res.stdout.strip():
+            return ("PASS", f"Operational: {res.stdout.strip()}")
+        return ("FAIL", f"CodeGraph CLI execution failed with returncode {res.returncode}")
+    except (OSError, subprocess.SubprocessError) as exc:
+        return ("FAIL", f"CodeGraph CLI execution error: {exc}")
 
 def check_playwright_cli():
-    try:
-        executable = shutil.which("npx")
-        if executable:
-            command = [executable, "--yes", "playwright", "--version"]
-            if os.name == "nt" and Path(executable).suffix.lower() in {".cmd", ".bat"}:
-                command = [os.environ.get("COMSPEC", "cmd.exe"), "/d", "/s", "/c", executable, "--yes", "playwright", "--version"]
-            res = subprocess.run(command, capture_output=True, text=True, shell=False, timeout=5)
+    # 1. Primary: Global playwright CLI
+    executable_pw = shutil.which("playwright")
+    if executable_pw:
+        try:
+            res = subprocess.run([executable_pw, "--version"], capture_output=True, text=True, shell=True, timeout=8)
             if res.returncode == 0 and res.stdout.strip():
-                return f"Operational: {res.stdout.strip()}"
-    except (OSError, subprocess.SubprocessError) as exc:
-        logger.warning("Unable to invoke Playwright through npx: %s", exc)
+                return ("PASS", f"Operational (global CLI): {res.stdout.strip()}")
+        except (OSError, subprocess.SubprocessError) as exc:
+            logger.debug("Global Playwright CLI invocation failed: %s", exc)
+
+    # 2. Secondary: npx playwright
+    executable_npx = shutil.which("npx")
+    if executable_npx:
+        try:
+            res = subprocess.run(f'"{executable_npx}" playwright --version', capture_output=True, text=True, shell=True, timeout=8)
+            if res.returncode == 0 and res.stdout.strip():
+                return ("WARN", f"No global CLI; operational via npx: {res.stdout.strip()}")
+        except (OSError, subprocess.SubprocessError) as exc:
+            logger.debug("npx Playwright invocation failed: %s", exc)
+
+    # 3. Fallback: local node_modules
     for cur in [Path.cwd(), *Path.cwd().parents]:
         for cand in [cur / "node_modules" / "@playwright" / "test" / "cli.js", cur / "04-src" / "node_modules" / "@playwright" / "test" / "cli.js"]:
             if cand.exists():
                 try:
-                    res = subprocess.run(["node", str(cand), "--version"], capture_output=True, text=True, shell=False, timeout=5)
+                    res = subprocess.run(["node", str(cand), "--version"], capture_output=True, text=True, shell=False, timeout=8)
                     if res.returncode == 0 and res.stdout.strip():
-                        return f"Operational (local): {res.stdout.strip()}"
+                        return ("WARN", f"No global CLI; operational via local node_modules: {res.stdout.strip()}")
                 except (OSError, subprocess.SubprocessError) as exc:
-                    logger.warning("Unable to invoke Playwright fallback %s: %s", cand, exc)
-    return "Playwright CLI not available globally" 
+                    logger.debug("Local Playwright invocation failed: %s", exc)
+
+    # 4. Blocked: No way to execute Playwright
+    return ("BLOCKED", "Playwright CLI cannot run: neither global CLI, npx, nor local node_modules found")
 
 def check_markitdown_tool():
     executable = shutil.which("markitdown")
     if not executable:
-        return "MarkItDown CLI not found in PATH"
-    res = subprocess.run([executable, "--version"], capture_output=True, text=True, shell=False)
-    if res.returncode == 0:
-        return f"Operational: {res.stdout.strip()}"
-    return "MarkItDown CLI not found in PATH"
+        return ("WARN", "MarkItDown CLI not found in PATH (optional for document conversion)")
+    try:
+        res = subprocess.run([executable, "--version"], capture_output=True, text=True, shell=True, timeout=15)
+        if res.returncode == 0 and res.stdout.strip():
+            return ("PASS", f"Operational: {res.stdout.strip()}")
+        return ("WARN", f"MarkItDown CLI execution returned exit code {res.returncode}")
+    except subprocess.TimeoutExpired:
+        return ("WARN", "MarkItDown CLI execution timed out (>15s)")
+    except (OSError, subprocess.SubprocessError) as exc:
+        return ("WARN", f"MarkItDown CLI execution error: {exc}")
 
 def check_mcp_config():
     mcp_file = Path.home() / ".gemini" / "config" / "mcp_config.json"
@@ -347,16 +383,22 @@ def main():
     results.append(check("8. End-to-End Dry-Run Simulation", run_dry_run_simulation, compact))
     results.append(check("9. Requirement Traceability & Deduplication", validate_traceability_engine, compact))
 
-    all_passed = all(r[0] for r in results)
+    has_blocked_or_fail = any(r[1] in ("BLOCKED", "FAIL") for r in results)
+    warn_count = sum(1 for r in results if r[1] == "WARN")
+    pass_count = sum(1 for r in results if r[1] == "PASS")
+
     if compact:
-        status_tag = "[SUCCESS]" if all_passed else "[WARNING]"
-        print(f"{status_tag} {sum(1 for r in results if r[0])}/9 Architectural Validations PASSED!")
+        status_tag = "[SUCCESS]" if not has_blocked_or_fail else "[FAILURE]"
+        print(f"{status_tag} {pass_count}/9 PASS, {warn_count} WARN")
     else:
         print("\n" + "=" * 60)
-        if all_passed:
-            print("[SUCCESS] All architectural validations and dry-run tests PASSED!")
+        if not has_blocked_or_fail:
+            if warn_count == 0:
+                print("[SUCCESS] All architectural validations and dry-run tests PASSED!")
+            else:
+                print(f"[SUCCESS] Core validations PASSED ({pass_count}/9 PASS, {warn_count}/9 WARN, 0 BLOCKED/FAIL)")
         else:
-            print("[WARNING] Some checks reported warnings or non-zero status.")
+            print("[FAILURE] One or more architectural checks were BLOCKED or FAILED!")
         print("=" * 60)
 
 if __name__ == "__main__":

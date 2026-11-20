@@ -42,10 +42,14 @@ Follow the 7-step lifecycle governed by `skills/workflow-orchestrator/`:
 [Step 1: codegraph-context-discovery]  --> Generates module-context.md (3 Golden Questions & cycle-safe AST discovery)
         │
         ▼
-[Step 2 & 3: gap-analysis-reproduction] --> Cross-references module-context.md with industry benchmark flows to
-                                           expose inadequacies (điểm bất cập) & blindspots (điểm mù), authors standalone
-                                           Playwright reproduction scripts (tests/repro/), embeds 1-click terminal commands
-                                           (npm run <module>:gap:<id>) into <module>-gaps.md, and advances automatically
+[Step 2: requirement-gap-analysis]     --> Cross-references module-context.md with industry benchmark flows to
+                                           expose inadequacies (điểm bất cập) & blindspots (điểm mù), assesses
+                                           dual-dimension impact (UX & Technical Risk), compiles numbered gap list
+        │
+        ▼
+[Step 2.5: gap-reproduction]           --> Verifies gaps live via Playwright MCP, eliminates false alarms (rollback),
+                                           authors standalone Playwright repro specs (tests/repro/) with zero hardcoded sleeps,
+                                           runs pre-delivery --debug verification, and embeds commands into <module>-gaps.md
         │
         ▼
 [Step 4: testcase-design]             --> Generates dynamic risk-based test cases (Tier S: 5–8, M: 10–18, L: 18–30+)

@@ -25,7 +25,7 @@
 - [4. Đối Chiếu Luồng Song Song & Điểm Gây Ức Chế Người Dùng (User Friction Audit)](#4-đối-chiếu-luồng-song-song--điểm-gây-ức-chế-người-dùng-user-friction-audit)
 - [5. Ma Trận Độ Phủ Rủi Ro Động (Tier S, M, L)](#5-ma-trận-độ-phủ-rủi-ro-động-tier-s-m-l)
 - [6. Chuẩn Ngôn Ngữ Dễ Hiểu (Non-IT Business Phrasing)](#6-chuẩn-ngôn-ngữ-dễ-hiểu-non-it-business-phrasing)
-- [7. Chi Tiết 11 Kỹ Năng Chuyên Biệt (Skills)](#7-chi-tiết-11-kỹ-năng-chuyên-biệt-skills)
+- [7. Chi Tiết 13 Kỹ Năng Chuyên Biệt (Skills)](#7-chi-tiết-13-kỹ-năng-chuyên-biệt-skills)
 - [8. Hiệu Năng & Đo Lường Token Thực Tế (Ground Truth)](#8-hiệu-năng--đo-lường-token-thực-tế-ground-truth)
 - [9. Cấu Trúc Dự Án & Bộ Kịch Bản (Scripts)](#9-cấu-trúc-dự-án--bộ-kịch-bản-scripts)
 - [10. Cài Đặt & Nhúng Dự Án](#10-cài-đặt--nhúng-dự-án)
@@ -163,7 +163,7 @@ Mọi kịch bản, bước thực hiện và kết quả mong đợi đều tu�
 
 ---
 
-## 7. Chi Tiết 12 Kỹ Năng Chuyên Biệt (Skills)
+## 7. Chi Tiết 13 Kỹ Năng Chuyên Biệt (Skills)
 
 | Kỹ Năng (Skill) | Vai Trò & Nhiệm Vụ Cốt Lõi Trong Hệ Thống |
 | :--- | :--- |
@@ -171,6 +171,7 @@ Mọi kịch bản, bước thực hiện và kết quả mong đợi đều tu�
 | [`codegraph-context-discovery`](skills/codegraph-context-discovery/SKILL.md) | Quét cây AST mã nguồn qua CodeGraph SQLite; nạp chữ ký theo cơ chế 5-Level Progressive Context. |
 | [`requirement-gap-analysis`](skills/requirement-gap-analysis/SKILL.md) | Đối chiếu spec x code x chuẩn ngành để vạch rõ Điểm bất cập & Điểm gây ức chế người dùng (User Friction); sinh kịch bản Playwright tái hiện lỗi; lập phiếu `<module>-gaps.md`. |
 | [`playwright-investigation`](skills/playwright-investigation/SKILL.md) | Mở trình duyệt Chromium qua Playwright MCP, kiểm chứng giao diện, tác giả kịch bản UI repro (`tests/repro/*-gap-*.spec.ts`). |
+| [`gap-reproduction`](skills/gap-reproduction/SKILL.md) | Chuyển hóa kẽ hở thành kịch bản Playwright tái hiện lỗi độc lập (`tests/repro/`), tích hợp lệnh chạy 1-click tại terminal, kiểm tra pre-delivery --debug. |
 | [`api-investigation`](skills/api-investigation/SKILL.md) | Kiểm chứng trực tiếp tại tầng API/RPC/REST (bỏ qua UI), tác giả kịch bản Playwright API (`tests/repro/*-api-gap-*.spec.ts`), bắt lỗi UI Bypass và Silent API Failures. |
 | [`testcase-design`](skills/testcase-design/SKILL.md) | Thiết kế test case 13 cột và kiểm soát truy vết hai chiều trên tập yêu cầu đã nạp. |
 | [`testcase-review-export`](skills/testcase-review-export/SKILL.md) | Tự soát lỗi nội bộ, xuất Excel phong cách Pastel Pill Badges $\rightarrow$ **Dừng tại Cổng 2**. |
@@ -242,7 +243,7 @@ Thu thập chỉ số `usage_metadata` chuẩn xác từ các lệnh gọi API t
 qa-agent-system/
 ├── AGENTS.md                      # Hướng dẫn quy tắc toàn cục và chuẩn mực bắt buộc cho AI Agent
 ├── plugin.json                    # Manifest đóng gói plugin Google Antigravity
-├── skills/                        # 11 kỹ năng kiểm thử chuyên biệt hóa (SKILL.md)
+├── skills/                        # 13 kỹ năng kiểm thử chuyên biệt hóa (SKILL.md)
 ├── scripts/
 │   ├── state_manager.py           # Quản lý FSM nguyên tử (.tmp + .bak) với cơ chế PID lock recovery
 │   ├── codegraph_discovery.py     # Quét cây AST, 5-level context và trích xuất chữ ký phương thức
