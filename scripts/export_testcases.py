@@ -292,7 +292,7 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
 
     gap_headers = [
         "Issue ID", "Related Flow", "Current Evidence", "Uncertainty",
-        "UX Impact", "Future Technical Risk", "Question for BA/PO", "Suggested Options", "Status"
+        "UX Impact", "Future Technical Risk", "Suggested Options", "Status"
     ]
     ws_gaps.append(gap_headers)
 
@@ -306,7 +306,6 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
     for gap in gaps:
         ux_impact = gap.get("ux_impact") or gap.get("business_impact", "")
         future_risk = gap.get("future_risk") or gap.get("potential_defect") or gap.get("future_technical_risk", "")
-        question = gap.get("question") or gap.get("question_for_ba", "")
         row = [
             gap.get("id", ""),
             gap.get("related_flow", ""),
@@ -314,7 +313,6 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
             gap.get("uncertainty", ""),
             ux_impact,
             future_risk,
-            question,
             gap.get("suggested_options", ""),
             gap.get("status", "Pending")
         ]
@@ -357,7 +355,7 @@ def export_to_excel(data: Dict[str, Any], output_path: Path):
                 cell.alignment = ALIGN_DATA_LEFT
 
     col_widths_gap = {
-        "A": 13, "B": 20, "C": 24, "D": 26, "E": 28, "F": 28, "G": 30, "H": 26, "I": 14
+        "A": 13, "B": 20, "C": 24, "D": 26, "E": 28, "F": 28, "G": 26, "H": 14
     }
     for col_letter, width in col_widths_gap.items():
         ws_gaps.column_dimensions[col_letter].width = width

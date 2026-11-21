@@ -25,8 +25,24 @@ SYSTEM_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(SYSTEM_ROOT))
 sys.path.insert(0, str(SYSTEM_ROOT / "scripts"))
 
-def get_discovered_skills():
-    skills_dir = SYSTEM_ROOT / "skills"
+REQUIRED_CANONICAL_SKILLS = [
+    "api-investigation",
+    "automation-implementation",
+    "automation-readiness",
+    "codegraph-context-discovery",
+    "continuous-learning",
+    "gap-reproduction",
+    "module-intake",
+    "playwright-investigation",
+    "requirement-gap-analysis",
+    "test-execution-debugging",
+    "testcase-design",
+    "testcase-review-export",
+    "workflow-orchestrator",
+]
+
+def get_discovered_skills(skills_root=None):
+    skills_dir = Path(skills_root) if skills_root else (SYSTEM_ROOT / "skills")
     if not skills_dir.exists():
         return []
     return sorted([
@@ -85,17 +101,65 @@ def validate_file_structure():
     assert (SYSTEM_ROOT / "scripts" / "quality_gate.py").exists(), "quality_gate.py missing"
     return "All structural directories and global files exist."
 
-def validate_skill_metadata():
-    skills = get_discovered_skills()
-    assert len(skills) > 0, "No skills discovered under skills/ directory"
-    for sk in skills:
-        skill_file = SYSTEM_ROOT / "skills" / sk / "SKILL.md"
-        assert skill_file.exists(), f"Skill file {skill_file} missing"
-        text = skill_file.read_text(encoding="utf-8")
-        assert text.startswith("---"), f"Skill {sk} lacks YAML frontmatter"
-        assert f"name: {sk}" in text, f"Skill {sk} name mismatch in frontmatter"
-        assert "description:" in text, f"Skill {sk} missing description"
-    return ("PASS", f"All {len(skills)} skills have valid frontmatter and files.")
+def validate_skill_metadata(skills_root=None):
+    import re
+    root = Path(skills_root) if skills_root else (SYSTEM_ROOT / "skills")
+    if not root.exists():
+        return ("FAIL", f"Skills directory '{root}' does not exist")
+
+    discovered_dirs = [d.name for d in root.iterdir() if d.is_dir()]
+
+    # 1. Require all 13 canonical skills
+    missing_skills = [sk for sk in REQUIRED_CANONICAL_SKILLS if sk not in discovered_dirs]
+    if missing_skills:
+        return ("FAIL", f"Missing required canonical skill(s): {missing_skills}")
+
+    seen_names = set()
+
+    for sk in REQUIRED_CANONICAL_SKILLS:
+        skill_dir = root / sk
+        skill_file = skill_dir / "SKILL.md"
+        if not skill_file.exists():
+            return ("FAIL", f"Skill file {skill_file} missing")
+
+        try:
+            text = skill_file.read_text(encoding="utf-8")
+        except Exception as ex:
+            return ("FAIL", f"Failed to read {skill_file}: {ex}")
+
+        if not text.startswith("---"):
+            return ("FAIL", f"Skill '{sk}' lacks YAML frontmatter delimiter (---)")
+
+        parts = text.split("---", 2)
+        if len(parts) < 3:
+            return ("FAIL", f"Skill '{sk}' has malformed YAML frontmatter")
+
+        frontmatter = parts[1]
+
+        # Extract name
+        name_match = re.search(r'^\s*name:\s*([^\r\n]+)', frontmatter, re.MULTILINE)
+        if not name_match:
+            return ("FAIL", f"Skill '{sk}' missing 'name' field in frontmatter")
+
+        declared_name = name_match.group(1).strip().strip("'\"")
+        if not declared_name:
+            return ("FAIL", f"Skill '{sk}' has empty 'name' in frontmatter")
+
+        # Check folder name == frontmatter name
+        if declared_name != sk:
+            return ("FAIL", f"Skill directory name '{sk}' does not match frontmatter name '{declared_name}'")
+
+        # Check duplicate name
+        if declared_name in seen_names:
+            return ("FAIL", f"Duplicate skill name '{declared_name}' discovered")
+        seen_names.add(declared_name)
+
+        # Extract description
+        desc_match = re.search(r'^\s*description:\s*([^\r\n]+)', frontmatter, re.MULTILINE)
+        if not desc_match or not desc_match.group(1).strip().strip("'\""):
+            return ("FAIL", f"Skill '{sk}' missing or empty 'description' in frontmatter")
+
+    return ("PASS", f"All {len(REQUIRED_CANONICAL_SKILLS)} canonical skills verified: valid files, unique names, and compliant frontmatter.")
 
 def validate_excel_template():
     import openpyxl
@@ -118,7 +182,7 @@ def check_codegraph_tool():
     if not executable:
         return ("BLOCKED", "CodeGraph CLI not found in PATH")
     try:
-        res = subprocess.run([executable, "--version"], capture_output=True, text=True, shell=True, timeout=8)
+        res = subprocess.run("codegraph --version", capture_output=True, text=True, shell=True, timeout=8, stdin=subprocess.DEVNULL)
         if res.returncode == 0 and res.stdout.strip():
             return ("PASS", f"Operational: {res.stdout.strip()}")
         return ("FAIL", f"CodeGraph CLI execution failed with returncode {res.returncode}")
@@ -130,7 +194,7 @@ def check_playwright_cli():
     executable_pw = shutil.which("playwright")
     if executable_pw:
         try:
-            res = subprocess.run([executable_pw, "--version"], capture_output=True, text=True, shell=True, timeout=8)
+            res = subprocess.run("playwright --version", capture_output=True, text=True, shell=True, timeout=8, stdin=subprocess.DEVNULL)
             if res.returncode == 0 and res.stdout.strip():
                 return ("PASS", f"Operational (global CLI): {res.stdout.strip()}")
         except (OSError, subprocess.SubprocessError) as exc:
@@ -140,7 +204,7 @@ def check_playwright_cli():
     executable_npx = shutil.which("npx")
     if executable_npx:
         try:
-            res = subprocess.run(f'"{executable_npx}" playwright --version', capture_output=True, text=True, shell=True, timeout=8)
+            res = subprocess.run("npx --no-install playwright --version", capture_output=True, text=True, shell=True, timeout=8, stdin=subprocess.DEVNULL)
             if res.returncode == 0 and res.stdout.strip():
                 return ("WARN", f"No global CLI; operational via npx: {res.stdout.strip()}")
         except (OSError, subprocess.SubprocessError) as exc:
@@ -151,7 +215,7 @@ def check_playwright_cli():
         for cand in [cur / "node_modules" / "@playwright" / "test" / "cli.js", cur / "04-src" / "node_modules" / "@playwright" / "test" / "cli.js"]:
             if cand.exists():
                 try:
-                    res = subprocess.run(["node", str(cand), "--version"], capture_output=True, text=True, shell=False, timeout=8)
+                    res = subprocess.run(["node", str(cand), "--version"], capture_output=True, text=True, shell=False, timeout=8, stdin=subprocess.DEVNULL)
                     if res.returncode == 0 and res.stdout.strip():
                         return ("WARN", f"No global CLI; operational via local node_modules: {res.stdout.strip()}")
                 except (OSError, subprocess.SubprocessError) as exc:
@@ -165,12 +229,12 @@ def check_markitdown_tool():
     if not executable:
         return ("WARN", "MarkItDown CLI not found in PATH (optional for document conversion)")
     try:
-        res = subprocess.run([executable, "--version"], capture_output=True, text=True, shell=True, timeout=15)
+        res = subprocess.run("markitdown --version", capture_output=True, text=True, shell=True, timeout=8, stdin=subprocess.DEVNULL)
         if res.returncode == 0 and res.stdout.strip():
             return ("PASS", f"Operational: {res.stdout.strip()}")
         return ("WARN", f"MarkItDown CLI execution returned exit code {res.returncode}")
     except subprocess.TimeoutExpired:
-        return ("WARN", "MarkItDown CLI execution timed out (>15s)")
+        return ("WARN", "MarkItDown CLI execution timed out (>8s)")
     except (OSError, subprocess.SubprocessError) as exc:
         return ("WARN", f"MarkItDown CLI execution error: {exc}")
 
@@ -402,6 +466,11 @@ def main():
         else:
             print("[FAILURE] One or more architectural checks were BLOCKED or FAILED!")
         print("=" * 60)
+
+    if has_blocked_or_fail:
+        sys.exit(1)
+    else:
+        sys.exit(0)
 
 if __name__ == "__main__":
     main()

@@ -65,7 +65,21 @@ description: >-
 * If 0 test cases are marked `Automation Ready = Yes`: halt and notify the user that no cases were selected for automation.
 
 ## 7. Human Approval Requirements
-* None (this skill is the direct recipient of human approval).
+* **Mandatory Gate 2 Enforcement:**
+  * Bắt buộc có đối tượng `approval` hợp lệ gắn trực tiếp với SHA-256 hash của workbook đã duyệt:
+    ```json
+    {
+      "approval": {
+        "approved": true,
+        "approved_at": "<ISO-8601>",
+        "approved_by": "human",
+        "artifact_hash": "<SHA-256 workbook>"
+      }
+    }
+    ```
+  * Lệnh ghi nhận phê duyệt: `python scripts/state_manager.py approve --workbook <path_to_excel> --by human`
+  * Chuyển trạng thái: `python scripts/state_manager.py transition AUTOMATION_IMPLEMENTATION --approval-token <user_token>`
+  * **Cơ chế khóa an toàn:** Hệ thống kiểm tra hash SHA-256 thực tế của file `.xlsx` trên đĩa. Không chấp nhận approval thiếu hash hoặc hash không khớp. Nếu workbook bị chỉnh sửa sau approval, hash mismatch sẽ ngay lập tức chặn transition sang `AUTOMATION_IMPLEMENTATION`.
 
 ## 8. Completion Criteria
 * At least one validated test case marked `Automation Ready = Yes`.
