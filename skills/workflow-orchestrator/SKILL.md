@@ -85,6 +85,24 @@ stateDiagram-v2
     COMPLETED --> [*]
 ```
 
+### 4.1. Core Human Decision Gate (Gate 2 Enforcement)
+Transition from `WAITING_FOR_APPROVED_TESTCASES` to `AUTOMATION_IMPLEMENTATION` strictly requires:
+1. **Approval Object:** State must contain a valid `approval` record:
+   ```json
+   {
+     "approval": {
+       "approved": true,
+       "approved_at": "<ISO-8601>",
+       "approved_by": "human",
+       "artifact_hash": "<SHA-256 workbook>"
+     }
+   }
+   ```
+2. **Workbook SHA-256 Hash Binding:** The `artifact_hash` MUST match the real disk SHA-256 hash of the approved `.xlsx` workbook.
+3. **Zero Agent Self-Approval:** `approved_by` must strictly be `human`. Agents are forbidden from approving Gate 2.
+4. **Tamper Proofing:** If the workbook is modified after approval, the hash mismatch blocks execution immediately.
+5. **Locked Control Fields:** `current_state`, `approval`, `quality_gates`, `environment.tier`, `environment.allowlist_verified`, and `history` cannot be mutated via `set-field` or transition metadata (`PermissionError` enforced).
+
 ---
 
 ## 5. Production Safety Gate (Pre-Execution Protection)

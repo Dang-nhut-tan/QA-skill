@@ -4,9 +4,9 @@
 
 ![Engine: CodeGraph](https://img.shields.io/badge/Core_Engine-CodeGraph_SQLite-2563EB?style=for-the-badge&logo=sqlite&logoColor=white)
 ![Automation: Playwright](https://img.shields.io/badge/Execution-Playwright_CLI_&_MCP_Hybrid-2EAD33?style=for-the-badge&logo=playwright&logoColor=white)
-![Document: MarkItDown](https://img.shields.io/badge/Ingestion-Microsoft_MarkItDown-0284C7?style=for-the-badge&logo=microsoft)
-![Optimization: Ground Truth](https://img.shields.io/badge/Telemetry-Ground_Truth_API-EA580C?style=for-the-badge)
-![Status: 127/127 Tests PASS](https://img.shields.io/badge/Test_Suite-127%2F127_PASS_(100%25)-16A34A?style=for-the-badge)
+![Skills: 13 Canonical Skills](https://img.shields.io/badge/Skills-13_Canonical_Skills-2563EB?style=for-the-badge)
+![Security: Recursive Redaction](https://img.shields.io/badge/Security-Recursive_Redaction-EA580C?style=for-the-badge)
+![Test Suite: Automated Regression Suite](https://img.shields.io/badge/Test_Suite-Automated_Regression_Suite-16A34A?style=for-the-badge)
 ![Architecture: 9/9 Validated](https://img.shields.io/badge/Architecture-9%2F9_VALIDATED-0D9488?style=for-the-badge)
 
 **Hệ Thống Trợ Lý Kiểm Thử Phần Mềm Thông Minh Đẳng Cấp Doanh Nghiệp (Enterprise QA Agent System)**  
@@ -83,24 +83,25 @@ Hệ thống phân hóa thành 3 chế độ kiểm thử chuyên biệt để �
 
 ### Bước 1: Kiểm tra tính sẵn sàng của kiến trúc hệ thống
 ```powershell
-python scripts/validate_system.py
-# Kết quả mong đợi: [SUCCESS] All 9/9 architectural validations and dry-run tests PASSED!
+python scripts/validate_system.py --compact
+# Kết quả mong đợi: [SUCCESS] 9/9 PASS (exit code 0).
+# Lưu ý: Khi phát hiện bất kỳ mục BLOCKED hoặc FAIL (thiếu công cụ bắt buộc hoặc thiếu bất kỳ skill nào trong 13 canonical skills), validator lập tức trả exit code 1 chống CI xanh giả.
 ```
 
 ### Bước 2: Chạy bộ kiểm thử tự động toàn diện
 ```powershell
 $env:PYTHONIOENCODING="utf-8"; python -m pytest tests -q
-# Kết quả mong đợi: 127 passed, 54 subtests passed (100% PASS)
+# Kết quả mong đợi: Toàn bộ bài test hồi quy PASS (0 FAIL, exit code 0).
 
 npx playwright test
-# Kết quả mong đợi: 5 passed (2.0s)
+# Kết quả mong đợi: Toàn bộ bài test trình duyệt Playwright PASS (0 FAIL, exit code 0).
 ```
 
 ### Bước 3: Lựa chọn chế độ & Ra lệnh cho AI Agent
 
 * **Chạy Quick Mode (Fast-Track QA Audit v2):**
   ```powershell
-  python scripts/quick_audit.py <repo_path> <module_name> [--depth 1]
+  python scripts/quick_audit.py --module <module_name> [--target <source_file>] [--symbol <symbol>] [--spec <spec_file>] [--base-url <url>]
   ```
   *Hoặc ra lệnh tự nhiên trong chat:*  
   > *"Chạy quick audit phân hệ Giỏ hàng và Đặt hàng, tìm ngay các điểm bất cập gây ức chế người dùng."*
@@ -114,8 +115,8 @@ npx playwright test
 ### Bước 4: Kiểm duyệt tại Chốt Chặn Hài Lòng Test Case (Core Human Gate)
 Trong chế độ `standard` và `critical`, sau khi thiết kế và xuất bản file Excel `<module>-testcases.xlsx`, AI sẽ bàn giao và trực tiếp hỏi bạn:
 > **"Bạn có hài lòng với bộ testcase hiện tại không?"**
-* **Nếu CÓ (Hài lòng):** AI dừng lại để bạn hoặc đội ngũ QA tiến hành kiểm thử thủ công (hoặc nếu muốn AI tự động hoá thì đánh dấu `Automation Ready = Yes` trong file Excel để viết mã).
-* **Nếu KHÔNG (Chưa hài lòng / cần sửa):** Bạn chỉ cần nêu góp ý, AI sẽ quay lại sửa đổi, bổ sung test case đúng theo ý bạn cho đến khi hoàn toàn hài lòng.
+* **Nếu CÓ (Hài lòng):** AI dừng lại để bạn hoặc đội ngũ QA tiến hành kiểm thử thủ công (hoặc nếu muốn AI tự động hoá thì cấp lệnh `python scripts/state_manager.py approve --workbook <file.xlsx> --by human` để kích hoạt cờ duyệt gắn với SHA-256 hash của workbook).
+* **Nếu KHÔNG (Chưa hài lòng / cần sửa):** Bạn chỉ cần nêu góp ý, AI sẽ quay lại sửa đổi, bổ sung test case đúng theo ý bạn cho đến khi hoàn toàn hài lòng. Mọi sửa đổi trên workbook sau khi duyệt sẽ làm thay đổi SHA-256 hash và tự động khóa gate.
 
 ---
 
@@ -165,10 +166,12 @@ flowchart TD
 ```
 
 > [!IMPORTANT]
-> **Quy Tắc Thép Tại Chốt Chặn Kiểm Soát:**  
+> **Quy Tắc Thép Tại Chốt Chặn Kiểm Soát & Bảo Vệ Vận Hành:**  
 > • **Quyền quyết định tối cao của người dùng:** AI không bao giờ tự ý chốt kịch bản. Sau khi xuất Excel tại Step 5, AI bắt buộc dừng lại và hỏi bạn có hài lòng không.  
-> • **Vòng lặp sửa đổi tức thì (Instant Feedback Loop):** Nếu bạn chưa hài lòng, AI lập tức tiếp thu phản hồi, quay ngược về bước thiết kế để điều chỉnh kịch bản.  
-> • **An toàn tuyệt đối cho Automation:** AI tuyệt đối cấm tự ý viết mã Playwright (Step 6) nếu người dùng chưa phê duyệt và cấp `approval_token`.
+> • **Xác thực SHA-256 Workbook & Chống Tự Duyệt:** Vượt qua Human Gate 2 bắt buộc phải có đối tượng `approval` (`approved: true`, `approved_by: "human"`) kèm mã băm SHA-256 của file Excel đã duyệt. AI Agent tuyệt đối bị cấm tự cấp quyền phê duyệt. Nếu workbook bị sửa đổi trên đĩa sau khi duyệt, sai lệch mã băm (hash mismatch) sẽ lập tức khóa cổng automation.  
+> • **Khóa Trường Điều Khiển (Locked Control Fields):** Cấm sửa đổi `current_state`, `approval`, `quality_gates`, `environment.tier`, `environment.allowlist_verified`, và `history` thông qua `set-field` hoặc transition metadata; vi phạm sẽ ném ngoại lệ `PermissionError`.  
+> • **Khử Nhạy Cảm Đệ Quy (Recursive Secret Redaction):** Mọi file state (`.qa-state.json`, `.qa-state-*.json`) và file snapshot backup (`.bak`) đều được tự động quét và che giấu toàn diện (`***REDACTED***`) đối với Bearer tokens, mật khẩu trong URL/User-info/Query, và API keys trước khi lưu xuống đĩa.  
+> • **Phân Loại Môi Trường An Toàn (Production Safety Gate):** Nhận diện môi trường (`local`, `test`, `staging`, `production`) dựa trên phân tích chính xác hostname (`urllib.parse.urlparse`), địa chỉ loopback IP và nhãn nhị phân. Các URL chứa từ khóa đánh lừa trong đường dẫn hoặc query (ví dụ `https://shop.company.com/test/checkout`) đều được xử lý an toàn (fail-safe) và xếp vào `production` để chặn đứng mọi thao tác biến đổi dữ liệu (mutation).
 
 ---
 
@@ -189,11 +192,14 @@ AI rà soát mã nguồn qua 5 nhóm rủi ro gây ức chế người dùng ph�
 5. **`HIDDEN_LOGIC` (Logic nghiệp vụ tiềm ẩn):** Bỏ qua kiểm tra giá trị âm phía server, vi phạm quyền hạn hoặc trạng thái luồng không hợp lệ.
 
 Mỗi phát hiện được gán một trong 5 trạng thái chuẩn tắc:
-- `CONFIRMED_BUG`: Lỗi đã được xác nhận bằng kịch bản chạy thật có bằng chứng.
-- `CONFIRMED_GUARD`: Cơ chế phòng thủ của hệ thống đã được kiểm chứng hoạt động đúng.
+- `CONFIRMED_BUG`: Lỗi đã được xác nhận bằng kịch bản chạy thật có bằng chứng thuộc đúng module được audit.
+- `CONFIRMED_GUARD`: Cơ chế phòng thủ của hệ thống đã được kiểm chứng hoạt động đúng với bằng chứng AST/runtime thuộc đúng module.
 - `SUSPECTED`: Có dấu hiệu rủi ro mã nguồn nhưng chưa đủ bằng chứng chạy thực nghiệm.
 - `NOT_VERIFIED`: Chưa kiểm chứng được do thiếu môi trường.
 - `NOT_APPLICABLE`: Không áp dụng cho phân hệ này.
+
+> [!WARNING]
+> **Nguyên Tắc Chống Thành Công Ảo (Anti-False-Success):** Quick Mode tuyệt đối cấm mặc định sinh `CONFIRMED_GUARD` cho các hằng số hiển thị hoặc file tĩnh. Tuyệt đối không sử dụng kịch bản/fixture của phân hệ khác làm bằng chứng xác nhận cho phân hệ đang audit.
 
 ### 3. Kiểm Chứng Thực Nghiệm & Cơ Chế Giữ Lại Guard Hợp Lệ
 - Kích hoạt **Production Safety Gate** (chặn đứng mọi mutation trên môi trường live).
@@ -365,6 +371,8 @@ qa-agent-system/
 ├── skills/                        # 13 kỹ năng kiểm thử chuyên biệt hóa (SKILL.md)
 ├── scripts/
 │   ├── quick_audit.py             # Động cơ Fast-Track QA Audit v2 (JIT AST, 5 nhóm bất cập, Playwright CLI ≤ 60s)
+│   ├── quality_gate.py            # Cổng kiểm soát chất lượng AI Coding Quality Gate (5 nhóm rules PW, SEC, PY, ARCH, QA)
+│   ├── lint_test_code.py          # Linter tĩnh kiểm soát chuẩn C1-C5, Playwright, Security & Python AST
 │   ├── state_manager.py           # Quản lý FSM nguyên tử (.tmp + .bak) với cơ chế PID lock recovery & Optimistic Lock
 │   ├── codegraph_discovery.py     # Quét cây AST, 5-level context và trích xuất chữ ký phương thức
 │   ├── codegraph_preflight.py     # Tiền kiểm tra môi trường CodeGraph, loại trừ thư mục binary
@@ -375,14 +383,16 @@ qa-agent-system/
 │   ├── token_benchmark.py         # Đo lường token ground-truth & production telemetry logger
 │   ├── verify_and_embed_images.py # Kiểm tra tính toàn vẹn của ảnh Playwright & nhúng link an toàn
 │   ├── generate_template.py       # Tự động sinh file Excel mẫu chuẩn (excel-testcases-template.xlsx)
-│   ├── lint_test_code.py          # Linter tĩnh kiểm soát chuẩn C1-C5 trước khi hoàn tất automation
 │   └── validate_system.py         # Bộ kiểm thử xác thực 9 bước kiến trúc toàn hệ thống (0 false PASS)
-├── tests/                         # 127 bài kiểm thử tự động toàn diện (100% PASS)
-│   ├── test_qa_skills_regression.py   # 56 bài test hồi quy FSM, bảo mật, RTM, Excel & Learning
-│   ├── test_codegraph_upgrades.py     # 30 bài test AST discovery, classification & token benchmark
-│   ├── test_adaptive_level4.py        # 11 bài test cô lập trạng thái đa phân hệ và JIT AST Level 4
-│   ├── test_golden_e2e_pipeline.py    # 15 bài test mô phỏng khép kín quy trình E2E trên dự án mẫu
-│   ├── test_quick_audit_regression.py # 15 bài test hồi quy Fast-Track QA Audit v2
+├── tests/                         # Bộ kiểm thử tự động hồi quy toàn diện (100% PASS)
+│   ├── test_quality_gate_regression.py # Test hồi quy AI Coding Quality Gate & Lint Rules
+│   ├── test_quick_audit_regression.py # Test hồi quy Fast-Track QA Audit v2 (Anti-False-Success)
+│   ├── test_human_gate_regression.py  # Test hồi quy Human Approval Gate & Secret Redaction
+│   ├── test_validate_system.py        # Test hồi quy Validator failure codes & canonical skills
+│   ├── test_qa_skills_regression.py   # Test hồi quy FSM, bảo mật, RTM, Excel & Learning
+│   ├── test_codegraph_upgrades.py     # Test AST discovery, classification & token benchmark
+│   ├── test_adaptive_level4.py        # Test cô lập trạng thái đa phân hệ và JIT AST Level 4
+│   ├── test_golden_e2e_pipeline.py    # Test mô phỏng khép kín quy trình E2E trên dự án mẫu
 │   ├── smoke.spec.js                  # Playwright smoke test khởi chạy trình duyệt thật
 │   └── fixtures/                      # Ứng dụng mẫu đối chứng (order-app.html, order.ts, order.page.ts)
 ├── templates/                     # File Excel mẫu chuẩn (testcase-template.xlsx)

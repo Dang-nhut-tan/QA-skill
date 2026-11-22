@@ -40,9 +40,18 @@ ORDER_TS = FIXTURE_DIR / "src" / "order.ts"
 SPEC_MD = FIXTURE_DIR / "spec.md"
 
 
+@pytest.fixture(autouse=True)
+def check_test_isolation_no_project_root_leakage():
+    """Autouse fixture: Asserts that no test state, lock, or report leaks into PROJECT_ROOT."""
+    initial_leakage = set(PROJECT_ROOT.glob(".qa-state-test-*")) | set(PROJECT_ROOT.glob("*-quick-audit.md"))
+    yield
+    new_leakage = (set(PROJECT_ROOT.glob(".qa-state-test-*")) | set(PROJECT_ROOT.glob("*-quick-audit.md"))) - initial_leakage
+    assert len(new_leakage) == 0, f"Project root isolation violation: new test files leaked into project root: {new_leakage}"
+
+
 def test_quick_actually_reads_code(tmp_path):
     """1. Verify Quick Mode actually reads code using targeted AST discovery."""
-    auditor = FastTrackQAAuditor(PROJECT_ROOT, module_name="test-read-code")
+    auditor = FastTrackQAAuditor(tmp_path, module_name="test-read-code")
     res = auditor.run_audit(
         target_path="tests/fixtures/golden-sample-project/src/order.ts",
         target_symbol="handleApiOrder",
@@ -54,11 +63,12 @@ def test_quick_actually_reads_code(tmp_path):
     assert auditor.discovery_metadata["line_count"] > 10
     assert "handleApiOrder" in auditor.discovery_metadata["source_snippet"]
     assert auditor.timings["discovery"] > 0.0
+    assert not (PROJECT_ROOT / ".qa-state-test-read-code.json").exists()
 
 
 def test_quick_actually_performs_gap_analysis(tmp_path):
     """2. Verify Quick Mode executes the 5 Universal Friction Groups analysis."""
-    auditor = FastTrackQAAuditor(PROJECT_ROOT, module_name="test-gap-analysis")
+    auditor = FastTrackQAAuditor(tmp_path, module_name="test-gap-analysis")
     res = auditor.run_audit(
         target_path="tests/fixtures/golden-sample-project/src/order.ts",
         target_symbol="handleApiOrder",
@@ -72,11 +82,12 @@ def test_quick_actually_performs_gap_analysis(tmp_path):
     assert "ERROR_CONTRACT" in groups_evaluated
     assert "HIDDEN_LOGIC" in groups_evaluated
     assert auditor.timings["gap_analysis"] > 0.0
+    assert not (PROJECT_ROOT / ".qa-state-test-gap-analysis.json").exists()
 
 
 def test_quick_does_not_declare_bug_without_evidence(tmp_path):
     """3. Verify that suspected issues without empirical test pass stay as SUSPECTED or NOT_VERIFIED, never CONFIRMED_BUG."""
-    auditor = FastTrackQAAuditor(PROJECT_ROOT, module_name="test-evidence-rule")
+    auditor = FastTrackQAAuditor(tmp_path, module_name="test-evidence-rule")
     auditor.run_audit(
         target_path="tests/fixtures/golden-sample-project/src/order.ts",
         target_symbol="createOrder",
@@ -88,11 +99,12 @@ def test_quick_does_not_declare_bug_without_evidence(tmp_path):
             assert "Playwright CLI xác nhận" in finding["evidence"] or "exit code 0" in finding["evidence"]
         elif finding["risk_level"] == "High" and "order-api-bug-repro" not in str(auditor.repro_scripts):
             assert finding["verification_status"] in ["SUSPECTED", "NOT_VERIFIED", "NOT_APPLICABLE"]
+    assert not (PROJECT_ROOT / ".qa-state-test-evidence-rule.json").exists()
 
 
 def test_quick_valid_guard_not_reported_as_bug(tmp_path):
     """4. Verify that valid defensive guards are classified as CONFIRMED_GUARD and never reported as bugs."""
-    auditor = FastTrackQAAuditor(PROJECT_ROOT, module_name="test-guard-rule")
+    auditor = FastTrackQAAuditor(tmp_path, module_name="test-guard-rule")
     auditor.run_audit(
         target_path="tests/fixtures/golden-sample-project/src/order.ts",
         target_symbol="validateOrderQuantity",
@@ -103,6 +115,7 @@ def test_quick_valid_guard_not_reported_as_bug(tmp_path):
     # Guard items must never have CONFIRMED_BUG status
     for g in guard_findings:
         assert g["verification_status"] != "CONFIRMED_BUG"
+    assert not (PROJECT_ROOT / ".qa-state-test-guard-rule.json").exists()
 
 
 def test_quick_discovery_incomplete_reported_honestly(tmp_path):
@@ -124,7 +137,7 @@ def test_quick_discovery_incomplete_reported_honestly(tmp_path):
 def test_quick_production_safety_gate_blocks_mutation(tmp_path):
     """6. Verify Production Safety Gate blocks destructive actions on production URLs across quick mode."""
     auditor = FastTrackQAAuditor(
-        PROJECT_ROOT,
+        tmp_path,
         module_name="test-prod-safety",
         base_url="https://production-store.company.com"
     )
@@ -142,6 +155,7 @@ def test_quick_production_safety_gate_blocks_mutation(tmp_path):
         if f["group_key"] == "ERROR_CONTRACT":
             assert f["verification_status"] == "NOT_VERIFIED"
             assert "Production Safety Gate" in f["evidence"]
+    assert not (PROJECT_ROOT / ".qa-state-test-prod-safety.json").exists()
 
 
 def test_quick_does_not_export_excel(tmp_path):
@@ -263,7 +277,7 @@ def test_quick_timeout_does_not_create_false_pass(tmp_path):
 
 def test_quick_non_applicable_groups_marked_na(tmp_path):
     """14. Verify that non-applicable friction groups (e.g. data loss on backend-only functions) are marked NOT_APPLICABLE."""
-    auditor = FastTrackQAAuditor(PROJECT_ROOT, module_name="test-na-group")
+    auditor = FastTrackQAAuditor(tmp_path, module_name="test-na-group")
     auditor.run_audit(
         target_path="tests/fixtures/golden-sample-project/src/order.ts",
         target_symbol="handleApiOrder",
@@ -273,12 +287,13 @@ def test_quick_non_applicable_groups_marked_na(tmp_path):
     assert len(na_findings) >= 1
     # Check that it's in the Markdown report
     assert "KHÔNG ÁP DỤNG" in auditor.report_markdown
+    assert not (PROJECT_ROOT / ".qa-state-test-na-group.json").exists()
 
 
 def test_quick_unreachable_environment_reported_accurately(tmp_path):
     """15. Verify that unreachable runtime targets are marked NOT_VERIFIED with an accurate reason, not false pass."""
     auditor = FastTrackQAAuditor(
-        PROJECT_ROOT,
+        tmp_path,
         module_name="test-unreachable",
         base_url="https://unreachable-qa-server-9999.internal.corp"
     )
@@ -293,3 +308,25 @@ def test_quick_unreachable_environment_reported_accurately(tmp_path):
     for f in auditor.findings:
         if f["risk_level"] == "High":
             assert f["verification_status"] == "NOT_VERIFIED"
+    assert not (PROJECT_ROOT / ".qa-state-test-unreachable.json").exists()
+
+
+def test_quick_unrelated_fixture_evidence_contract(tmp_path):
+    """16. Verify that auditing an unrelated constant file (label.ts) produces 0 confirmed guards and 0 confirmed bugs."""
+    auditor = FastTrackQAAuditor(tmp_path, module_name="test-unrelated-label")
+    res = auditor.run_audit(
+        target_path="tests/fixtures/quick-audit/label.ts",
+        target_symbol="LABEL",
+    )
+    verified_scripts = getattr(auditor, "verified_scripts", len(auditor.repro_scripts) + len(auditor.guard_scripts))
+    assert verified_scripts == 0
+
+    confirmed_guards = [f for f in auditor.findings if f.get("verification_status") == "CONFIRMED_GUARD"]
+    confirmed_bugs = [f for f in auditor.findings if f.get("verification_status") == "CONFIRMED_BUG"]
+
+    assert len(confirmed_guards) == 0, f"Expected 0 CONFIRMED_GUARD, got {len(confirmed_guards)}: {confirmed_guards}"
+    assert len(confirmed_bugs) == 0, f"Expected 0 CONFIRMED_BUG, got {len(confirmed_bugs)}: {confirmed_bugs}"
+
+    for f in auditor.findings:
+        assert f.get("verification_status") in ["SUSPECTED", "NOT_VERIFIED", "NOT_APPLICABLE"]
+

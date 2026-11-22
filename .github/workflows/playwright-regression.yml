@@ -35,9 +35,16 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: 20
+        cache: 'npm'
+
+    - name: Install Node Dependencies
+      run: npm ci
 
     - name: Install CodeGraph CLI
       run: npm install -g @colbymchenry/codegraph
+
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps chromium
 
     - name: Install Python Dependencies
       run: |
@@ -52,7 +59,6 @@ jobs:
 
   playwright-e2e:
     name: Headless Playwright Regression
-    needs: python-integrity
     timeout-minutes: 60
     runs-on: ubuntu-latest
 

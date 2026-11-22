@@ -14,6 +14,8 @@ import time
 import hashlib
 import shutil
 import logging
+import ipaddress
+from urllib.parse import urlparse
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, Any, Optional, List, Tuple
@@ -65,29 +67,76 @@ ALLOWED_TRANSITIONS = {
     "BLOCKED": VALID_STATES
 }
 
-SAFE_ENVIRONMENT_DOMAINS = [
-    "localhost", "127.0.0.1", "0.0.0.0"
-]
+LOCAL_HOSTNAMES = {"localhost", "127.0.0.1", "0.0.0.0", "::1"}
+TEST_EXACT_LABELS = {"test", "dev", "sandbox", "sit", "qa"}
+STAGING_EXACT_LABELS = {"staging", "stg", "uat"}
 
-SAFE_ENVIRONMENT_KEYWORDS = [
-    ".test", ".local", "dev.", "dev-", "-dev", "sandbox", "sit.", "staging.", "staging-", "-staging", "stg.", "uat."
-]
+def _is_loopback(hostname: str) -> bool:
+    h = hostname.strip().lower()
+    if h in LOCAL_HOSTNAMES or h.endswith(".localhost"):
+        return True
+    try:
+        ip = ipaddress.ip_address(h.strip("[]"))
+        return ip.is_loopback or ip.is_unspecified
+    except ValueError:
+        return False
 
 def classify_environment(base_url: Optional[str]) -> Dict[str, Any]:
-    """Classifies target URL into local, test, staging, or production tiers."""
+    """Classifies target URL into local, test, staging, or production tiers based strictly on parsed hostname."""
     if not base_url or not isinstance(base_url, str):
         return {"tier": "unknown", "base_url": "", "allowlist_verified": False}
-    url = base_url.strip().lower()
-    if not url:
+    
+    raw = base_url.strip()
+    if not raw:
         return {"tier": "unknown", "base_url": "", "allowlist_verified": False}
-    if any(d in url for d in SAFE_ENVIRONMENT_DOMAINS):
+    
+    try:
+        parsed = urlparse(raw)
+    except Exception:
+        return {"tier": "unknown", "base_url": base_url, "allowlist_verified": False}
+    
+    # Scheme validation: Only http and https URLs are accepted for web test environments
+    if parsed.scheme.lower() not in ("http", "https"):
+        return {"tier": "unknown", "base_url": base_url, "allowlist_verified": False}
+    
+    hostname = parsed.hostname
+    if not hostname:
+        return {"tier": "unknown", "base_url": base_url, "allowlist_verified": False}
+    
+    host_lower = hostname.lower()
+    
+    # 1. Local Tier (strict loopback or .local / .localhost)
+    if _is_loopback(host_lower) or host_lower.endswith(".local") or host_lower.endswith(".localhost"):
         return {"tier": "local", "base_url": base_url, "allowlist_verified": True}
-    if any(k in url for k in [".test", ".local", "dev.", "dev-", "-dev", "sandbox", "sit."]):
+    
+    labels = [lbl for lbl in host_lower.split(".") if lbl]
+    
+    # 2. Test Tier (exact hostname labels or .test domain)
+    if (
+        host_lower.endswith(".test")
+        or any(lbl in TEST_EXACT_LABELS for lbl in labels)
+        or any(lbl.startswith("dev-") or lbl.endswith("-dev") for lbl in labels)
+    ):
         return {"tier": "test", "base_url": base_url, "allowlist_verified": True}
-    if any(k in url for k in ["staging.", "staging-", "-staging", "stg.", "uat."]):
+    
+    # 3. Staging Tier (exact hostname labels)
+    if (
+        any(lbl in STAGING_EXACT_LABELS for lbl in labels)
+        or any(lbl.startswith("staging-") or lbl.endswith("-staging") for lbl in labels)
+    ):
         return {"tier": "staging", "base_url": base_url, "allowlist_verified": True}
-    # Otherwise treat as production or unverified
+    
+    # 4. Otherwise treat as production or unverified target (Fail-Safe)
     return {"tier": "production", "base_url": base_url, "allowlist_verified": False}
+
+PROTECTED_CONTROL_FIELDS = {
+    "current_state",
+    "approval",
+    "quality_gates",
+    "environment.tier",
+    "environment.allowlist_verified",
+    "history"
+}
 
 FORBIDDEN_SECRET_KEYS = {
     "password", "passwd", "secret", "token", "credentials", "auth_key", 
@@ -95,22 +144,74 @@ FORBIDDEN_SECRET_KEYS = {
     "otp", "totp", "pin", "authorization", "session_id", "conn_str"
 }
 
+SENSITIVE_KEY_SUBSTRINGS = (
+    "password", "passwd", "secret", "token", "credentials", "auth_key",
+    "api_key", "access_key", "private_key", "jwt", "bearer", "passphrase",
+    "otp", "totp", "pin", "authorization", "session_id", "conn_str",
+    "cookie", "session"
+)
+
 URI_CREDENTIAL_PATTERN = re.compile(r'([a-zA-Z0-9+.-]+://[^:\s@]+:)([^@\s]+)(@)')
+SENSITIVE_QUERY_PARAMS = re.compile(
+    r'([?&](?:token|code|key|api_key|secret|password|auth|access_token|session)=)[^&#\s]+',
+    re.IGNORECASE
+)
+BEARER_TOKEN_PATTERN = re.compile(r'(?i)\bBearer\s+[A-Za-z0-9_\-\.=]+')
+GENERIC_SECRET_PATTERNS = [
+    re.compile(r'ghp_[A-Za-z0-9_]{16,}'),
+    re.compile(r'AKIA[0-9A-Z]{16}'),
+    re.compile(r'xox[baprs]-[A-Za-z0-9_-]{10,}'),
+]
+
+def redact_string(val: str) -> str:
+    if not isinstance(val, str):
+        return val
+    if "://" in val and "@" in val:
+        val = URI_CREDENTIAL_PATTERN.sub(r'\1***REDACTED***\3', val)
+    val = SENSITIVE_QUERY_PARAMS.sub(r'\1***REDACTED***', val)
+    val = BEARER_TOKEN_PATTERN.sub('Bearer ***REDACTED***', val)
+    for pat in GENERIC_SECRET_PATTERNS:
+        val = pat.sub('***REDACTED***', val)
+    return val
+
+def redact_sensitive_data(data: Any, key_name: Optional[str] = None) -> Any:
+    """
+    Recursively scans and redacts sensitive credentials, tokens, passwords,
+    and secret keys from arbitrary data structures (dict, list, str, etc.).
+    Preserves structural integrity so load state will never crash.
+    """
+    if isinstance(data, dict):
+        redacted_dict = {}
+        for k, v in data.items():
+            k_norm = str(k).lower().replace("-", "_")
+            if any(sub in k_norm for sub in SENSITIVE_KEY_SUBSTRINGS):
+                if "hash" in k_norm:
+                    redacted_dict[k] = v
+                elif isinstance(v, str) and ("bearer" in v.lower() or "://" in v):
+                    redacted_dict[k] = redact_string(v)
+                else:
+                    redacted_dict[k] = "***REDACTED***"
+            else:
+                redacted_dict[k] = redact_sensitive_data(v, key_name=str(k))
+        return redacted_dict
+    elif isinstance(data, list):
+        return [redact_sensitive_data(x, key_name=key_name) for x in data]
+    elif isinstance(data, str):
+        return redact_string(data)
+    return data
 
 def redact_credentials_in_string(val: str) -> str:
     """
     Scans a string value for URI credentials (e.g. postgres://user:password@host)
     and redacts the password portion to prevent secret leakage into state.
     """
-    if "://" in val and "@" in val:
-        return URI_CREDENTIAL_PATTERN.sub(r'\1***REDACTED***\3', val)
-    return val
+    return redact_string(val)
 
-def sanitize_metadata(data: Any) -> Any:
+def sanitize_metadata(data: Any, raise_on_secret: bool = True) -> Any:
     """
     Recursively inspects metadata dictionaries, lists, and strings.
     - Normalizes hyphens to underscores to catch keys like 'x-api-key', 'auth-token'.
-    - Raises ValueError if sensitive credential keys are found.
+    - Raises ValueError if sensitive credential keys are found and raise_on_secret is True.
     - Redacts embedded credentials inside URI string values.
     """
     if isinstance(data, dict):
@@ -118,14 +219,75 @@ def sanitize_metadata(data: Any) -> Any:
         for k, v in data.items():
             k_norm = str(k).lower().replace("-", "_")
             if any(forbidden in k_norm for forbidden in FORBIDDEN_SECRET_KEYS):
-                raise ValueError(f"Security Alert: Attempted to persist sensitive credential key '{k}' into state.")
-            sanitized[k] = sanitize_metadata(v)
+                if raise_on_secret:
+                    raise ValueError(f"Security Alert: Attempted to persist sensitive credential key '{k}' into state.")
+                else:
+                    sanitized[k] = "***REDACTED***"
+                    continue
+            sanitized[k] = sanitize_metadata(v, raise_on_secret=raise_on_secret)
         return sanitized
     elif isinstance(data, list):
-        return [sanitize_metadata(x) for x in data]
+        return [sanitize_metadata(x, raise_on_secret=raise_on_secret) for x in data]
     elif isinstance(data, str):
-        return redact_credentials_in_string(data)
+        return redact_string(data)
     return data
+
+def validate_human_approval(state: Dict[str, Any], workspace_root: Path) -> Tuple[bool, str]:
+    """
+    Unified Human Approval Gate 2 validator.
+    Validates that:
+    1. Approved Excel workbook exists on disk and is a valid .xlsx file.
+    2. State contains an 'approval' dictionary.
+    3. approval.approved is strictly True.
+    4. approval.approved_by is strictly 'human' (agents cannot self-approve).
+    5. approval.artifact_hash matches the real SHA-256 hash of the workbook on disk.
+    """
+    if not isinstance(state, dict):
+        return (False, "Human Gate 2 Violation: Invalid state object.")
+    
+    artifacts = state.get("artifacts", {})
+    wb_val = artifacts.get("approved_excel") or artifacts.get("excel_testcases")
+    if not wb_val:
+        return (False, "Human Gate 2 Violation: No approved Excel workbook path registered in state artifacts.")
+    
+    wb_path = Path(wb_val)
+    if not wb_path.is_absolute():
+        wb_path = workspace_root / wb_path
+        
+    if not wb_path.exists() or not wb_path.is_file():
+        return (False, f"Human Gate 2 Violation: Approved workbook file not found on disk: {wb_path}")
+        
+    if wb_path.suffix.lower() != ".xlsx":
+        return (False, f"Human Gate 2 Violation: Approved workbook must be a .xlsx file: {wb_path}")
+        
+    hasher = hashlib.sha256()
+    try:
+        with open(wb_path, "rb") as f:
+            for chunk in iter(lambda: f.read(65536), b""):
+                hasher.update(chunk)
+        actual_hash = hasher.hexdigest()
+    except OSError as exc:
+        return (False, f"Human Gate 2 Violation: Unable to read workbook file {wb_path}: {exc}")
+
+    approval = state.get("approval")
+    if not isinstance(approval, dict):
+        return (False, "Human Gate 2 Violation: Missing or invalid 'approval' object in state.")
+        
+    if approval.get("approved") is not True:
+        return (False, "Human Gate 2 Violation: Approval status is not True (approval rejected or pending).")
+        
+    approved_by = str(approval.get("approved_by", "")).strip().lower()
+    if approved_by != "human":
+        return (False, f"Human Gate 2 Violation: Approval must be granted by 'human', got '{approved_by}'. Agents cannot self-approve Gate 2.")
+        
+    recorded_hash = str(approval.get("artifact_hash", "")).strip().lower()
+    if not recorded_hash:
+        return (False, "Human Gate 2 Violation: Approval missing required 'artifact_hash'.")
+        
+    if recorded_hash != actual_hash:
+        return (False, f"Human Gate 2 Violation: Workbook hash mismatch! Approved hash '{recorded_hash}' != disk hash '{actual_hash}'. File was modified or tampered after approval.")
+        
+    return (True, "Human Gate 2 Validated successfully.")
 
 STATE_FILE_NAME = ".qa-state.json"
 
@@ -309,14 +471,16 @@ class WorkflowStateManager:
                 )
             data["_version"] = disk_version + 1
             data["updated_at"] = self._now()
+            clean_data = redact_sensitive_data(data)
             # Atomic file write with backup snapshot to prevent 0-byte state corruption
             tmp_file = self.state_file.with_name(f"{self.state_file.name}.{os.getpid()}.tmp")
             bak_file = self.state_file.with_name(f"{self.state_file.name}.bak")
             with open(tmp_file, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2, ensure_ascii=False)
+                json.dump(clean_data, f, indent=2, ensure_ascii=False)
             if self.state_file.exists():
                 try:
-                    shutil.copy2(self.state_file, bak_file)
+                    with open(bak_file, "w", encoding="utf-8") as bf:
+                        json.dump(clean_data, bf, indent=2, ensure_ascii=False)
                 except OSError as exc:
                     logger.warning("Unable to create state backup %s: %s", bak_file, exc)
             for attempt in range(5):
@@ -409,6 +573,50 @@ class WorkflowStateManager:
         self.save(state)
         return state
 
+    def record_human_approval(
+        self,
+        approved: bool = True,
+        approved_by: str = "human",
+        workbook_path: Optional[str] = None,
+        note: str = ""
+    ) -> Dict[str, Any]:
+        """
+        Registers human approval decision for Human Gate 2.
+        Binds approval to the specific workbook file via SHA-256 integrity hash.
+        """
+        state = self.load()
+        if not state:
+            raise RuntimeError(f"Cannot record approval: {STATE_FILE_NAME} does not exist.")
+        
+        target_wb = workbook_path
+        if not target_wb:
+            artifacts = state.get("artifacts", {})
+            target_wb = artifacts.get("approved_excel") or artifacts.get("excel_testcases")
+            
+        if not target_wb:
+            raise ValueError("Human Gate 2: No workbook specified or found in state artifacts.")
+            
+        wb_p = Path(target_wb)
+        if not wb_p.is_absolute():
+            wb_p = self.workspace_root / wb_p
+            
+        if not wb_p.exists() or not wb_p.is_file():
+            raise FileNotFoundError(f"Human Gate 2: Workbook file not found on disk: {wb_p}")
+            
+        h = self._compute_hash(wb_p)
+        state["approval"] = {
+            "approved": bool(approved),
+            "approved_at": self._now(),
+            "approved_by": approved_by,
+            "artifact_hash": h
+        }
+        if note:
+            state["approval"]["note"] = note
+            
+        state.setdefault("artifacts", {})["approved_excel"] = str(wb_p)
+        self.save(state)
+        return state
+
     def check_mutation_allowed(self) -> Tuple[bool, str]:
         """Checks if mutation / concurrency operations are safe for the current environment."""
         state = self.load()
@@ -432,6 +640,14 @@ class WorkflowStateManager:
         if not state:
             raise RuntimeError(f"Cannot transition: {STATE_FILE_NAME} does not exist. Run init first.")
 
+        # Guard against tampering protected control fields via transition metadata
+        if metadata:
+            for k in list(metadata.keys()):
+                k_norm = str(k).strip().lower()
+                for protected in PROTECTED_CONTROL_FIELDS:
+                    if k_norm == protected or k_norm.startswith(f"{protected}."):
+                        raise PermissionError(f"Access Denied: Protected field '{k}' cannot be mutated via transition metadata.")
+
         prev_state = state.get("current_state")
 
         if enforce_fsm and prev_state and prev_state != target_state:
@@ -439,16 +655,31 @@ class WorkflowStateManager:
             if target_state not in allowed:
                 raise ValueError(f"FSM Transition Violation: Cannot transition from '{prev_state}' to '{target_state}'. Allowed states: {allowed}")
 
-        if prev_state == "WAITING_FOR_APPROVED_TESTCASES" and target_state == "AUTOMATION_IMPLEMENTATION":
-            artifacts = state.get("artifacts", {})
-            workbook_value = artifacts.get("approved_excel") or artifacts.get("excel_testcases")
-            workbook_path = Path(workbook_value) if workbook_value else None
-            if workbook_path and not workbook_path.is_absolute():
-                workbook_path = self.workspace_root / workbook_path
-            if not workbook_path or workbook_path.suffix.lower() != ".xlsx" or not workbook_path.is_file():
-                raise ValueError("Human Gate 2 requires an existing approved .xlsx testcase workbook.")
-            if not isinstance(approval_token, str) or not approval_token.strip():
-                raise ValueError("Human Gate 2 requires a non-empty approval_token supplied by the approving user.")
+        if target_state == "AUTOMATION_IMPLEMENTATION":
+            # If approval token was provided and no approval recorded yet, record it
+            if isinstance(approval_token, str) and approval_token.strip():
+                if "approval" not in state or state["approval"] is None:
+                    artifacts = state.get("artifacts", {})
+                    workbook_value = artifacts.get("approved_excel") or artifacts.get("excel_testcases")
+                    workbook_path = Path(workbook_value) if workbook_value else None
+                    if workbook_path and not workbook_path.is_absolute():
+                        workbook_path = self.workspace_root / workbook_path
+                    if workbook_path and workbook_path.is_file():
+                        h = self._compute_hash(workbook_path)
+                        state["approval"] = {
+                            "approved": True,
+                            "approved_at": self._now(),
+                            "approved_by": "human",
+                            "artifact_hash": h,
+                            "token": approval_token.strip()
+                        }
+            elif "approval" not in state or state["approval"] is None:
+                raise ValueError("Human Gate 2 requires a non-empty approval_token supplied by the approving user or a verified human approval object.")
+
+            # Unified Human Gate validation
+            is_valid, reason = validate_human_approval(state, self.workspace_root)
+            if not is_valid:
+                raise ValueError(reason)
 
         # Guard against infinite clarification loops
         if prev_state == "WAITING_FOR_REQUIREMENT_CLARIFICATION" and target_state in ["CONTEXT_DISCOVERY", "GAP_ANALYSIS"]:
@@ -526,7 +757,14 @@ class WorkflowStateManager:
         if not state:
             raise RuntimeError(f"Cannot set field: {STATE_FILE_NAME} does not exist.")
         
-        value = sanitize_metadata(value) if isinstance(value, (dict, list, str)) else value
+        normalized_path = field_path.strip().lower()
+        for protected in PROTECTED_CONTROL_FIELDS:
+            if normalized_path == protected or normalized_path.startswith(f"{protected}."):
+                raise PermissionError(
+                    f"Access Denied: Field '{field_path}' is a protected control field and cannot be mutated via set_field."
+                )
+
+        value = sanitize_metadata(value, raise_on_secret=False) if isinstance(value, (dict, list, str)) else value
         parts = field_path.strip().split(".")
         curr = state
         for p in parts[:-1]:
@@ -542,6 +780,17 @@ class WorkflowStateManager:
         state = self.load()
         if not state:
             return {"valid": False, "reason": "No state file found"}
+
+        # Validate human approval gate if state is at or beyond automation implementation
+        if state.get("current_state") in ("AUTOMATION_IMPLEMENTATION", "AUTOMATION_EXECUTION", "COMPLETED"):
+            is_valid, reason = validate_human_approval(state, self.workspace_root)
+            if not is_valid:
+                return {
+                    "valid": False,
+                    "reason": reason,
+                    "current_state": state.get("current_state"),
+                    "resumable": False
+                }
 
         changed_docs = []
         for doc_path, old_hash in state.get("document_hashes", {}).items():
@@ -574,7 +823,7 @@ if __name__ == "__main__":
             idx += 1
 
     if not clean_args:
-        print("Usage: python state_manager.py [init|status|transition|validate] [args...] [--module <mod>]")
+        print("Usage: python state_manager.py [init|status|transition|approve|set-field|set-artifact|validate] [args...] [--module <mod>]")
         sys.exit(1)
 
     cmd = clean_args[0].lower()
@@ -623,6 +872,21 @@ if __name__ == "__main__":
         else:
             print(val)
 
+    elif cmd == "approve":
+        wb_arg = None
+        by_arg = "human"
+        for i, a in enumerate(clean_args):
+            if a in ("--workbook", "-w") and i + 1 < len(clean_args):
+                wb_arg = clean_args[i + 1]
+            elif a in ("--by", "-b") and i + 1 < len(clean_args):
+                by_arg = clean_args[i + 1]
+        try:
+            s = mgr.record_human_approval(approved=True, approved_by=by_arg, workbook_path=wb_arg)
+            print(f"[OK] Human approval recorded for workbook (hash: {s.get('approval', {}).get('artifact_hash')})")
+        except Exception as exc:
+            print(f"[ERROR] Failed to record approval: {exc}")
+            sys.exit(1)
+
     elif cmd == "transition":
         if len(clean_args) < 2:
             print(f"Usage: python state_manager.py transition <TARGET_STATE> [note] [--metadata '<json>'] [--approval-token <token>] [--module <mod>]")
@@ -648,8 +912,12 @@ if __name__ == "__main__":
                 note_parts.append(args[i])
                 i += 1
         note = " ".join(note_parts)
-        s = mgr.transition(tgt, note=note, metadata=meta, approval_token=approval_token)
-        print(f"[OK] State transitioned to {s['current_state']}")
+        try:
+            s = mgr.transition(tgt, note=note, metadata=meta, approval_token=approval_token)
+            print(f"[OK] State transitioned to {s['current_state']}")
+        except Exception as exc:
+            print(f"[ERROR] Transition rejected: {exc}")
+            sys.exit(1)
 
     elif cmd == "set-field":
         if len(clean_args) < 3:
@@ -661,8 +929,12 @@ if __name__ == "__main__":
             val = json.loads(raw_val)
         except json.JSONDecodeError:
             val = raw_val
-        s = mgr.set_field(field_path, val)
-        print(f"[OK] Field '{field_path}' updated successfully.")
+        try:
+            s = mgr.set_field(field_path, val)
+            print(f"[OK] Field '{field_path}' updated successfully.")
+        except PermissionError as exc:
+            print(f"[ERROR] {exc}")
+            sys.exit(1)
 
     elif cmd == "set-artifact":
         if len(clean_args) < 3:

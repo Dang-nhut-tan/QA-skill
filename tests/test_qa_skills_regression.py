@@ -851,7 +851,7 @@ class TestQASkillsRegression(unittest.TestCase):
         self.assertIn("Future Technical Risk", tpl_content)
 
     def test_export_testcases_gaps_sheet_has_dual_impact_columns(self):
-        """V8: export_testcases creates 9-column Requirement Gaps sheet with UX impact and future risk."""
+        """V8: export_testcases creates 8-column Requirement Gaps sheet with UX impact and future risk (without BA question)."""
         import openpyxl
         from scripts.export_testcases import export_to_excel
         sample_data = {
@@ -876,14 +876,17 @@ class TestQASkillsRegression(unittest.TestCase):
             export_to_excel(sample_data, tmp_p)
             wb = openpyxl.load_workbook(tmp_p)
             ws_gaps = wb["Requirement Gaps"]
-            self.assertEqual(ws_gaps.max_column, 9)
+            self.assertEqual(ws_gaps.max_column, 8)
             headers = [cell.value for cell in ws_gaps[1]]
             self.assertIn("UX Impact", headers)
             self.assertIn("Future Technical Risk", headers)
+            self.assertNotIn("Question for BA/PO", headers)
             # Verify data row
             row2 = [cell.value for cell in ws_gaps[2]]
             self.assertEqual(row2[4], "User gets stuck on spinner with no feedback")
             self.assertEqual(row2[5], "Orphaned pending payments in DB")
+            self.assertEqual(row2[6], "A) 10s B) 30s")
+            self.assertEqual(row2[7], "Pending")
         finally:
             tmp_p.unlink(missing_ok=True)
 
@@ -1195,6 +1198,45 @@ class TestQASkillsRegression(unittest.TestCase):
             violations_conc = lint_file(bad_concurrency_script)
             rule_names_conc = [v[1] for v in violations_conc]
             self.assertIn("EXCESSIVE_CONCURRENCY_VIOLATION", rule_names_conc)
+
+    def test_classify_environment_hostname_isolation_contract(self):
+        """Task 1: Verify environment classification relies exclusively on parsed hostname."""
+        # Must be local
+        for u in ["http://localhost:3000", "http://127.0.0.1:5173", "http://[::1]:8080"]:
+            res = classify_environment(u)
+            self.assertEqual(res["tier"], "local", f"Failed for {u}")
+            self.assertTrue(res["allowlist_verified"], f"Failed for {u}")
+
+        # Must be test/staging only when hostname label or allowlist confirms
+        for u in ["https://test.company.internal", "https://qa.company.internal"]:
+            res = classify_environment(u)
+            self.assertEqual(res["tier"], "test", f"Failed for {u}")
+            self.assertTrue(res["allowlist_verified"], f"Failed for {u}")
+
+        res_staging = classify_environment("https://staging.company.internal")
+        self.assertEqual(res_staging["tier"], "staging")
+        self.assertTrue(res_staging["allowlist_verified"])
+
+        # Must be production/unverified - never tricked by path, query, user-info, or substring
+        tricky_prod_urls = [
+            "https://shop.company.com/test/checkout",
+            "https://shop.company.com/?environment=staging",
+            "https://dev.example.com@shop.company.com/orders",
+            "https://shop.company.com/?redirect=localhost",
+            "https://contest.company.com",
+            "https://latest.company.com",
+        ]
+        for u in tricky_prod_urls:
+            res = classify_environment(u)
+            self.assertIn(res["tier"], ["production", "unverified"], f"Security vulnerability: {u} classified as {res['tier']}")
+            self.assertFalse(res["allowlist_verified"], f"Security vulnerability: {u} marked allowlist_verified")
+
+        # Invalid URLs or missing scheme must fail-safe
+        invalid_urls = ["not-a-url", "://broken", "", None, 12345]
+        for u in invalid_urls:
+            res = classify_environment(u)
+            self.assertIn(res["tier"], ["production", "unverified", "unknown"], f"Failed fail-safe for {u}")
+            self.assertFalse(res["allowlist_verified"], f"Failed fail-safe for {u}")
 
     def test_valuable_guard_retention_policy(self):
         """Verify verified security guards are retained in tests/guards/ rather than being purged."""

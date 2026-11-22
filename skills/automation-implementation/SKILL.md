@@ -98,14 +98,43 @@ expect(page.locator('.alert-success')).toBeVisible();
 await expect(page.locator('.alert-success')).toBeVisible();
 ```
 
-#### 3. Review, Self-Correction & Mandatory Linter Gate:
+#### 3. Review, Self-Correction & Mandatory AI Coding Quality Gate:
+
 1. **Syntax Check:**
    * Run syntax check: `node --check <file>` or language compiler.
-2. **Automated Linter Gate:**
-   * The AI agent MUST execute the static linter before completing the task:
-     `python scripts/lint_test_code.py <file>`
-   * If any violation is detected (arbitrary sleeps, hardcoded secrets, floating promises, broken selector syntax, collision-prone identifiers), the AI MUST NOT report completion. It must self-correct the code and re-run the linter until achieving `0 violations`.
-3. **Technical Self-Audit Verification Card:**
+
+2. **Automated AI Coding Quality Gate (`scripts/quality_gate.py`):**
+   * The AI agent MUST execute the Quality Gate before completing the task:
+     ```powershell
+     python scripts/quality_gate.py <modified_files>
+     ```
+   * **Mandatory Lint Rules Matrix (17 Rules across 5 Groups):**
+     | Rule ID | Rule Name | Severity | Scope | Violation Trigger & Remediation |
+     | :--- | :--- | :---: | :--- | :--- |
+     | **PW-001** | `ZERO_SLEEP_VIOLATION` | **BLOCK** | Test specs (`.js`, `.ts`, `.py`) | Prohibits `waitForTimeout()`, `time.sleep()`. Use web-first assertions (`await expect(locator).toBeVisible()`). |
+     | **PW-002** | `FLOATING_PROMISE_VIOLATION` | **BLOCK** | Playwright specs (`.js`, `.ts`) | Prohibits un-awaited async web assertions and un-awaited Playwright page actions (`click`, `goto`, `fill`). Prefix with `await`. |
+     | **PW-003** | `TRACEABILITY_VIOLATION` | **BLOCK** | Test specs | Every test title must contain an approved traceable ID: `TC-xxx`, `GAP-xxx`, or `GUARD-xxx`. |
+     | **PW-004** | `FOCUSED_TEST_VIOLATION` | **BLOCK** | Playwright specs | Prohibits `test.only()`, `it.only()`, and ungrounded `test.skip()` without reason/ticket. Remove focus before handover. |
+     | **PW-005** | `LOCATOR_QUALITY_WARNING` | **WARNING** | Playwright specs | Advises against absolute XPath (`//html/...`), deep DOM chains, or ungrounded `.nth()`. Use user-facing semantic locators (`getByRole`, `getByText`, `data-testid`). |
+     | **SEC-001** | `HARDCODED_SECRET_VIOLATION` | **BLOCK** | All code (`.js`, `.ts`, `.py`) | Prohibits hardcoding passwords, API tokens, secret keys. Read from environment variables (`process.env.TEST_PASSWORD`). |
+     | **SEC-002** | `UNMASKED_CREDENTIAL_LOG_VIOLATION` | **BLOCK** | All code | Prohibits printing or logging unmasked credentials/tokens to console or logger. Mask with `***REDACTED***`. |
+     | **PY-001** | `SILENT_EXCEPTION_VIOLATION` | **BLOCK** | Python code (`.py`) | AST-level: Prohibits bare `except:` or swallowed exceptions (`except Exception: pass`). Catch specific errors and log or re-raise. |
+     | **PY-002** | `MUTABLE_DEFAULT_ARG_VIOLATION` | **BLOCK** | Python code (`.py`) | AST-level: Prohibits mutable default parameters (`items=[]`, `data={}`). Default to `None` and initialize inside function. |
+     | **PY-003** | `UNSAFE_EVAL_VIOLATION` | **BLOCK** | Python code (`.py`) | AST-level: Prohibits `eval()` and `exec()`. Use `ast.literal_eval()` or dictionary dispatch tables. |
+     | **ARCH-001** | `IMPORT_BOUNDARY_VIOLATION` | **BLOCK** | All code | Prohibits production scripts (`scripts/`) from importing test code or test fixtures (`tests/`). |
+     | **ARCH-002** | `FRAMEWORK_UTILITY_REUSE_WARNING` | **WARNING** | All code | Flags re-implementing manual sleep polling loops or file locking routines. Reuse `expect.poll` or `WorkflowStateManager`. |
+     | **QA-001** | `NO_FALSE_PASS_VIOLATION` | **BLOCK** | State files & reports | Prohibits reporting COMPLETED when test execution failed or execution artifacts are missing. |
+     | **QA-002** | `UNVERIFIED_BUG_VIOLATION` | **BLOCK** | State files & reports | Prohibits marking gaps CONFIRMED without reproducible script in `tests/repro/` and execution proof. |
+     | **QA-003** | `UNVERIFIED_GUARD_VIOLATION` | **BLOCK** | State files & reports | Prohibits saving GUARD without verified negative execution proof in `tests/guards/`. |
+     | **QA-004** | `APPROVAL_GATE_VIOLATION` | **BLOCK** | State files & runtime | Prohibits executing automation implementation without human approval token at Step 5. |
+     | **QA-005** | `PRODUCTION_SAFETY_VIOLATION` | **BLOCK** | State files & runtime | Prohibits executing automated mutations against production environments. |
+
+3. **AI Auto-Fix Feedback Loop Protocol:**
+   - **Vòng lặp:** `Tạo code -> Chạy Quality Gate -> Đọc lỗi -> Sửa đúng nguyên nhân -> Chạy lại Quality Gate -> Chạy test`.
+   - **Quy tắc trần:** Tối đa 2 lần tự sửa cho cùng một nhóm lỗi. Nếu không sửa được, báo cáo lỗi còn tồn tại kèm bằng chứng và dừng lại.
+   - **Hành vi nghiêm cấm:** CẤM thêm suppression comment (`/* eslint-disable */`, `# noqa`, `// @ts-ignore`), CẤM xóa hoặc làm yếu assertion, CẤM sửa linter rule để ép test xanh, CẤM sửa logic ngoài phạm vi nhiệm vụ.
+
+4. **Technical Self-Audit Verification Card:**
    * At the conclusion of the code generation output, the AI agent MUST output the following audit card:
      ```markdown
      ### Technical Self-Audit Verification Card
@@ -116,23 +145,24 @@ await expect(page.locator('.alert-success')).toBeVisible();
      | 3 | C3: Multi-Viewport Matrix | PASS | Tested across Desktop (1920x1080) and Mobile viewports |
      | 4 | C4: State Concurrency Safe | PASS | StateFileLock with PID check & TTL recovery applied |
      | 5 | C5: 100% Awaited Assertions | PASS | Linter verified 0 floating promises |
+     | 6 | Quality Gate (17 Rules) | PASS | python scripts/quality_gate.py: 0 BLOCK violations |
      ```
 
-4. **Mandatory Pre-Delivery Smoke Execution Gate (Chạy thực tế trước khi bàn giao):**
+5. **Mandatory Pre-Delivery Smoke Execution Gate (Chạy thực tế trước khi bàn giao):**
    * The AI agent MUST execute a live dry-run of the authored test spec:
      `npx playwright test <spec_file> --project=chromium-desktop`
    * Confirm 0 syntax errors, 0 locator timeouts, and 0 harness crashes.
    * If any step fails due to locator changes or timing, auto-repair the script immediately and re-run.
    * STRICTLY PROHIBITED from handing over untested or broken test files to the user.
 
-4. **Transition Workflow State:**
+6. **Transition Workflow State:**
    * Update workflow state:
-     `python scripts/state_manager.py transition AUTOMATION_EXECUTION "Automation scripts generated and verified via Linter Gate"`.
+     `python scripts/state_manager.py transition AUTOMATION_EXECUTION "Automation scripts generated and verified via Quality Gate"`.
 
 ## 5. Expected Outputs
 * Automated test spec files adhering to the project's native style and Senior Dev standards.
 * Traceability mapping between spec functions and Excel Test Case IDs.
-* Verified Technical Self-Audit Verification Card confirming C1-C5 compliance.
+* Verified Technical Self-Audit Verification Card confirming C1-C5 and Quality Gate compliance.
 * Updated `.qa-state.json` transitioning to `AUTOMATION_EXECUTION`.
 
 ## 6. Failure Handling
@@ -143,6 +173,6 @@ await expect(page.locator('.alert-success')).toBeVisible();
 
 ## 8. Completion Criteria
 * All approved test cases are coded into executable test files.
-* `python scripts/lint_test_code.py` passes with 0 violations.
+* `python scripts/quality_gate.py` passes with 0 BLOCK violations.
 * Technical Self-Audit Verification Card is provided in the final output.
 * State is `AUTOMATION_EXECUTION`.

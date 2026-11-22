@@ -73,6 +73,39 @@
         }
       }
     },
+    "approval": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "approved": {
+          "type": "boolean"
+        },
+        "approved_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "approved_by": {
+          "type": "string"
+        },
+        "artifact_hash": {
+          "type": "string"
+        },
+        "token": {
+          "type": "string"
+        },
+        "note": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "approved",
+        "approved_at",
+        "approved_by",
+        "artifact_hash"
+      ]
+    },
     "artifacts": {
       "type": "object",
       "properties": {
